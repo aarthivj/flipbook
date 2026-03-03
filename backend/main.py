@@ -1,13 +1,16 @@
 import os
-from fastapi import FastAPI, Depends, HTTPException
+import shutil
+from uuid import uuid4
+import uuid
+from fastapi import FastAPI, Depends, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
-from sqlalchemy import create_engine, Column, String, Integer, JSON, ForeignKey
+from sqlalchemy import Text, create_engine, Column, String, Integer, JSON, ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
 from pydantic import BaseModel
-from typing import Any, List, Optional
+from typing import List, Optional
 
 # --- DATABASE SETUP ---
 DATABASE_URL = "sqlite:///./droidal.db"
@@ -34,48 +37,37 @@ class CustomElement(Base):
     __tablename__ = "custom_elements"
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"))
-    name = Column(String)
-    data = Column(JSON)  # Stores the Fabric.js object JSON
-    thumbnail = Column(String, nullable=True) # Stores base64 image string
+    name = Column(String, nullable=True)
+    data = Column(JSON)
+    thumbnail = Column(Text)
 
-# Create tables
 Base.metadata.create_all(bind=engine)
 
 # --- APP SETUP ---
 app = FastAPI()
 
-# Enable CORS for frontend communication
+# Enable CORS for frontend-backend communication
 app.add_middleware(
-    CORSMiddleware, 
+    CORSMiddleware,
     allow_origins=["*"], 
-    allow_methods=["*"], 
-    allow_headers=["*"]
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
-# Paths for Frontend (Assumes main.py is in /backend and html is in /frontend)
-# Adjust this path if your folder structure is different
+# Directory configurations
 FRONTEND_DIR = os.path.join(os.path.dirname(__file__), "..", "frontend")
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+VIDEO_DIR = os.path.join(BASE_DIR, "videos")
 
-# --- SCHEMAS (Pydantic) ---
+# Ensure the folder exists
+if not os.path.exists(VIDEO_DIR):
+    os.makedirs(VIDEO_DIR)
+
+# --- SCHEMAS ---
 class LoginRequest(BaseModel):
     username: str
     password: str
-
-class CustomElementCreate(BaseModel):
-    user_id: int
-    name: str
-    element_data: Any  # From frontend: payload.element_data
-    thumbnail: Optional[str] = None
-
-class CustomElementResponse(BaseModel):
-    id: int
-    user_id: int
-    name: str
-    data: Any          # Maps to the DB 'data' column
-    thumbnail: Optional[str] = None
-
-    class Config:
-        from_attributes = True
 
 # --- DEPENDENCY ---
 def get_db():
@@ -106,11 +98,28 @@ def get_editor():
 def get_preview():
     return FileResponse(os.path.join(FRONTEND_DIR, "flip.html"))
 
-# Serve static files (CSS, JS, Images)
+# Static file mounting for frontend assets and uploaded media
 app.mount("/frontend", StaticFiles(directory=FRONTEND_DIR), name="frontend")
+app.mount("/uploads", StaticFiles(directory=VIDEO_DIR), name="uploads")
 
-# --- API ROUTES ---
+# --- VIDEO UPLOAD API ---
+@app.post("/upload_video")
+async def upload_video(video: UploadFile = File(...)):
+    file_extension = video.filename.split(".")[-1]
+    unique_filename = f"{uuid.uuid4()}.{file_extension}"
+    
+    # Save to backend/videos/
+    file_path = os.path.join(VIDEO_DIR, unique_filename)
+    
+    with open(file_path, "wb") as buffer:
+        shutil.copyfileobj(video.file, buffer)
+    
+    # The URL returned to the frontend should still start with /uploads/
+    return {"url": f"/uploads/{unique_filename}"}
 
+
+
+# --- AUTH API ---
 @app.post("/api/signup")
 def signup(req: LoginRequest, db: Session = Depends(get_db)):
     existing_user = db.query(User).filter(User.username == req.username).first()
@@ -130,25 +139,29 @@ def login(req: LoginRequest, db: Session = Depends(get_db)):
         raise HTTPException(status_code=401, detail="Invalid username or password")
     return {"user_id": user.id, "username": user.username}
 
+# --- PROJECTS API ---
 @app.get("/api/projects/{user_id}")
 def get_projects(user_id: int, db: Session = Depends(get_db)):
     return db.query(Project).filter(Project.user_id == user_id).all()
 
 @app.get("/api/project/{p_id}")
 def get_project(p_id: int, db: Session = Depends(get_db)):
-    project = db.query(Project).filter(Project.id == p_id).first()
-    if not project:
-        raise HTTPException(status_code=404, detail="Project not found")
-    return project
+    return db.query(Project).filter(Project.id == p_id).first()
 
 @app.post("/api/projects/save")
 def save_project(proj: dict, db: Session = Depends(get_db)):
     p_id = proj.get("id")
+    data_content = proj.get("data")
+    
+    if isinstance(data_content, str):
+        import json
+        data_content = json.loads(data_content)
+
     if p_id:
         db_p = db.query(Project).filter(Project.id == p_id).first()
         if db_p:
-            db_p.data = proj.get("data")
-            db_p.title = proj.get("title", db_p.title)
+            db_p.data = data_content
+            db_p.title = proj.get('title', db_p.title)
             db.commit()
             return {"status": "updated", "id": db_p.id}
     
@@ -156,36 +169,31 @@ def save_project(proj: dict, db: Session = Depends(get_db)):
         title=proj.get('title', 'Untitled'), 
         project_type=proj.get('type', 'flipbook'), 
         user_id=proj.get('user_id'), 
-        data=proj.get('data', [])
+        data=data_content
     )
     db.add(new_p)
     db.commit()
     db.refresh(new_p)
     return {"id": new_p.id}
 
-# --- CUSTOM ELEMENTS ROUTES ---
-
+# --- CUSTOM ELEMENTS API ---
 @app.post("/api/custom-elements/save")
-def save_custom_element(element: CustomElementCreate, db: Session = Depends(get_db)):
-    try:
-        new_el = CustomElement(
-            user_id=element.user_id,
-            name=element.name,
-            data=element.element_data, # Correctly maps element_data to DB data column
-            thumbnail=element.thumbnail
-        )
-        db.add(new_el)
-        db.commit()
-        db.refresh(new_el)
-        return {"status": "success", "id": new_el.id}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+def save_custom_element(payload: dict, db: Session = Depends(get_db)):
+    """Saves a custom element, including its JSON data and thumbnail."""
+    new_el = CustomElement(
+        user_id=payload["user_id"],
+        name=payload.get("name", "Untitled"),
+        data=payload["element_data"],
+        thumbnail=payload.get("thumbnail") 
+    )
+    db.add(new_el)
+    db.commit()
+    db.refresh(new_el)
+    return {"status": "saved"}
 
-@app.get("/api/custom-elements/{user_id}", response_model=List[CustomElementResponse])
+@app.get("/api/custom-elements/{user_id}")
 def get_custom_elements(user_id: int, db: Session = Depends(get_db)):
-    # Returns an empty list [] if none found, satisfying frontend .forEach()
-    elements = db.query(CustomElement).filter(CustomElement.user_id == user_id).all()
-    return elements
+    return db.query(CustomElement).filter(CustomElement.user_id == user_id).all()
 
 if __name__ == "__main__":
     import uvicorn

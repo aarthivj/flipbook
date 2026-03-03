@@ -222,16 +222,33 @@ async function renderPage(canvasId, jsonData, overlay) {
                 
                 // 1. VIDEO LOGIC
                 if (obj.customVideoSrc) {
-                    const vid = document.createElement('video');
-                    vid.src = obj.customVideoSrc; 
-                    vid.autoplay = true; 
-                    vid.muted = true;
-                    vid.loop = true;
-                    vid.playsInline = true;
-                    vid.style.cssText = `position:absolute;left:${obj.left}px;top:${obj.top}px;width:${obj.getScaledWidth()}px;height:${obj.getScaledHeight()}px;object-fit:cover;z-index:5;`;
-                    overlay.appendChild(vid);
-                }
-
+            // Create a NATIVE HTML5 Video
+            const vid = document.createElement('video');
+            vid.src = obj.customVideoSrc.startsWith('http') 
+                ? obj.customVideoSrc 
+                : `http://127.0.0.1:8000${obj.customVideoSrc}`;
+            
+            vid.autoplay = true;
+            vid.muted = true;
+            vid.loop = true;
+            vid.playsInline = true;
+            
+            // Calculate position based on the Fabric Object
+            const rect = obj.getBoundingRect();
+            
+            vid.style.cssText = `
+                position: absolute;
+                left: ${rect.left}px;
+                top: ${rect.top}px;
+                width: ${rect.width}px;
+                height: ${rect.height}px;
+                transform: rotate(${obj.angle}deg);
+                object-fit: fill;
+                z-index: 100;
+            `;
+            
+            overlay.appendChild(vid);
+        }
                 // 2. EXTERNAL LINK
                 if (obj.customLink) {
                     const a = document.createElement('a');
