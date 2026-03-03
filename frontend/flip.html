@@ -1,0 +1,333 @@
+//flip.html
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Droidal – Flipbook Preview</title>
+    <script src="https://cdn.jsdelivr.net/npm/page-flip@2.0.7/dist/js/page-flip.browser.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700;900&family=Inter:wght@300;400;500;600;700&family=Roboto:wght@400;700&family=Oswald:wght@400;700&family=Montserrat:wght@400;600;700&family=Poppins:wght@400;600&family=Raleway:wght@400;700&family=Lato:wght@400;700&family=Open+Sans:wght@400;600&family=Merriweather:wght@400;700&family=Dancing+Script:wght@600&family=Bebas+Neue&display=swap" rel="stylesheet">
+    <style>
+        *{box-sizing:border-box;margin:0;padding:0}
+        body{background:#0f172a;min-height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:40px 20px 60px;font-family:'Inter',sans-serif;overflow:hidden}
+        body::before{content:'';position:fixed;top:0;left:0;right:0;bottom:0;background:radial-gradient(circle at 20% 30%,rgba(16,185,129,.15) 0%,transparent 50%),radial-gradient(circle at 80% 70%,rgba(59,130,246,.15) 0%,transparent 50%);pointer-events:none;z-index:0}
+        .book-wrapper{text-align:center;position:relative;z-index:1}
+        #book{width:840px;height:600px;position:relative;margin:0 auto 20px;transition:transform .6s cubic-bezier(.4,0,.2,1)}
+        .my-page{background-color:#ffffff;position:absolute;top:0;left:0;width:100%;height:100%;overflow:hidden;box-shadow:inset 0 0 1px rgba(0,0,0,.1)}
+        .my-page::before{content:'';position:absolute;top:0;left:0;right:0;bottom:0;background-image:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.008) 2px,rgba(0,0,0,.008) 4px);pointer-events:none;opacity:.6;z-index:50}
+        .interactive-layer{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:10}
+        .interactive-layer a{pointer-events:auto}
+        .interactive-layer video{pointer-events:auto}
+        .loading-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:#0a4d68;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;transition:opacity .5s ease;gap:14px}
+        .loading-overlay.hidden{opacity:0;pointer-events:none}
+        .loader{width:48px;height:48px;border:4px solid rgba(16,185,129,.2);border-top-color:#10b981;border-radius:50%;animation:spin .8s linear infinite}
+        .load-txt{color:rgba(255,255,255,.65);font-size:.85rem;font-weight:500}
+        @keyframes spin{to{transform:rotate(360deg)}}
+        .empty-state{display:none;flex-direction:column;align-items:center;gap:12px;text-align:center;color:#fff;z-index:2;padding:40px}
+        .empty-state.show{display:flex}
+        .empty-state h2{font-size:1.3rem;font-weight:700}
+        .empty-state p{color:rgba(255,255,255,.6);font-size:.88rem;max-width:360px}
+        .empty-state a{margin-top:8px;padding:10px 22px;background:#6366f1;color:#fff;border-radius:8px;text-decoration:none;font-weight:600}
+        .empty-state a:hover{background:#4f46e5}
+        .ctrl-bar{position:fixed;bottom:0;left:0;right:0;height:50px;background:rgba(15,23,42,.96);backdrop-filter:blur(12px);border-top:1px solid rgba(255,255,255,.07);display:flex;align-items:center;justify-content:space-between;padding:0 18px;z-index:100}
+        .cb-side{display:flex;align-items:center;gap:7px}
+        .cb-center{display:flex;align-items:center;gap:5px}
+        .cb-btn{padding:5px 13px;border:1px solid rgba(255,255,255,.15);border-radius:6px;background:rgba(255,255,255,.07);color:rgba(255,255,255,.8);cursor:pointer;font-size:.78rem;font-weight:500;font-family:'Inter',sans-serif;transition:.15s}
+        .cb-btn:hover{background:rgba(255,255,255,.15);color:#fff}
+        .cb-btn.pri{background:#6366f1;border-color:#6366f1;color:#fff}
+        .cb-btn.pri:hover{background:#4f46e5}
+        .pg-ind{color:rgba(255,255,255,.5);font-size:.78rem;font-weight:500;min-width:72px;text-align:center}
+        .dot-wrap{display:flex;gap:5px;align-items:center}
+        .p-dot{width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,.22);cursor:pointer;border:none;transition:.15s}
+        .p-dot.a{background:#6366f1;width:9px;height:9px}
+        .p-dot:hover{background:rgba(255,255,255,.5)}
+        .update-banner{display:none;position:fixed;top:14px;left:50%;transform:translateX(-50%);background:#6366f1;color:#fff;padding:9px 18px;border-radius:8px;font-size:.83rem;font-weight:600;cursor:pointer;z-index:200;box-shadow:0 4px 18px rgba(99,102,241,.4);white-space:nowrap}
+        .update-banner.show{display:block}
+    </style>
+</head>
+<body>
+    <div class="loading-overlay" id="loadOverlay">
+        <div class="loader"></div>
+        <div class="load-txt" id="loadTxt">Loading your book...</div>
+    </div>
+    <div class="empty-state" id="emptyState">
+        <h2>📚 No pages found</h2>
+        <p>Open the Droidal Editor, add content to the canvas, then click <strong>Preview</strong>. It auto-saves on every change.</p>
+        <a href="editor.html">← Open Editor</a>
+    </div>
+    <div class="book-wrapper">
+        <div id="book"></div>
+    </div>
+    <div class="ctrl-bar">
+        <div class="cb-side"><button class="cb-btn" onclick="goPrev()">← Prev</button></div>
+        <div class="cb-center">
+            <div class="dot-wrap" id="dotWrap"></div>
+            <span class="pg-ind" id="pgInd">Page 1</span>
+        </div>
+        <div class="cb-side">
+            <button class="cb-btn" onclick="goNext()">Next →</button>
+            <button class="cb-btn pri" onclick="window.open('editor.html','_blank')">✏️ Edit</button>
+        </div>
+    </div>
+    <div class="update-banner" id="updateBanner" onclick="location.reload()">📝 Editor updated — click to reload</div>
+    <audio id="pageSound" preload="auto">
+        <source src="data:audio/mpeg;base64,//uQxAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAACAAACcQCAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICA//////////////////////////////////////////////////////////////////8AAAA5TEFNRTMuMTAwAZYAAAAAAAAAABQ4JALqQgAAOAAAcQFFGy0AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" type="audio/mpeg">
+    </audio>
+   <script>
+const BOOK_ID = 'droidal_book', LS_KEY = `droidal_pages_${BOOK_ID}`, PAGE_W = 420, PAGE_H = 594;
+let pageFlip, totalPages = 0;
+
+document.addEventListener('DOMContentLoaded', async () => {
+    setTxt('Loading pages...');
+    const pages = await loadPages();
+    if (!pages || !pages.length) {
+        document.getElementById('loadOverlay').classList.add('hidden');
+        document.getElementById('emptyState').classList.add('show');
+        return;
+    }
+    setTxt(`Rendering ${pages.length} page(s)...`);
+    await buildDOM(pages);
+    initFlip(pages.length);
+    
+    window.addEventListener('storage', e => {
+        if (e.key === LS_KEY) document.getElementById('updateBanner').classList.add('show');
+    });
+
+
+    
+});
+
+
+document.addEventListener('DOMContentLoaded', async () => {
+    setTxt('Checking for updates...');
+    
+    // Priority: Check URL for project ID first
+    const params = new URLSearchParams(window.location.search);
+    const pId = params.get('id');
+    
+    let pages = null;
+    if (pId) {
+        try {
+            const r = await fetch(`/api/project/${pId}`);
+            const proj = await r.json();
+            pages = proj.data.map((json, i) => ({ page_number: i, canvas_json: json }));
+        } catch (e) { console.error("DB Load failed", e); }
+    }
+
+    if (!pages) {
+        pages = await loadPages(); // Fallback to LocalStorage
+    }
+
+    if (!pages || !pages.length) {
+        document.getElementById('loadOverlay').classList.add('hidden');
+        document.getElementById('emptyState').classList.add('show');
+        return;
+    }
+
+    setTxt(`Preparing ${pages.length} pages...`);
+    await buildDOM(pages);
+    initFlip(pages.length);
+});
+
+function setTxt(t) { document.getElementById('loadTxt').textContent = t }
+
+async function loadPages() {
+    try {
+        const raw = localStorage.getItem(LS_KEY);
+        if (raw) {
+            const a = JSON.parse(raw);
+            if (Array.isArray(a) && a.length) {
+                a.sort((x, y) => x.page_number - y.page_number);
+                return a;
+            }
+        }
+    } catch (e) {}
+    return null;
+}
+
+async function loadPages() {
+    try {
+        const raw = localStorage.getItem(LS_KEY);
+        if (raw) {
+            const a = JSON.parse(raw);
+            if (Array.isArray(a) && a.length) {
+                a.sort((x, y) => x.page_number - y.page_number);
+                return a;
+            }
+        }
+    } catch (e) {}
+    try {
+        setTxt('Trying server...');
+        const r = await fetch(`http://127.0.0.1:8000/get_book_pages?book_id=${BOOK_ID}`, { signal: AbortSignal.timeout(3000) });
+        if (r.ok) {
+            const a = await r.json();
+            if (Array.isArray(a) && a.length) {
+                a.sort((x, y) => x.page_number - y.page_number);
+                return a;
+            }
+        }
+    } catch (e) {}
+    return null;
+}
+
+async function buildDOM(pagesData) {
+    const bookEl = document.getElementById('book');
+    bookEl.innerHTML = ''; 
+
+    const renderList = [...pagesData];
+    if (renderList.length % 2 !== 0) {
+        renderList.push({ page_number: 999, canvas_json: null });
+    }
+
+    totalPages = renderList.length;
+
+    for (let i = 0; i < renderList.length; i++) {
+        const info = renderList[i];
+        const pageDiv = document.createElement('div');
+        pageDiv.className = 'my-page';
+        
+        const cvEl = document.createElement('canvas');
+        cvEl.id = `rc-${i}`;
+        pageDiv.appendChild(cvEl);
+        
+        const overlay = document.createElement('div');
+        overlay.className = 'interactive-layer';
+        pageDiv.appendChild(overlay);
+        
+        bookEl.appendChild(pageDiv);
+        // Only one renderPage call here
+        await renderPage(cvEl.id, info.canvas_json, overlay);
+    }
+}
+// ... (Keep your CSS and HTML structure) ...
+
+async function renderPage(canvasId, jsonData, overlay) {
+    return new Promise(resolve => {
+        const sc = new fabric.StaticCanvas(canvasId, { width: PAGE_W, height: PAGE_H });
+        if (!jsonData) {
+            sc.backgroundColor = '#ffffff';
+            sc.renderAll();
+            return resolve();
+        }
+        
+        const data = typeof jsonData === 'string' ? JSON.parse(jsonData) : jsonData;
+        
+        // Pass CUSTOM_PROPS to ensure they are loaded into the objects
+        sc.loadFromJSON(data, () => {
+            sc.renderAll();
+            sc.getObjects().forEach(obj => {
+                
+                // 1. VIDEO LOGIC
+                if (obj.customVideoSrc) {
+                    const vid = document.createElement('video');
+                    vid.src = obj.customVideoSrc; 
+                    vid.autoplay = true; 
+                    vid.muted = true;
+                    vid.loop = true;
+                    vid.playsInline = true;
+                    vid.style.cssText = `position:absolute;left:${obj.left}px;top:${obj.top}px;width:${obj.getScaledWidth()}px;height:${obj.getScaledHeight()}px;object-fit:cover;z-index:5;`;
+                    overlay.appendChild(vid);
+                }
+
+                // 2. EXTERNAL LINK
+                if (obj.customLink) {
+                    const a = document.createElement('a');
+                    a.href = obj.customLink; a.target = '_blank';
+                    a.style.cssText = `position:absolute;left:${obj.left}px;top:${obj.top}px;width:${obj.getScaledWidth()}px;height:${obj.getScaledHeight()}px;cursor:pointer;pointer-events:auto;z-index:10;`;
+                    overlay.appendChild(a);
+                }
+
+                // 3. INTERNAL JUMP (The Menu/Buttons)
+                if (obj.customPageTarget !== undefined && obj.customPageTarget !== null) {
+                    const jumpBtn = document.createElement('div');
+                    jumpBtn.style.cssText = `position:absolute;left:${obj.left}px;top:${obj.top}px;width:${obj.getScaledWidth()}px;height:${obj.getScaledHeight()}px;cursor:pointer;pointer-events:auto;z-index:20;`;
+                    
+                    jumpBtn.onclick = (e) => {
+                        e.preventDefault();
+                        const target = parseInt(obj.customPageTarget);
+                        if (pageFlip && !isNaN(target)) {
+                            pageFlip.flip(target);
+                        }
+                    };
+                    overlay.appendChild(jumpBtn);
+                }
+            });
+            resolve();
+        });
+    });
+}
+
+
+
+function initFlip(n) {
+    const bookEl = document.getElementById('book');
+    const pageSound = document.getElementById('pageSound');
+
+    pageFlip = new St.PageFlip(bookEl, {
+        width: PAGE_W,
+        height: PAGE_H,
+        size: 'fixed',
+        showCover: true,
+        usePortrait: false,
+        flippingTime: 800,
+        drawShadow: true,
+        maxShadowOpacity: .5,
+        showPageCorners: true,
+        useMouseEvents: true,
+        clickEventForward: false
+    });
+
+    pageFlip.loadFromHTML(document.querySelectorAll('#book .my-page'));
+
+    function recenter(idx) {
+        const total = pageFlip.getPageCount();
+        if (idx === 0) bookEl.style.transform = 'translateX(-210px)';
+        else if (idx >= total - 1) bookEl.style.transform = 'translateX(210px)';
+        else bookEl.style.transform = 'translateX(0px)';
+    }
+
+    recenter(0);
+
+    setTimeout(() => {
+        document.getElementById('loadOverlay').classList.add('hidden');
+    }, 500);
+
+    pageFlip.on('flip', e => {
+        if (pageSound) { pageSound.currentTime = 0; pageSound.play().catch(() => {}); }
+        recenter(e.data);
+        updateUI(e.data);
+    });
+
+    buildDots(totalPages);
+    updateUI(0);
+}
+
+
+function buildDots(n) {
+    const wrap = document.getElementById('dotWrap');
+    wrap.innerHTML = '';
+    if (n <= 30) {
+        for (let i = 0; i < n; i++) {
+            const d = document.createElement('button');
+            d.className = 'p-dot' + (i === 0 ? ' a' : '');
+            d.onclick = () => { if (pageFlip) pageFlip.flip(i); };
+            wrap.appendChild(d);
+        }
+    }
+}
+
+function updateUI(idx) {
+    const ind = document.getElementById('pgInd');
+    if (ind) ind.textContent = `Page ${idx + 1} / ${totalPages}`;
+    document.querySelectorAll('.p-dot').forEach((d, i) => d.classList.toggle('a', i === idx));
+}
+
+
+function goPrev() { if (pageFlip) pageFlip.flipPrev(); }
+function goNext() { if (pageFlip) pageFlip.flipNext(); }
+</script>
+</body>
+</html>

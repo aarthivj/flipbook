@@ -1,0 +1,2123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Droidal Editor</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Roboto:wght@400;700&family=Oswald:wght@400;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@400;600;700&family=Poppins:wght@400;600&family=Raleway:wght@400;700&family=Lato:wght@400;700&family=Open+Sans:wght@400;600&family=Merriweather:wght@400;700&family=Dancing+Script:wght@600&family=Bebas+Neue&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --pri:#6366f1;--pri-d:#4f46e5;--bg:#f0f2f5;
+  --dark:#111827;--panel:#fff;--bdr:#e5e7eb;
+  --txt:#111827;--muted:#6b7280;--hov:#f9fafb;
+  --grn:#10b981;--ylw:#f59e0b;--red:#ef4444;
+}
+body{display:flex;flex-direction:column;height:100vh;background:var(--bg);overflow:hidden;font-family:'Inter',sans-serif}
+.navbar{height:52px;background:#fff;border-bottom:1px solid var(--bdr);display:flex;align-items:center;justify-content:space-between;padding:0 12px;z-index:30;box-shadow:0 1px 3px rgba(0,0,0,.05);flex-shrink:0}
+.nav-left{display:flex;align-items:center;gap:8px}
+.brand{font-weight:800;color:var(--pri);font-size:1.1rem;margin-right:10px;letter-spacing:-.4px}
+.ico-btn{width:28px;height:28px;border:none;background:transparent;border-radius:5px;cursor:pointer;color:var(--muted);font-size:.9rem;display:flex;align-items:center;justify-content:center;transition:.15s}
+.ico-btn:hover{background:#f3f4f6;color:var(--txt)}
+.nav-divider{width:1px;height:20px;background:var(--bdr)}
+.nav-right{display:flex;align-items:center;gap:6px}
+.btn{padding:6px 13px;border:none;border-radius:6px;cursor:pointer;font-weight:600;font-size:.8rem;transition:.15s;display:flex;align-items:center;gap:5px;font-family:inherit}
+.btn-primary{background:var(--pri);color:#fff}.btn-primary:hover{background:var(--pri-d)}
+.btn-outline{background:#fff;border:1px solid var(--bdr);color:var(--txt)}.btn-outline:hover{background:#f3f4f6}
+.btn-green{background:var(--grn);color:#fff}.btn-green:hover{opacity:.88}
+.main{display:flex;flex:1;overflow:hidden}
+.icon-bar{width:64px;background:var(--dark);display:flex;flex-direction:column;align-items:center;padding:6px 0;z-index:15;overflow-y:auto;flex-shrink:0}
+.tab-btn{width:54px;height:54px;margin-bottom:2px;border-radius:7px;border:none;background:transparent;color:#9ca3af;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:.58rem;line-height:1.3;gap:3px;transition:.15s;font-family:'Inter',sans-serif}
+.tab-btn i{font-size:1.15rem}
+.tab-btn:hover,.tab-btn.active{color:#fff;background:#1f2937}
+.sep{width:36px;height:1px;background:#374151;margin:4px 0}
+.panel-wrap{width:272px;background:#fff;border-right:1px solid var(--bdr);display:flex;flex-direction:column;flex-shrink:0;overflow:hidden}
+.panel{display:none;padding:14px;height:100%;overflow-y:auto;flex-direction:column;gap:0}
+.panel.active{display:flex}
+.panel-title{font-size:.95rem;font-weight:700;margin-bottom:12px;color:var(--txt)}
+.search{width:100%;padding:7px 10px;border:1px solid var(--bdr);border-radius:7px;font-size:.82rem;outline:none;margin-bottom:12px;background:#f9fafb;font-family:inherit}
+.search:focus{border-color:var(--pri);background:#fff}
+.section{font-size:.72rem;font-weight:600;color:var(--muted);margin:10px 0 7px;text-transform:uppercase;letter-spacing:.06em;flex-shrink:0}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:4px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px}
+.tool{padding:4px 4px;border:1px solid var(--bdr);border-radius:7px;background:#fff;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:5px;font-size:.75rem;color:var(--txt);transition:.15s;font-weight:500;font-family:inherit}
+.tool:hover{background:#f9fafb;border-color:#c7c9cd;box-shadow:0 2px 5px rgba(0,0,0,.05)}
+.tool i{font-size:1.2rem;color:var(--muted)}
+.tool.wide{grid-column:span 2;flex-direction:row;justify-content:center;gap:7px;padding:10px}
+.tool.pri{background:var(--pri);color:#fff;border-color:var(--pri)}.tool.pri i{color:#fff}.tool.pri:hover{background:var(--pri-d)}
+.tool.grn{background:var(--grn);color:#fff;border-color:var(--grn)}.tool.grn i{color:#fff}
+
+/* ── FRAMES PANEL ── */
+.frame-search{width:100%;padding:7px 10px;border:1px solid var(--bdr);border-radius:7px;font-size:.82rem;outline:none;margin-bottom:10px;background:#f9fafb;font-family:inherit}
+.frame-search:focus{border-color:var(--pri);background:#fff}
+.frame-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:6px}
+.frame-btn{border:1.5px solid var(--bdr);border-radius:8px;background:#fff;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:8px 4px 6px;font-size:.62rem;font-weight:600;color:var(--muted);transition:.2s;font-family:inherit;min-height:62px}
+.frame-btn:hover{border-color:var(--pri);background:#e0e7ff;color:var(--pri);transform:translateY(-1px);box-shadow:0 3px 8px rgba(99,102,241,.18)}
+.frame-btn .fthumb{width:32px;height:32px;background:linear-gradient(135deg,rgba(99,102,241,.25),rgba(99,102,241,.12));border:1.5px dashed rgba(99,102,241,.6);flex-shrink:0}
+.frame-btn .fthumb.circle{border-radius:50%}
+.frame-btn .fthumb.oval-h{border-radius:50%;height:20px}
+.frame-btn .fthumb.oval-v{border-radius:50%;width:20px}
+.frame-btn i{color:rgba(99,102,241,.75);font-size:18px}
+.frame-badge{display:inline-flex;align-items:center;gap:4px;background:#e0e7ff;color:var(--pri);font-size:.65rem;font-weight:700;padding:2px 7px;border-radius:10px;margin-bottom:8px}
+.frame-drop-hint{position:fixed;bottom:100px;left:50%;transform:translateX(-50%);background:rgba(99,102,241,.9);color:#fff;font-size:.8rem;font-weight:600;padding:8px 18px;border-radius:20px;z-index:50;pointer-events:none;opacity:0;transition:opacity .3s;backdrop-filter:blur(8px)}
+.frame-drop-hint.show{opacity:1}
+
+.layer-item{display:flex;justify-content:space-between;align-items:center;padding:8px 9px;border:1px solid var(--bdr);margin-bottom:5px;border-radius:6px;cursor:pointer;background:#fff;transition:.15s;font-size:.8rem}
+.layer-item:hover{background:#f9fafb}
+.layer-item.sel{border-color:var(--pri);background:#e0e7ff}
+.layer-item .la{display:flex;gap:3px}
+.layer-item .la button{background:none;border:none;cursor:pointer;color:var(--muted);padding:3px 4px;border-radius:3px;font-size:.78rem}
+.layer-item .la button:hover{background:#e5e7eb;color:var(--txt)}
+.color-row{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px}
+.cswatch{width:26px;height:26px;border-radius:5px;border:2px solid transparent;cursor:pointer;transition:.15s;flex-shrink:0}
+.cswatch:hover{transform:scale(1.1)}
+.cswatch.sel{border-color:var(--pri)}
+.font-row{padding:7px 9px;border:1px solid var(--bdr);border-radius:6px;margin-bottom:5px;cursor:pointer;font-size:.88rem;transition:.15s}
+.font-row:hover{background:#f9fafb;border-color:#c7c9cd}
+.chart-type{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:12px}
+.ct-btn{padding:10px 5px;border:1px solid var(--bdr);border-radius:7px;background:#fff;cursor:pointer;text-align:center;font-size:.72rem;font-weight:600;transition:.15s;font-family:inherit}
+.ct-btn:hover,.ct-btn.sel{border-color:var(--pri);background:#e0e7ff;color:var(--pri)}
+.ct-btn i{display:block;font-size:1.3rem;margin-bottom:3px}
+.app-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.app-card{padding:12px 8px;border:1px solid var(--bdr);border-radius:9px;background:#fff;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:5px;font-size:.72rem;font-weight:600;color:var(--txt);transition:.15s;text-align:center;font-family:inherit}
+.app-card:hover{transform:translateY(-2px);box-shadow:0 4px 12px rgba(0,0,0,.08)}
+.app-icon{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;color:#fff}
+.upload-thumb{aspect-ratio:1;border-radius:6px;background:#f3f4f6;border:1px solid var(--bdr);cursor:pointer;overflow:hidden;display:flex;align-items:center;justify-content:center;transition:.15s;background-size:cover;background-position:center}
+.upload-thumb:hover{border-color:var(--pri)}
+.props-bar{position:absolute;top:52px;left:336px;right:0;height:46px;background:#fff;border-bottom:1px solid var(--bdr);display:flex;align-items:center;padding:0 12px;gap:8px;z-index:8;overflow-x:auto;box-shadow:0 2px 5px rgba(0,0,0,.04);opacity:0;pointer-events:none;transition:opacity .2s;flex-shrink:0}
+.props-bar.on{opacity:1;pointer-events:all}
+.pg{display:flex;align-items:center;gap:5px;font-size:.78rem;color:var(--txt);flex-shrink:0}
+.pg label{font-size:.7rem;color:var(--muted);font-weight:500}
+.pg input[type=color]{border:1px solid var(--bdr);width:24px;height:24px;border-radius:4px;cursor:pointer;padding:1px}
+.pb{padding:4px 7px;border:1px solid transparent;background:transparent;border-radius:4px;cursor:pointer;transition:.15s;color:var(--txt);font-size:.8rem;display:flex;align-items:center;gap:3px;font-family:inherit}
+.pb:hover,.pb.on{background:#f3f4f6;border-color:var(--bdr)}
+.pi{padding:3px 6px;border:1px solid var(--bdr);border-radius:4px;outline:none;font-size:.76rem;background:#f9fafb;font-family:inherit}
+.pi:focus{border-color:var(--pri);background:#fff}
+.ps{padding:3px 6px;border:1px solid var(--bdr);border-radius:4px;outline:none;font-size:.76rem;background:#f9fafb;font-family:inherit;max-width:105px}
+.dvd{width:1px;height:20px;background:var(--bdr);flex-shrink:0}
+.red-btn{color:var(--red)!important}
+.workspace{flex:1;display:flex;flex-direction:column;overflow:hidden;position:relative}
+.ws-scroll{flex:1;overflow:auto;background:var(--bg);display:flex;flex-direction:column;align-items:center;padding:46px 20px 80px}
+.page-wrap{display:flex;flex-direction:column;align-items:center;gap:8px;margin-top:10px}
+.page-hdr{display:flex;justify-content:space-between;align-items:center;color:var(--muted);font-size:.78rem;padding:0 3px}
+.page-hdr-btns button{background:transparent;border:none;color:var(--muted);cursor:pointer;padding:3px 6px;border-radius:4px;font-size:.82rem}
+.page-hdr-btns button:hover{background:#e5e7eb;color:var(--txt)}
+.cv-wrap{position:relative}
+.cv-shadow{box-shadow:0 6px 24px rgba(0,0,0,.12)}
+.grid-ov{position:absolute;top:0;left:0;right:0;bottom:0;pointer-events:none;background-image:linear-gradient(rgba(99,102,241,.1) 1px,transparent 1px),linear-gradient(90deg,rgba(99,102,241,.1) 1px,transparent 1px);background-size:20px 20px;display:none;z-index:1}
+.add-page-row{margin-top:14px}
+.add-page-btn{width:420px;padding:10px;background:transparent;border:2px dashed #cbd5e1;border-radius:7px;color:var(--muted);font-weight:600;font-size:.88rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;transition:.2s;font-family:inherit}
+.add-page-btn:hover{border-color:var(--pri);color:var(--pri);background:#e0e7ff}
+.draw-bar{position:absolute;left:50%;transform:translateX(-50%);bottom:52px;background:#fff;border:1px solid var(--bdr);border-radius:30px;padding:5px 10px;display:none;gap:4px;align-items:center;z-index:15;box-shadow:0 4px 16px rgba(0,0,0,.1)}
+.draw-bar.show{display:flex}
+.db-btn{width:30px;height:30px;border-radius:50%;border:2px solid transparent;background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:.85rem;transition:.15s}
+.db-btn:hover,.db-btn.on{background:#e0e7ff;border-color:var(--pri);color:var(--pri)}
+.bottom-bar{height:42px;background:#fff;border-top:1px solid var(--bdr);display:flex;align-items:center;justify-content:space-between;padding:0 14px;z-index:20;flex-shrink:0}
+.bb-left,.bb-right{display:flex;align-items:center;gap:6px}
+.bb-center{display:flex;align-items:center;gap:5px}
+.bb-btn{padding:4px 9px;border:none;background:transparent;border-radius:5px;cursor:pointer;font-size:.78rem;font-weight:500;color:var(--muted);display:flex;align-items:center;gap:4px;transition:.15s;font-family:inherit}
+.bb-btn:hover{background:#f3f4f6;color:var(--txt)}
+.page-dot{width:26px;height:26px;border-radius:50%;background:#f3f4f6;border:none;cursor:pointer;font-weight:600;font-size:.72rem;color:var(--muted);transition:.15s;font-family:inherit}
+.page-dot.a{background:var(--pri);color:#fff}
+.zoom-lbl{font-size:.8rem;font-weight:600;color:var(--txt);min-width:38px;text-align:center;cursor:pointer}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:100;display:none;align-items:center;justify-content:center;backdrop-filter:blur(3px)}
+.overlay.open{display:flex}
+.modal{background:#fff;border-radius:12px;padding:20px;box-shadow:0 16px 50px rgba(0,0,0,.18);min-width:320px;max-width:560px;width:90%;max-height:82vh;display:flex;flex-direction:column}
+.modal-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+.modal-title{font-size:1rem;font-weight:700;color:var(--txt)}
+.modal-close{background:none;border:none;cursor:pointer;color:var(--muted);font-size:1rem;padding:3px}
+.modal-close:hover{color:var(--txt)}
+.modal-body{flex:1;overflow-y:auto}
+.modal-foot{display:flex;gap:7px;justify-content:flex-end;margin-top:14px}
+.timer-disp{font-size:2.8rem;font-weight:700;color:var(--pri);text-align:center;margin:12px 0;letter-spacing:2px}
+.t-presets{display:flex;gap:7px;justify-content:center;flex-wrap:wrap;margin-bottom:12px}
+.t-preset{padding:5px 12px;border:1px solid var(--bdr);border-radius:16px;cursor:pointer;font-size:.78rem;font-weight:500;transition:.15s;background:transparent;font-family:inherit}
+.t-preset:hover{background:var(--pri);color:#fff;border-color:var(--pri)}
+.note-item{padding:9px;border:1px solid var(--bdr);border-radius:7px;margin-bottom:7px}
+.note-pg{font-size:.7rem;color:var(--muted);margin-bottom:3px}
+.note-txt{font-size:.82rem;color:var(--txt)}
+textarea.minput{width:100%;padding:9px;border:1px solid var(--bdr);border-radius:7px;outline:none;resize:none;font-size:.85rem;font-family:inherit;height:80px}
+textarea.minput:focus{border-color:var(--pri)}
+.exp-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:14px}
+#saveBadge{position:fixed;bottom:50px;right:12px;background:var(--grn);color:#fff;font-size:.7rem;font-weight:600;padding:4px 10px;border-radius:16px;z-index:99;opacity:0;transition:opacity .3s;pointer-events:none}
+#customElements {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+}
+t[type=file]{display:none}
+input[type=range]{accent-color:var(--pri)}
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-thumb{background:#d1d5db;border-radius:2px}
+@keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.6}}
+
+
+</style>
+</head>
+<body>
+
+<div class="navbar">
+  <div class="nav-left">
+    <div class="brand">✦ Droidal</div>
+    <div class="nav-divider"></div>
+    <button class="ico-btn" onclick="undo()" title="Undo Ctrl+Z"><i class="fa-solid fa-rotate-left"></i></button>
+    <button class="ico-btn" onclick="redo()" title="Redo Ctrl+Y"><i class="fa-solid fa-rotate-right"></i></button>
+    <div class="nav-divider"></div>
+    <button class="ico-btn" onclick="toggleGrid()" id="gridBtn" title="Grid"><i class="fa-solid fa-border-all"></i></button>
+  </div>
+
+  <div class="nav-right">
+    <!-- Selection Tools Moved to Navbar -->
+    
+
+    <div class="nav-divider"></div>
+    <button class="btn btn-outline" onclick="openModal('modalExport')"><i class="fa-solid fa-download"></i> Export</button>
+    <button class="btn btn-primary" onclick="saveAllPages()" id="saveBtn"><i class="fa-solid fa-cloud-arrow-up"></i> Save</button>
+    <button class="btn btn-green" onclick="previewBook()"><i class="fa-solid fa-play"></i> Preview</button>
+  </div>
+</div>
+
+
+<!-- PROPERTIES BAR -->
+<div class="props-bar" id="propsBar">
+  <div class="pg">
+    <label>Fill</label>
+    <input type="color" id="pFill" onchange="cp('fill',this.value)">
+  </div>
+  <div class="pg">
+    <label>Stroke</label>
+    <input type="color" id="pStroke" onchange="cp('stroke',this.value)">
+    <input type="number" class="pi" id="pStrokeW" style="width:38px" min="0" max="30" onchange="cp('strokeWidth',+this.value)" title="Stroke Width">
+  </div>
+  <div class="pg">
+    <label>Opacity</label>
+    <input type="range" id="pOpacity" min=".05" max="1" step=".05" style="width:60px" onchange="cp('opacity',+this.value)">
+  </div>
+  <div class="dvd" id="txtDvd"></div>
+  <div class="pg" id="txtProps" style="display:none;flex-wrap:nowrap;gap:5px">
+    <select class="ps" id="pFont" onchange="cp('fontFamily',this.value)">
+      <option>Inter</option><option>Roboto</option><option>Oswald</option>
+      <option>Playfair Display</option><option>Montserrat</option><option>Poppins</option>
+      <option>Raleway</option><option>Lato</option><option>Open Sans</option>
+      <option>Merriweather</option><option>Dancing Script</option><option>Bebas Neue</option>
+    </select>
+    <input type="number" class="pi" id="pSize" style="width:46px" onchange="cp('fontSize',+this.value)" title="Size">
+    <button class="pb" id="bBold" onclick="toggleTxt('fontWeight','bold','normal')"><b>B</b></button>
+    <button class="pb" id="bItal" onclick="toggleTxt('fontStyle','italic','normal')"><i>I</i></button>
+    <button class="pb" id="bUnder" onclick="toggleTxt('underline',true,false)"><u>U</u></button>
+    <div class="dvd"></div>
+    <button class="pb" onclick="setTextAlign('left')"><i class="fa-solid fa-align-left"></i></button>
+    <button class="pb" onclick="setTextAlign('center')"><i class="fa-solid fa-align-center"></i></button>
+    <button class="pb" onclick="setTextAlign('right')"><i class="fa-solid fa-align-right"></i></button>
+    <button class="pb" onclick="bullets()" title="Bullets"><i class="fa-solid fa-list-ul"></i></button>
+    <label style="font-size:.7rem;color:var(--muted)">LH</label>
+    <input type="number" class="pi" id="pLineH" style="width:42px" min=".8" max="3" step=".1" onchange="cp('lineHeight',+this.value)" title="Line Height">
+    <label style="font-size:.7rem;color:var(--muted)">CS</label>
+    <input type="number" class="pi" id="pCharSpace" style="width:46px" min="-200" max="800" onchange="cp('charSpacing',+this.value)" title="Char Spacing">
+    <input type="color" id="pTextStroke" onchange="cp('stroke',this.value)" title="Text Stroke">
+    <input type="number" class="pi" id="pTextStrokeW" style="width:36px" min="0" max="10" onchange="cp('strokeWidth',+this.value)" title="Text Stroke W">
+  </div>
+  <div class="dvd"></div>
+  <div class="pg">
+    <label>X</label><input type="number" class="pi" id="pX" style="width:46px" onchange="setXY('x',this.value)">
+    <label>Y</label><input type="number" class="pi" id="pY" style="width:46px" onchange="setXY('y',this.value)">
+    <label>W</label><input type="number" class="pi" id="pW" style="width:46px" onchange="setXY('w',this.value)">
+    <label>H</label><input type="number" class="pi" id="pH" style="width:46px" onchange="setXY('h',this.value)">
+    <label>°</label><input type="number" class="pi" id="pAng" style="width:46px" onchange="setXY('a',this.value)">
+  </div>
+  <div class="dvd"></div>
+  <div class="pg">
+    <button class="pb" onclick="flipObj('X')" title="Flip H"><i class="fa-solid fa-left-right"></i></button>
+    <button class="pb" onclick="flipObj('Y')" title="Flip V"><i class="fa-solid fa-up-down"></i></button>
+    <button class="pb" id="bShadow" onclick="toggleShadow()" title="Shadow"><i class="fa-solid fa-droplet"></i></button>
+    <button class="pb" onclick="addLink()" title="Link"><i class="fa-solid fa-link"></i></button>
+    <button class="pb" id="bLock" onclick="toggleLock()"><i class="fa-solid fa-lock-open"></i></button>
+  </div>
+  <div class="dvd"></div>
+  <div class="pg">
+    <button class="pb" id="bGroup" style="display:none" onclick="groupObjs()"><i class="fa-solid fa-object-group"></i> Group</button>
+   <button class="pb" id="saveElementBtn" onclick="saveAsCustomElement()" title="Add to My Elements">
+  <i class="fa-solid fa-bookmark"></i> Save Element
+</button>
+    <button class="pb" id="bUngroup" style="display:none" onclick="ungroupObjs()"><i class="fa-solid fa-object-ungroup"></i> Ungroup</button>
+    <button class="pb" onclick="dupObj()" title="Duplicate Ctrl+D"><i class="fa-regular fa-copy"></i></button>
+    <button class="pb red-btn" onclick="delObj()" title="Delete"><i class="fa-solid fa-trash"></i></button>
+  </div>
+
+  <!-- Inside <div class="props-bar">, near the Link button -->
+<button class="pb" id="bJump" onclick="setJumpTarget()" title="Jump to Page">
+    <i class="fa-solid fa-share-from-square"></i>
+</button>
+</div>
+
+<div class="main">
+  <!-- ICON BAR -->
+  <div class="icon-bar">
+    <button class="tab-btn active" data-tab="tabElements" onclick="openTab(this)"><i class="fa-solid fa-shapes"></i>Elements</button>
+    <button class="tab-btn" data-tab="tabFrames" onclick="openTab(this)"><i class="fa-solid fa-crop"></i>Frames</button>
+    <button class="tab-btn" data-tab="tabText" onclick="openTab(this)"><i class="fa-solid fa-t"></i>Text</button>
+    <button class="tab-btn" data-tab="tabBrand" onclick="openTab(this)"><i class="fa-solid fa-star"></i>Brand</button>
+    <button class="tab-btn" data-tab="tabUploads" onclick="openTab(this)"><i class="fa-solid fa-cloud-arrow-up"></i>Uploads</button>
+    <button class="tab-btn" data-tab="tabDraw" onclick="openTab(this);showDrawBar()"><i class="fa-solid fa-paintbrush"></i>Draw</button>
+    <button class="tab-btn" data-tab="tabCharts" onclick="openTab(this)"><i class="fa-solid fa-chart-pie"></i>Charts</button>
+    <button class="tab-btn" data-tab="tabApps" onclick="openTab(this)"><i class="fa-solid fa-grid-2"></i>Apps</button>
+    <button class="tab-btn" data-tab="tabAnims" onclick="openTab(this)"><i class="fa-solid fa-wand-sparkles"></i>Anims</button>
+    
+    <div class="sep"></div>
+    <button class="tab-btn" data-tab="tabLayers" onclick="openTab(this);renderLayers()"><i class="fa-solid fa-layer-group"></i>Layers</button>
+    <button class="tab-btn" data-tab="tabBg" onclick="openTab(this)"><i class="fa-solid fa-fill-drip"></i>Bg</button>
+  </div>
+
+  <div class="panel-wrap">
+
+    <!-- ELEMENTS -->
+    <div id="tabElements" class="panel active">
+  <div class="panel-title">Elements</div>
+  
+  <div class="section">Basic Shapes</div>
+  <div class="g3">
+    <button class="tool" onclick="addShape('rect')" title="Square"><i class="fa-solid fa-square"></i></button>
+    <button class="tool" onclick="addShape('roundRect')" title="Rounded"><i class="fa-solid fa-square" style="border-radius:4px"></i></button>
+    <button class="tool" onclick="addShape('circle')" title="Circle"><i class="fa-solid fa-circle"></i></button>
+    <button class="tool" onclick="addShape('ellipse')" title="Ellipse"><i class="fa-regular fa-circle"></i></button>
+    <button class="tool" onclick="addShape('triangle')" title="Triangle"><i class="fa-solid fa-play fa-rotate-270"></i></button>
+  </div>
+
+  <div class="section">Polygons</div>
+  <div class="g3">
+    <button class="tool" onclick="addShape('pentagon')">5 Sides</button>
+    <button class="tool" onclick="addShape('hexagon')">6 Sides</button>
+    <button class="tool" onclick="addShape('heptagon')">7 Sides</button>
+    <button class="tool" onclick="addShape('octagon')">8 Sides</button>
+    <button class="tool" onclick="addShape('decagon')">10 Sides</button>
+    <button class="tool" onclick="addShape('rhombus')">Rhombus</button>
+  </div>
+
+  <div class="section">Stars & Bursts</div>
+  <div class="g3">
+    <button class="tool" onclick="addShape('star4')">4 Point<i class="fa-solid fa-star-of-four"></i></button>
+    <button class="tool" onclick="addShape('star')"><i class="fa-solid fa-star"></i></button>
+    <button class="tool" onclick="addShape('star6')">6 Point</button>
+    <button class="tool" onclick="addShape('star8')">8 Point</button>
+    <button class="tool" onclick="addShape('starburst')"><i class="fa-solid fa-sun"></i></button>
+    <button class="tool" onclick="addShape('pinwheel')"><i class="fa-solid fa-asterisk"></i></button>
+  </div>
+
+  <div class="section">Decorative Symbols</div>
+  <div class="g3">
+    <button class="tool" onclick="addShape('heart')"><i class="fa-solid fa-heart"></i></button>
+    <button class="tool" onclick="addShape('cloud')"><i class="fa-solid fa-cloud"></i></button>
+    <button class="tool" onclick="addShape('moon')"><i class="fa-solid fa-moon"></i></button>
+    <button class="tool" onclick="addShape('lightning')"><i class="fa-solid fa-bolt"></i></button>
+    <button class="tool" onclick="addShape('shield')"><i class="fa-solid fa-shield"></i></button>
+    <button class="tool" onclick="addShape('cross')"><i class="fa-solid fa-plus"></i></button>
+    <button class="tool" onclick="addShape('arrow')"><i class="fa-solid fa-arrow-right"></i></button>
+    <button class="tool" onclick="addShape('leaf')"><i class="fa-solid fa-leaf"></i></button>
+    <button class="tool" onclick="addShape('badge')"><i class="fa-solid fa-certificate"></i></button>
+  </div>
+
+  <div class="section">Lines</div>
+  <div class="g2">
+    <button class="tool" onclick="addShape('line')"><i class="fa-solid fa-minus"></i></button>
+    <button class="tool" onclick="addShape('dashed')"><i class="fa-solid fa-ellipsis"></i></button>
+  </div>
+
+<div id="elementsTab" class="tab-content">
+    <h3>My Elements</h3>
+    <div id="customElements">
+        </div>
+</div>
+
+
+
+</div>
+
+
+    <!-- FRAMES -->
+    <div id="tabFrames" class="panel">
+      <div class="panel-title">Frames <span class="frame-badge"><i class="fa-solid fa-crop"></i> 100+ Shapes</span></div>
+      <p style="font-size:.75rem;color:var(--muted);margin-bottom:10px;line-height:1.4">Add a frame, then <b>drag any image</b> over it to clip automatically.</p>
+      <input class="frame-search" id="frameSearch" placeholder="🔍  Search frames..." oninput="filterFrames(this.value)">
+      <div id="framePanelContent"></div>
+    </div>
+
+    <!-- TEXT -->
+    <div id="tabText" class="panel">
+      <div class="panel-title">Text</div>
+      <button class="tool pri wide" onclick="addText(36,'bold')" style="margin-bottom:7px"><i class="fa-solid fa-plus"></i>Add Text Box</button>
+      <div class="section">Text Styles</div>
+      <button class="tool wide" style="font-size:1.2rem;font-weight:800;margin-bottom:7px" onclick="addText(38,'bold')">Add a Heading</button>
+      <button class="tool wide" style="font-size:1rem;font-weight:600;margin-bottom:7px" onclick="addText(24,'600')">Add a Subheading</button>
+      <button class="tool wide" style="font-size:.85rem;margin-bottom:7px" onclick="addText(16,'400')">Add body text</button>
+      <div class="section">Dynamic</div>
+      <button class="tool wide" onclick="addPageNum()" style="margin-bottom:7px"><i class="fa-solid fa-hashtag"></i>Page Number</button>
+      <button class="tool wide" onclick="addDate()"><i class="fa-regular fa-calendar"></i>Today's Date</button>
+      <div class="section">Font Styles</div>
+      <div id="fontStyleList">
+        <div class="font-row" style="font-family:'Bebas Neue';font-size:1.1rem" onclick="applyFontStyle('Bebas Neue',30,'normal')">BEBAS NEUE</div>
+        <div class="font-row" style="font-family:'Playfair Display';font-weight:700" onclick="applyFontStyle('Playfair Display',26,'bold')">Playfair Display</div>
+        <div class="font-row" style="font-family:'Dancing Script';font-size:1.05rem" onclick="applyFontStyle('Dancing Script',26,'normal')">Dancing Script</div>
+        <div class="font-row" style="font-family:'Montserrat';font-weight:700" onclick="applyFontStyle('Montserrat',22,'bold')">Montserrat Bold</div>
+        <div class="font-row" style="font-family:'Oswald'" onclick="applyFontStyle('Oswald',22,'normal')">Oswald Regular</div>
+        <div class="font-row" style="font-family:'Raleway'" onclick="applyFontStyle('Raleway',20,'normal')">Raleway Regular</div>
+        <div class="font-row" style="font-family:'Poppins'" onclick="applyFontStyle('Poppins',20,'normal')">Poppins</div>
+      </div>
+    </div>
+
+    <!-- BRAND -->
+    <div id="tabBrand" class="panel">
+      <div class="panel-title">Brand Kit</div>
+      <div class="section">Brand Colors</div>
+      <div class="color-row" id="brandColors"></div>
+      <div style="display:flex;gap:7px;align-items:center;margin-bottom:12px">
+        <input type="color" id="newColor" value="#6366f1" style="width:28px;height:28px;border-radius:5px;border:1px solid var(--bdr);cursor:pointer;padding:1px">
+        <button class="tool" style="flex:1;flex-direction:row;gap:6px;padding:7px 10px" onclick="addBrandColor()"><i class="fa-solid fa-plus"></i>Add Color</button>
+      </div>
+      <div class="section">Brand Fonts</div>
+      <div id="brandFonts"></div>
+      <select id="newFont" class="search" style="margin-bottom:7px">
+        <option>Inter</option><option>Roboto</option><option>Montserrat</option>
+        <option>Poppins</option><option>Playfair Display</option><option>Bebas Neue</option>
+        <option>Dancing Script</option><option>Oswald</option><option>Raleway</option>
+      </select>
+      <button class="tool wide" onclick="addBrandFont()"><i class="fa-solid fa-plus"></i>Add Font</button>
+      <div class="section">Brand Logo</div>
+      <label class="tool wide" for="logo-upload" style="cursor:pointer">
+        <i class="fa-solid fa-image"></i>Upload Logo
+        <input type="file" id="logo-upload" accept="image/*" onchange="uploadLogo(event)">
+      </label>
+      <div id="logoPreview" style="margin-top:8px"></div>
+    </div>
+
+    <!-- UPLOADS -->
+    <div id="tabUploads" class="panel">
+      <div class="panel-title">Upload Media</div>
+      <label class="tool pri wide" for="img-up" style="cursor:pointer;margin-bottom:8px">
+        <i class="fa-solid fa-image"></i>Upload Image(s)
+        <input type="file" id="img-up" accept="image/*" multiple onchange="uploadMedia(event,'image')">
+      </label>
+      <label class="tool grn wide" for="vid-up" style="cursor:pointer;margin-bottom:8px">
+        <i class="fa-solid fa-video"></i>Upload Video
+        <input type="file" id="vid-up" accept="video/*" onchange="uploadMedia(event,'video')">
+      </label>
+      <label class="tool wide" for="svg-up" style="cursor:pointer;margin-bottom:8px">
+        <i class="fa-solid fa-bezier-curve"></i>Upload SVG
+        <input type="file" id="svg-up" accept=".svg" onchange="uploadMedia(event,'svg')">
+      </label>
+      <div class="section">Recent Uploads</div>
+      <div class="g3" id="uploadGallery"></div>
+    </div>
+
+    <!-- DRAW -->
+    <div id="tabDraw" class="panel">
+      <div class="panel-title">Free Draw</div>
+      <div class="g2" style="margin-bottom:10px">
+        <button class="tool" id="dPen" onclick="setTool('pen')"><i class="fa-solid fa-pen" style="color:#6366f1"></i>Pen</button>
+        <button class="tool" id="dMarker" onclick="setTool('marker')"><i class="fa-solid fa-highlighter" style="color:#f59e0b"></i>Marker</button>
+        <button class="tool" id="dEraser" onclick="setTool('eraser')"><i class="fa-solid fa-eraser" style="color:#ef4444"></i>Eraser</button>
+        <button class="tool" id="dCalli" onclick="setTool('calli')"><i class="fa-solid fa-feather" style="color:#8b5cf6"></i>Calligraphy</button>
+      </div>
+      <button class="tool wide" id="drawToggle" onclick="toggleDraw()" style="margin-bottom:12px"><i class="fa-solid fa-toggle-off" id="drawIcon"></i>Enable Drawing</button>
+      <div class="section">Brush Color</div>
+      <input type="color" id="brushColor" value="#000000" onchange="updateBrush()" style="width:100%;height:36px;border:1px solid var(--bdr);border-radius:6px;cursor:pointer;padding:2px;margin-bottom:10px">
+      <div class="section">Size: <span id="bSizeLbl">5</span>px</div>
+      <input type="range" id="brushSize" min="1" max="60" value="5" oninput="updateBrush();document.getElementById('bSizeLbl').textContent=this.value" style="width:100%;margin-bottom:10px">
+      <div class="section">Opacity: <span id="bOpacLbl">100</span>%</div>
+      <input type="range" id="brushOpac" min="10" max="100" value="100" oninput="updateBrush();document.getElementById('bOpacLbl').textContent=this.value" style="width:100%;margin-bottom:12px">
+      <button class="tool wide" style="background:var(--red);color:#fff;border:none" onclick="clearDrawings()"><i class="fa-solid fa-eraser"></i>Clear All Drawings</button>
+    </div>
+
+    <!-- CHARTS -->
+    <div id="tabCharts" class="panel">
+      <div class="panel-title">Charts</div>
+      <div class="section">Type</div>
+      <div class="chart-type">
+        <div class="ct-btn sel" id="ct_bar" onclick="selChart('bar',this)"><i class="fa-solid fa-chart-bar"></i>Bar</div>
+        <div class="ct-btn" id="ct_line" onclick="selChart('line',this)"><i class="fa-solid fa-chart-line"></i>Line</div>
+        <div class="ct-btn" id="ct_pie" onclick="selChart('pie',this)"><i class="fa-solid fa-chart-pie"></i>Pie</div>
+        <div class="ct-btn" id="ct_doughnut" onclick="selChart('doughnut',this)"><i class="fa-solid fa-circle-half-stroke"></i>Donut</div>
+        <div class="ct-btn" id="ct_polarArea" onclick="selChart('polarArea',this)"><i class="fa-solid fa-bullseye"></i>Polar</div>
+        <div class="ct-btn" id="ct_radar" onclick="selChart('radar',this)"><i class="fa-solid fa-star"></i>Radar</div>
+      </div>
+      <div class="section">Title</div>
+      <input class="search" id="ctTitle" value="My Chart" placeholder="Chart title">
+      <div class="section">Labels (comma separated)</div>
+      <input class="search" id="ctLabels" value="Jan,Feb,Mar,Apr,May">
+      <div class="section">Values (comma separated)</div>
+      <input class="search" id="ctVals" value="12,19,8,25,14">
+      <div class="section">Color Theme</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">
+        <div style="width:20px;height:20px;border-radius:4px;background:#6366f1;cursor:pointer" onclick="setChartColors(['#6366f1','#8b5cf6','#a78bfa','#c4b5fd','#ddd6fe'])"></div>
+        <div style="width:20px;height:20px;border-radius:4px;background:#10b981;cursor:pointer" onclick="setChartColors(['#10b981','#34d399','#6ee7b7','#a7f3d0','#059669'])"></div>
+        <div style="width:20px;height:20px;border-radius:4px;background:#f59e0b;cursor:pointer" onclick="setChartColors(['#f59e0b','#fbbf24','#fcd34d','#fde68a','#d97706'])"></div>
+        <div style="width:20px;height:20px;border-radius:4px;background:#ef4444;cursor:pointer" onclick="setChartColors(['#ef4444','#f87171','#fca5a5','#fecaca','#dc2626'])"></div>
+        <div style="width:20px;height:20px;border-radius:4px;background:#3b82f6;cursor:pointer" onclick="setChartColors(['#3b82f6','#60a5fa','#93c5fd','#bfdbfe','#2563eb'])"></div>
+        <div style="width:20px;height:20px;border-radius:4px;background:linear-gradient(135deg,#6366f1,#f59e0b);cursor:pointer" onclick="setChartColors(['#6366f1','#10b981','#f59e0b','#ef4444','#3b82f6'])"></div>
+      </div>
+      <button class="tool pri wide" onclick="insertChart()"><i class="fa-solid fa-plus"></i>Insert Chart</button>
+    </div>
+
+    <!-- APPS -->
+    <div id="tabApps" class="panel">
+      <div class="panel-title">Apps</div>
+      <div class="app-grid" style="margin-bottom:12px">
+        <div class="app-card" onclick="addTable()"><div class="app-icon" style="background:#f59e0b"><i class="fa-solid fa-table"></i></div>Table</div>
+        <div class="app-card" onclick="addQR()"><div class="app-icon" style="background:#111827"><i class="fa-solid fa-qrcode"></i></div>QR Code</div>
+        <div class="app-card" onclick="openModal('modalNotes')"><div class="app-icon" style="background:#6b7280"><i class="fa-solid fa-note-sticky"></i></div>Notes</div>
+        <div class="app-card" onclick="openModal('modalTimer')"><div class="app-icon" style="background:#ef4444"><i class="fa-solid fa-stopwatch"></i></div>Timer</div>
+        <div class="app-card" onclick="openModal('modalExport')"><div class="app-icon" style="background:#059669"><i class="fa-solid fa-file-export"></i></div>Export</div>
+        <div class="app-card" onclick="openPositionModal()"><div class="app-icon" style="background:#6366f1"><i class="fa-solid fa-ruler-combined"></i></div>Position</div>
+      </div>
+    </div>
+
+
+    <!-- ANIMS -->
+    <div id="tabAnims" class="panel">
+  <div class="panel-title">Animations</div>
+  <p style="font-size:.75rem; color:var(--muted); margin-bottom:10px;">Select an object to animate it.</p>
+  
+  <div class="section">Entrance Effects</div>
+  <div class="g2">
+    <button class="tool" onclick="applyAnim('fade')">Fade In</button>
+    <button class="tool" onclick="applyAnim('pop')">Pop / Zoom</button>
+    <button class="tool" onclick="applyAnim('slideL')">Slide Left</button>
+    <button class="tool" onclick="applyAnim('slideR')">Slide Right</button>
+    <button class="tool" onclick="applyAnim('slideU')">Slide Up</button>
+    <button class="tool" onclick="applyAnim('slideD')">Slide Down</button>
+  </div>
+
+  <div class="section">Attention Seekers</div>
+  <div class="g2">
+    <button class="tool" onclick="applyAnim('bounce')">Bounce</button>
+    <button class="tool" onclick="applyAnim('shake')">Shake</button>
+    <button class="tool" onclick="applyAnim('pulse')">Pulse</button>
+    <button class="tool" onclick="applyAnim('float')">Float</button>
+  </div>
+
+  <div class="section">Settings</div>
+  <div class="pg" style="margin-bottom:10px;">
+    <label>Duration (ms)</label>
+    <input type="number" id="animDur" class="pi" value="800" style="width:70px">
+  </div>
+  
+  <button class="tool wide pri" onclick="playCurrentAnim()">
+    <i class="fa-solid fa-play"></i> Play Animation
+  </button>
+  <button class="tool wide" onclick="clearAnim()" style="margin-top:5px; color:var(--red)">
+    <i class="fa-solid fa-trash"></i> Remove Animation
+  </button>
+</div>
+
+
+    <!-- LAYERS -->
+    <div id="tabLayers" class="panel">
+      <div class="panel-title">Layers & Position</div>
+      <div class="section">Align</div>
+      <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px">
+        <button class="pb" onclick="alignObj('left')"><i class="fa-solid fa-align-left"></i></button>
+        <button class="pb" onclick="alignObj('hcenter')"><i class="fa-solid fa-align-center"></i></button>
+        <button class="pb" onclick="alignObj('right')"><i class="fa-solid fa-align-right"></i></button>
+        <button class="pb" onclick="alignObj('top')"><i class="fa-solid fa-arrow-up-to-line"></i></button>
+        <button class="pb" onclick="alignObj('vcenter')"><i class="fa-solid fa-arrows-up-down"></i></button>
+        <button class="pb" onclick="alignObj('bottom')"><i class="fa-solid fa-arrow-down-to-line"></i></button>
+        <button class="pb" onclick="alignObj('hpage')"><i class="fa-solid fa-left-right"></i></button>
+        <button class="pb" onclick="alignObj('vpage')"><i class="fa-solid fa-up-down"></i></button>
+      </div>
+      <div class="section">Order</div>
+      <div style="display:flex;gap:5px;margin-bottom:12px;flex-wrap:wrap">
+        <button class="pb" onclick="layerOrd('front')"><i class="fa-solid fa-angles-up"></i> Front</button>
+        <button class="pb" onclick="layerOrd('fwd')"><i class="fa-solid fa-angle-up"></i> Fwd</button>
+        <button class="pb" onclick="layerOrd('back')"><i class="fa-solid fa-angle-down"></i> Back</button>
+        <button class="pb" onclick="layerOrd('bottom')"><i class="fa-solid fa-angles-down"></i> Bottom</button>
+      </div>
+      <div class="section">Layers</div>
+      <div id="layersList"></div>
+    </div>
+
+    <!-- BACKGROUND -->
+    <div id="tabBg" class="panel">
+      <div class="panel-title">Background</div>
+      <div class="section">Solid Color</div>
+      <input type="color" id="bgColor" onchange="setBgColor(this.value)" style="width:100%;height:40px;border:1px solid var(--bdr);border-radius:6px;cursor:pointer;padding:2px;margin-bottom:10px">
+      <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:12px" id="bgPresets"></div>
+      <div class="section">Gradients</div>
+      <div id="bgGrads" style="margin-bottom:12px"></div>
+      <div class="section">Background Image</div>
+      <label class="tool wide" for="bg-up" style="cursor:pointer;margin-bottom:7px">
+        <i class="fa-solid fa-image"></i>Upload BG Image
+        <input type="file" id="bg-up" accept="image/*" onchange="setBgImg(event)">
+      </label>
+      <button class="tool wide" onclick="removeBgImg()"><i class="fa-solid fa-trash"></i>Remove BG Image</button>
+    </div>
+
+  </div><!-- /panel-wrap -->
+
+  <!-- WORKSPACE -->
+  <div class="workspace">
+    <div class="ws-scroll" id="wsScroll">
+      <div class="page-wrap" id="pageWrap">
+        <div class="page-hdr" id="pageHdr" style="width:420px">
+          <span id="pageLbl">Page 1 – Cover</span>
+          <div class="page-hdr-btns">
+            <button onclick="dupPage()" title="Duplicate"><i class="fa-regular fa-copy"></i></button>
+            <button onclick="movePage(-1)" title="Move Left"><i class="fa-solid fa-arrow-left"></i></button>
+            <button onclick="movePage(1)" title="Move Right"><i class="fa-solid fa-arrow-right"></i></button>
+            <button onclick="delPage()" title="Delete" style="color:var(--red)"><i class="fa-solid fa-trash"></i></button>
+          </div>
+        </div>
+        <div class="cv-wrap">
+          <div class="grid-ov" id="gridOv"></div>
+          <canvas id="c" class="cv-shadow"></canvas>
+        </div>
+        <div class="add-page-row">
+          <button class="add-page-btn" onclick="addPage()"><i class="fa-solid fa-plus"></i> Add Page</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="draw-bar" id="drawBar">
+      <button class="db-btn on" id="dbSelect" onclick="setDrawMode(false)" title="Select"><i class="fa-solid fa-arrow-pointer"></i></button>
+      <button class="db-btn" id="dbPen" onclick="setDrawMode(true,'pen')" title="Pen"><i class="fa-solid fa-pen"></i></button>
+      <button class="db-btn" id="dbMarker" onclick="setDrawMode(true,'marker')" title="Marker"><i class="fa-solid fa-highlighter"></i></button>
+      <button class="db-btn" id="dbEraser" onclick="setDrawMode(true,'eraser')" title="Eraser"><i class="fa-solid fa-eraser"></i></button>
+      <div style="width:1px;height:20px;background:var(--bdr)"></div>
+      <input type="color" id="floatColor" value="#000000" onchange="document.getElementById('brushColor').value=this.value;updateBrush()" style="width:24px;height:24px;border-radius:50%;border:1px solid var(--bdr);cursor:pointer;padding:1px">
+      <input type="range" min="1" max="40" value="5" id="floatSize" oninput="document.getElementById('brushSize').value=this.value;updateBrush()" style="width:65px">
+      <button class="db-btn" onclick="hideDrawBar()" title="Close"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+  </div>
+</div>
+
+<div class="bottom-bar">
+  <div class="bb-left">
+    <button class="bb-btn" onclick="openModal('modalNotes')"><i class="fa-regular fa-note-sticky"></i> Notes</button>
+    <button class="bb-btn" onclick="openModal('modalTimer')"><i class="fa-solid fa-stopwatch"></i> Timer</button>
+  </div>
+  <div class="bb-center"><div id="pageDots"></div></div>
+  <div class="bb-right">
+    <button class="ico-btn" onclick="zoomOut()"><i class="fa-solid fa-minus"></i></button>
+    <input type="range" id="zoomRange" min="25" max="200" value="100" oninput="applyZoom(+this.value)" style="width:80px">
+    <span class="zoom-lbl" id="zoomLbl" onclick="applyZoom(100)">100%</span>
+    <button class="ico-btn" onclick="zoomIn()"><i class="fa-solid fa-plus"></i></button>
+    <div class="nav-divider"></div>
+    <button class="ico-btn" onclick="toggleFullscreen()"><i class="fa-solid fa-expand"></i></button>
+  </div>
+</div>
+
+<div id="saveBadge">✓ Auto-saved</div>
+<div class="frame-drop-hint" id="frameDropHint">📌 Release to fit image into frame</div>
+
+<!-- MODALS -->
+<div class="overlay" id="modalNotes">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-hdr"><div class="modal-title"><i class="fa-regular fa-note-sticky"></i> Notes</div><button class="modal-close" onclick="closeModal('modalNotes')"><i class="fa-solid fa-xmark"></i></button></div>
+    <div class="modal-body">
+      <label style="font-size:.82rem;font-weight:600;display:block;margin-bottom:5px">Note for Page <span id="notePageSpan"></span></label>
+      <textarea class="minput" id="noteInput" placeholder="Write a note..."></textarea>
+      <button class="btn btn-primary" style="width:100%;margin-top:7px;justify-content:center" onclick="saveNote()">Save Note</button>
+      <div class="section">All Notes</div>
+      <div id="notesList"></div>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="modalTimer">
+  <div class="modal" style="max-width:340px">
+    <div class="modal-hdr"><div class="modal-title"><i class="fa-solid fa-stopwatch"></i> Timer</div><button class="modal-close" onclick="closeModal('modalTimer')"><i class="fa-solid fa-xmark"></i></button></div>
+    <div class="modal-body">
+      <div class="timer-disp" id="timerDisp">05:00</div>
+      <div class="t-presets">
+        <button class="t-preset" onclick="setTimer(1)">1 min</button>
+        <button class="t-preset" onclick="setTimer(5)">5 min</button>
+        <button class="t-preset" onclick="setTimer(10)">10 min</button>
+        <button class="t-preset" onclick="setTimer(15)">15 min</button>
+        <button class="t-preset" onclick="setTimer(25)">25 min</button>
+      </div>
+      <div style="display:flex;align-items:center;gap:7px;justify-content:center;margin-bottom:10px">
+        <input type="number" class="pi" id="tMin" placeholder="Min" style="width:55px">
+        <span>:</span>
+        <input type="number" class="pi" id="tSec" placeholder="Sec" style="width:55px">
+        <button class="btn btn-outline" onclick="setTimerCustom()">Set</button>
+      </div>
+      <div style="display:flex;gap:7px;justify-content:center">
+        <button class="btn btn-primary" onclick="startTimer()">Start</button>
+        <button class="btn btn-outline" onclick="pauseTimer()">Pause</button>
+        <button class="btn btn-outline" onclick="resetTimer()">Reset</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="modalExport">
+  <div class="modal" style="max-width:380px">
+    <div class="modal-hdr"><div class="modal-title"><i class="fa-solid fa-file-export"></i> Export</div><button class="modal-close" onclick="closeModal('modalExport')"><i class="fa-solid fa-xmark"></i></button></div>
+    <div class="modal-body">
+      <!-- Inside <div class="modal-body"> of modalExport -->
+<div class="section">Professional Export</div>
+<div class="exp-grid">
+  <!-- Add this button -->
+  <button class="tool" onclick="exportAsVideo()" style="grid-column: span 2; background: var(--dark); color: #fff;">
+    <i class="fa-solid fa-video" style="color:#10b981"></i> Generate Video Flipbook (.webm)
+  </button>
+</div>
+
+      <div class="section">Format</div>
+      <div class="exp-grid">
+        <button class="tool" onclick="exportAs('png')"><i class="fa-solid fa-image" style="color:#6366f1"></i>PNG</button>
+        <button class="tool" onclick="exportAs('jpeg')"><i class="fa-solid fa-image" style="color:#f59e0b"></i>JPEG</button>
+        <button class="tool" onclick="exportSVG()"><i class="fa-solid fa-bezier-curve" style="color:#10b981"></i>SVG</button>
+        <button class="tool" onclick="exportAll()"><i class="fa-solid fa-images" style="color:#3b82f6"></i>All Pages</button>
+      </div>
+      <div class="section">Quality (multiplier)</div>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+        <input type="range" id="expQ" min="1" max="4" step=".5" value="2" oninput="document.getElementById('expQLbl').textContent=this.value+'x'" style="flex:1">
+        <span id="expQLbl" style="font-size:.82rem;font-weight:600;min-width:34px">2x</span>
+      </div>
+      <div class="section">Canvas Size</div>
+      <div style="display:flex;gap:7px;align-items:flex-end">
+        <div><label style="font-size:.72rem">W</label><br><input type="number" class="pi" id="cvW" value="420" style="width:60px"></div>
+        <div><label style="font-size:.72rem">H</label><br><input type="number" class="pi" id="cvH" value="594" style="width:60px"></div>
+        <button class="btn btn-outline" onclick="resizeCanvas()">Resize</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="modalPos">
+  <div class="modal" style="max-width:360px">
+    <div class="modal-hdr"><div class="modal-title"><i class="fa-solid fa-ruler-combined"></i> Position & Size</div><button class="modal-close" onclick="closeModal('modalPos')"><i class="fa-solid fa-xmark"></i></button></div>
+    <div class="modal-body">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:12px">
+        <div><label style="font-size:.75rem;font-weight:600;display:block;margin-bottom:3px">X</label><input type="number" class="pi" id="mX" style="width:100%" onchange="setXY('x',this.value)"></div>
+        <div><label style="font-size:.75rem;font-weight:600;display:block;margin-bottom:3px">Y</label><input type="number" class="pi" id="mY" style="width:100%" onchange="setXY('y',this.value)"></div>
+        <div><label style="font-size:.75rem;font-weight:600;display:block;margin-bottom:3px">Width</label><input type="number" class="pi" id="mW" style="width:100%" onchange="setXY('w',this.value)"></div>
+        <div><label style="font-size:.75rem;font-weight:600;display:block;margin-bottom:3px">Height</label><input type="number" class="pi" id="mH" style="width:100%" onchange="setXY('h',this.value)"></div>
+        <div><label style="font-size:.75rem;font-weight:600;display:block;margin-bottom:3px">Rotation °</label><input type="number" class="pi" id="mA" style="width:100%" onchange="setXY('a',this.value)"></div>
+        <div><label style="font-size:.75rem;font-weight:600;display:block;margin-bottom:3px">Opacity</label><input type="number" class="pi" id="mO" style="width:100%" min="0" max="1" step=".05" onchange="cp('opacity',+this.value)"></div>
+      </div>
+    </div>
+    <div class="modal-foot"><button class="btn btn-primary" onclick="closeModal('modalPos')">Done</button></div>
+  </div>
+</div>
+
+<div id="video-container" style="display:none"></div>
+
+<script>
+// ─── CANVAS INIT ──────────────────────────────────────────────────────────────
+let CW = 420, CH = 594;
+const canvas = new fabric.Canvas('c', {
+  width: CW, height: CH,
+  backgroundColor: '#ffffff',
+  preserveObjectStacking: true
+});
+const BOOK_ID = 'droidal_book';
+const LS_KEY  = `droidal_pages_${BOOK_ID}`;
+const LS_META = `droidal_meta_${BOOK_ID}`;
+// ─── PAGES ────────────────────────────────────────────────────────────────────
+let pages = [null], cur = 0;
+const pageNotes = {};
+
+const CUSTOM_PROPS = ['customLink','customVideoSrc','locked','animData','isFrame','_frameId', 'customPageTarget', 'selectable', 'evented'];
+const CURRENT_USER_ID = localStorage.getItem('droidal_user_id') || 1;
+
+
+document.addEventListener("DOMContentLoaded", () => {
+    loadCustomElements();
+});
+
+
+function saveAndSwitch(idx) {
+    pages[cur] = getJSON(); 
+    cur = idx;
+    loadCurrentPage();
+    scheduleSync(); // Still sync to LS for the previewer
+}
+
+function refreshUI() {
+  updatePageLabel(); renderDots(); renderLayers();
+  const z = zoom / 100;
+  document.getElementById('pageHdr').style.width = (CW * z) + 'px';
+  document.querySelector('.add-page-btn').style.width = (CW * z) + 'px';
+}
+
+function updatePageLabel() {
+  let lbl = `Page ${cur + 1}`;
+  if (cur === 0) lbl += ' – Cover';
+  else if (cur === pages.length - 1 && pages.length > 1) lbl += ' – Back Cover';
+  document.getElementById('pageLbl').textContent = lbl;
+  document.getElementById('notePageSpan').textContent = cur + 1;
+}
+
+function renderDots() {
+  const bar = document.getElementById('pageDots');
+  bar.innerHTML = '';
+  const wrap = document.createElement('div');
+  wrap.style.cssText = 'display:flex;gap:5px;align-items:center';
+  pages.forEach((_, i) => {
+    const d = document.createElement('button');
+    d.className = 'page-dot' + (i === cur ? ' a' : '');
+    d.textContent = i + 1;
+    d.onclick = () => saveAndSwitch(i);
+    wrap.appendChild(d);
+  });
+  bar.appendChild(wrap);
+}
+
+function addPage() {
+    pages[cur] = getJSON();
+    pages.splice(cur + 1, 0, null);
+    saveAndSwitch(cur + 1);
+}
+
+function dupPage()  { const j = getJSON(); pages[cur] = j; pages.splice(cur+1,0,JSON.parse(JSON.stringify(j))); saveAndSwitch(cur+1); }
+function delPage() {
+    if (pages.length <= 1) { 
+        alert('Cannot delete the only page!'); 
+        return; 
+    }
+    if (!confirm('Delete this current page?')) return;
+
+    // 1. Remove the current page from the array
+    pages.splice(cur, 1);
+
+    // 2. Determine the new index to show
+    // If we deleted the last page, move back one. Otherwise, stay at same index (which is now the next page)
+    if (cur >= pages.length) {
+        cur = pages.length - 1;
+    }
+
+    // 3. Load the page data at the new 'cur' position
+    // Note: We DON'T call saveAndSwitch() here because we don't want to save 
+    // the canvas we just "deleted" over our new current page data.
+    const pd = pages[cur];
+    if (pd) {
+        canvas.loadFromJSON(pd, () => { 
+            canvas.renderAll(); 
+            restoreVideos(); 
+            histReset(); 
+            refreshUI(); 
+        });
+    } else {
+        canvas.clear(); 
+        canvas.backgroundColor = '#ffffff'; 
+        canvas.renderAll(); 
+        histReset(); 
+        refreshUI();
+    }
+    
+    // Sync changes to LocalStorage
+    scheduleSync();
+}
+
+function movePage(d){ const ni=cur+d; if(ni<0||ni>=pages.length)return; pages[cur]=getJSON(); [pages[cur],pages[ni]]=[pages[ni],pages[cur]]; saveAndSwitch(ni); }
+
+// ─── TABS ─────────────────────────────────────────────────────────────────────
+function openTab(btn) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.getElementById(btn.dataset.tab).classList.add('active');
+  if (btn.dataset.tab !== 'tabDraw') { canvas.isDrawingMode = false; isDrawOn = false; }
+}
+
+// ─── PROPERTIES BAR ───────────────────────────────────────────────────────────
+canvas.on('selection:created', onSel);
+canvas.on('selection:updated', onSel);
+canvas.on('selection:cleared', () => document.getElementById('propsBar').classList.remove('on'));
+function updateSaveBtn() {
+    const obj = canvas.getActiveObject();
+    const btn = document.getElementById("saveElementBtn");
+
+    if (!obj) {
+        btn.style.display = "none";
+        return;
+    }
+
+    btn.style.display = "inline-flex";
+}
+canvas.on('object:modified', () => { hist(); renderLayers(); syncBar(); });
+canvas.on('object:scaling', syncBar);
+canvas.on('object:moving', syncBar);
+canvas.on('object:rotating', syncBar);
+
+function onSel() {
+  const obj = canvas.getActiveObject();
+  
+  // 1. Selection illana propsBar-ah hide pannu
+  if (!obj) {
+    document.getElementById('propsBar').classList.remove('on');
+    return;
+  }
+  
+  // 2. Selection irundha propsBar-ah kaattu
+  document.getElementById('propsBar').classList.add('on');
+
+  // 3. Group/Ungroup Buttons - Correct IDs (bGroup, bUngroup)
+  const groupBtn = document.getElementById('bGroup');
+  const ungroupBtn = document.getElementById('bUngroup');
+  const saveElemBtn = document.getElementById('saveElementBtn');
+ if (groupBtn) groupBtn.style.display = (obj.type === 'activeSelection') ? 'flex' : 'none';
+  if (ungroupBtn) ungroupBtn.style.display = (obj.type === 'group') ? 'flex' : 'none';
+
+  if (saveElemBtn) {
+      saveElemBtn.style.display = 'flex'; 
+  }
+  // 4. Color & Stroke - Correct IDs (pFill, pStroke)
+  const fill = obj.fill;
+  const pFill = document.getElementById('pFill');
+  const pStroke = document.getElementById('pStroke');
+  
+  if (pFill) pFill.value = (typeof fill === 'string' && /^#/.test(fill)) ? fill : '#000000';
+  if (pStroke) pStroke.value = (typeof obj.stroke === 'string' && /^#/.test(obj.stroke)) ? obj.stroke : '#000000';
+
+  // 5. Lock Icon logic
+  const lockBtn = document.getElementById('bLock');
+  if (lockBtn) {
+    lockBtn.querySelector('i').className = 
+      obj.selectable === false ? 'fa-solid fa-lock' : 'fa-solid fa-lock-open';
+  }
+  
+  // 6. Text properties logic
+  const isT = obj.type === 'i-text' || obj.type === 'text';
+  const txtProps = document.getElementById('txtProps');
+  const txtDvd = document.getElementById('txtDvd');
+  
+  if (txtProps) txtProps.style.display = isT ? 'flex' : 'none';
+  if (txtDvd) txtDvd.style.display = isT ? 'block' : 'none';
+  
+  syncBar();
+}
+function syncBar() {
+  const obj = canvas.getActiveObject();
+  if (!obj) return;
+  const b = obj.getBoundingRect();
+  document.getElementById('pX').value   = Math.round(obj.left || 0);
+  document.getElementById('pY').value   = Math.round(obj.top  || 0);
+  document.getElementById('pW').value   = Math.round(b.width);
+  document.getElementById('pH').value   = Math.round(b.height);
+  document.getElementById('pAng').value = Math.round(obj.angle || 0);
+}
+
+function cp(prop, val) {
+  const obj = canvas.getActiveObject(); if (!obj) return;
+  const apply = o => { if (o) o.set(prop, val); };
+  if (obj.type==='activeSelection') obj.forEachObject(apply); else apply(obj);
+  canvas.requestRenderAll(); hist();
+}
+
+function setTextAlign(alignment) {
+  const obj = canvas.getActiveObject(); if (!obj) return;
+  const apply = o => { if (o.type==='i-text'||o.type==='text') o.set({textAlign:alignment}); };
+  if (obj.type==='activeSelection') obj.forEachObject(apply); else apply(obj);
+  canvas.requestRenderAll(); hist();
+}
+
+function toggleTxt(prop, on, off) {
+  const obj = canvas.getActiveObject(); if (!obj) return;
+  const apply = o => { if (o.type==='i-text'||o.type==='text') o.set(prop, o[prop]===on?off:on); };
+  if (obj.type==='activeSelection') obj.forEachObject(apply); else apply(obj);
+  canvas.requestRenderAll(); hist(); onSel();
+}
+
+function setXY(prop, val) {
+  const obj = canvas.getActiveObject(); if (!obj) return;
+  val = parseFloat(val);
+  if (prop==='x') obj.set('left', val);
+  else if (prop==='y') obj.set('top', val);
+  else if (prop==='w') obj.scaleToWidth(val);
+  else if (prop==='h') obj.scaleToHeight(val);
+  else if (prop==='a') obj.set('angle', val);
+  obj.setCoords(); canvas.requestRenderAll(); hist();
+}
+
+function flipObj(ax)       { const o=canvas.getActiveObject();if(!o)return;o.set('flip'+ax,!o['flip'+ax]);canvas.renderAll();hist(); }
+function toggleShadow()    { const o=canvas.getActiveObject();if(!o)return;o.shadow=o.shadow?null:{color:'rgba(0,0,0,.3)',blur:10,offsetX:4,offsetY:4};canvas.renderAll();hist(); }
+function addLink()         { const o=canvas.getActiveObject();if(!o)return;const url=prompt('Enter URL:',o.customLink||'https://');if(url){o.set('customLink',url);hist();alert('Link attached!');} }
+function toggleLock()      { const o=canvas.getActiveObject();if(!o)return;const lk=o.selectable===false;o.set({selectable:lk,evented:lk,lockMovementX:!lk,lockMovementY:!lk,lockScalingX:!lk,lockScalingY:!lk,lockRotation:!lk});canvas.discardActiveObject();canvas.requestRenderAll();hist();renderLayers(); }
+function groupObjs() {
+  const o = canvas.getActiveObject();
+  if (!o || o.type !== 'activeSelection') return;
+  
+  const newGroup = o.toGroup();
+  canvas.requestRenderAll();
+  onSel(); 
+  hist();
+  renderLayers();
+
+  // "Ask" the user if they want to save this new group to their library
+  if (confirm("Objects grouped! Would you like to save this as a 'Custom Element' for future use?")) {
+      saveAsCustomElement();
+  }
+}
+
+function ungroupObjs()     { const o=canvas.getActiveObject();if(!o||o.type!=='group')return;o.toActiveSelection();canvas.requestRenderAll();onSel();hist();renderLayers(); }
+function dupObj()          { const o=canvas.getActiveObject();if(!o)return;o.clone(cl=>{cl.set({left:(o.left||0)+18,top:(o.top||0)+18});canvas.add(cl);canvas.setActiveObject(cl);hist();renderLayers();}); }
+function delObj()          { const objs=canvas.getActiveObjects();if(!objs.length)return;canvas.discardActiveObject();objs.forEach(o=>canvas.remove(o));hist();renderLayers(); }
+function bullets()         { const o=canvas.getActiveObject();if(!o||o.type!=='i-text')return;const lines=o.text.split('\n');const hasBullet=lines[0].startsWith('• ');o.set('text',lines.map(l=>hasBullet?l.replace(/^• /,''):'• '+l).join('\n'));canvas.renderAll();hist(); }
+
+function alignObj(dir) {
+  const obj=canvas.getActiveObject();if(!obj)return;
+  const b=obj.getBoundingRect(),cw=canvas.width,ch=canvas.height;
+  if(dir==='left')    obj.set('left',0);
+  if(dir==='right')   obj.set('left',cw-b.width);
+  if(dir==='top')     obj.set('top',0);
+  if(dir==='bottom')  obj.set('top',ch-b.height);
+  if(dir==='hcenter') obj.set('left',(cw-b.width)/2);
+  if(dir==='vcenter') obj.set('top',(ch-b.height)/2);
+  if(dir==='hpage')   obj.centerH();
+  if(dir==='vpage')   obj.centerV();
+  obj.setCoords();canvas.requestRenderAll();hist();
+}
+
+function layerOrd(dir) {
+  const obj=canvas.getActiveObject();if(!obj)return;
+  if(dir==='front')  canvas.bringToFront(obj);
+  if(dir==='fwd')    canvas.bringForward(obj);
+  if(dir==='back')   canvas.sendBackwards(obj);
+  if(dir==='bottom') canvas.sendToBack(obj);
+  hist();renderLayers();
+}
+
+function renderLayers() {
+  const list=document.getElementById('layersList'); if(!list)return;
+  list.innerHTML='';
+  const objs=[...canvas.getObjects()].reverse();
+  const active=canvas.getActiveObject();
+  objs.forEach((obj,ri)=>{
+    const realIdx=canvas.getObjects().length-1-ri;
+    const el=document.createElement('div');
+    el.className='layer-item'+(obj===active?' sel':'');
+    let icon='fa-shapes',name='Shape';
+    if(obj.type==='i-text'||obj.type==='text'){icon='fa-t';name=(obj.text||'').slice(0,12)+'…';}
+    if(obj.type==='image'){icon='fa-image';name='Image';}
+    if(obj.type==='group'){icon='fa-object-group';name='Group';}
+    if(obj.type==='path') {icon='fa-pen-nib';name='Drawing';}
+    if(obj.isFrame)        {icon='fa-crop';name='Frame';}
+    el.innerHTML=`<div style="display:flex;align-items:center;gap:7px;flex:1;cursor:pointer;overflow:hidden" onclick="selLayer(${realIdx})">
+      <i class="fa-solid ${icon}" style="color:var(--muted);font-size:.82rem;flex-shrink:0"></i>
+      <span style="font-size:.79rem;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${name}</span>
+    </div>
+    <div class="la">
+      <button onclick="mvLayer(${realIdx},1)"><i class="fa-solid fa-chevron-up"></i></button>
+      <button onclick="mvLayer(${realIdx},-1)"><i class="fa-solid fa-chevron-down"></i></button>
+      <button onclick="rmLayer(${realIdx})" style="color:var(--red)"><i class="fa-solid fa-trash"></i></button>
+    </div>`;
+    list.appendChild(el);
+  });
+}
+
+function selLayer(i){const obj=canvas.item(i);if(obj&&obj.selectable!==false){canvas.setActiveObject(obj);canvas.requestRenderAll();}}
+function mvLayer(i,d){const obj=canvas.item(i);if(!obj)return;d===1?canvas.bringForward(obj):canvas.sendBackwards(obj);hist();renderLayers();}
+function rmLayer(i) {const obj=canvas.item(i);if(!obj)return;canvas.remove(obj);hist();renderLayers();}
+
+//__________ Animation Engine ________//
+// --- ANIMATION ENGINE ---
+
+function applyAnim(type) {
+  const obj = canvas.getActiveObject();
+  if (!obj) { alert("Please select an object first!"); return; }
+
+  const dur = parseInt(document.getElementById('animDur').value) || 800;
+
+  // Store the animation metadata inside the object
+  obj.set('animData', {
+    type: type,
+    duration: dur,
+    origLeft: obj.left,
+    origTop: obj.top,
+    origOpacity: obj.opacity,
+    origScaleX: obj.scaleX,
+    origScaleY: obj.scaleY
+  });
+
+  playCurrentAnim();
+  hist();
+}
+
+function playCurrentAnim() {
+  const obj = canvas.getActiveObject();
+  if (!obj || !obj.animData) return;
+
+  const data = obj.animData;
+  const dur = data.duration;
+
+  // Reset to initial state before playing
+  obj.set({
+    opacity: data.origOpacity,
+    left: data.origLeft,
+    top: data.origTop,
+    scaleX: data.origScaleX,
+    scaleY: data.origScaleY
+  });
+
+  switch (data.type) {
+    case 'fade':
+      obj.set('opacity', 0);
+      obj.animate('opacity', data.origOpacity, { duration: dur, onChange: canvas.renderAll.bind(canvas) });
+      break;
+
+    case 'pop':
+      obj.set({ scaleX: 0, scaleY: 0 });
+      obj.animate({ scaleX: data.origScaleX, scaleY: data.origScaleY }, { 
+        duration: dur, 
+        easing: fabric.util.ease.easeOutBack,
+        onChange: canvas.renderAll.bind(canvas) 
+      });
+      break;
+
+    case 'slideL':
+      obj.set('left', data.origLeft + 100);
+      obj.animate('left', data.origLeft, { duration: dur, easing: fabric.util.ease.easeOutCubic, onChange: canvas.renderAll.bind(canvas) });
+      break;
+
+    case 'slideR':
+      obj.set('left', data.origLeft - 100);
+      obj.animate('left', data.origLeft, { duration: dur, easing: fabric.util.ease.easeOutCubic, onChange: canvas.renderAll.bind(canvas) });
+      break;
+
+    case 'slideU':
+      obj.set('top', data.origTop + 100);
+      obj.animate('top', data.origTop, { duration: dur, easing: fabric.util.ease.easeOutCubic, onChange: canvas.renderAll.bind(canvas) });
+      break;
+
+    case 'bounce':
+      obj.animate('top', data.origTop - 50, {
+        duration: dur / 2,
+        easing: fabric.util.ease.easeOutCubic,
+        onChange: canvas.renderAll.bind(canvas),
+        onComplete: () => {
+          obj.animate('top', data.origTop, { duration: dur / 2, easing: fabric.util.ease.easeOutBounce, onChange: canvas.renderAll.bind(canvas) });
+        }
+      });
+      break;
+
+    case 'pulse':
+      obj.animate({ scaleX: data.origScaleX * 1.2, scaleY: data.origScaleY * 1.2 }, {
+        duration: dur / 2,
+        onChange: canvas.renderAll.bind(canvas),
+        onComplete: () => {
+          obj.animate({ scaleX: data.origScaleX, scaleY: data.origScaleY }, { duration: dur / 2, onChange: canvas.renderAll.bind(canvas) });
+        }
+      });
+      break;
+      
+    case 'shake':
+        obj.animate('left', data.origLeft - 10, {
+            duration: 100,
+            onChange: canvas.renderAll.bind(canvas),
+            onComplete: () => {
+                obj.animate('left', data.origLeft + 10, {
+                    duration: 100,
+                    onChange: canvas.renderAll.bind(canvas),
+                    onComplete: () => { obj.animate('left', data.origLeft, { duration: 100, onChange: canvas.renderAll.bind(canvas) }); }
+                });
+            }
+        });
+        break;
+  }
+}
+
+function clearAnim() {
+  const obj = canvas.getActiveObject();
+  if (obj) {
+    obj.set('animData', null);
+    alert("Animation removed.");
+    hist();
+  }
+}
+
+
+// ─── SHAPES ───────────────────────────────────────────────────────────────────
+const palette=['#6366f1','#10b981','#f59e0b','#ef4444','#3b82f6','#8b5cf6','#ec4899'];
+let palIdx=0;
+const nc=()=>palette[palIdx++%palette.length];
+
+function addShape(type) {
+  const defaultFill = '#ffffff';
+  const defaultStroke = '#000000';
+  const defaultStrokeWidth = 2;
+  const x = 100 + Math.random() * 50;
+  const y = 100 + Math.random() * 50;
+  
+  const props = {
+    left: x, top: y,
+    fill: defaultFill,
+    stroke: defaultStroke,
+    strokeWidth: defaultStrokeWidth,
+    originX: 'center', originY: 'center'
+  };
+
+  let s;
+  switch(type){
+    // --- BASIC ---
+    case 'rect':      s = new fabric.Rect({...props, width:100, height:100}); break;
+    case 'roundRect': s = new fabric.Rect({...props, width:100, height:100, rx:15, ry:15}); break;
+    case 'circle':    s = new fabric.Circle({...props, radius:50}); break;
+    case 'ellipse':   s = new fabric.Ellipse({...props, rx:70, ry:40}); break;
+    case 'triangle':  s = new fabric.Triangle({...props, width:100, height:90}); break;
+    
+    // --- POLYGONS (Using your existing polyPts helper) ---
+    case 'pentagon':  s = new fabric.Polygon(polyPts(5, 60), props); break;
+    case 'hexagon':   s = new fabric.Polygon(polyPts(6, 60), props); break;
+    case 'heptagon':  s = new fabric.Polygon(polyPts(7, 60), props); break;
+    case 'octagon':   s = new fabric.Polygon(polyPts(8, 60), props); break;
+    case 'decagon':   s = new fabric.Polygon(polyPts(10, 60), props); break;
+    case 'diamond':   s = new fabric.Polygon(polyPts(4, 60, Math.PI/4), props); break;
+    case 'rhombus':   s = new fabric.Polygon([{x:30,y:0},{x:150,y:0},{x:120,y:100},{x:0,y:100}], props); break;
+
+    // --- STARS (Using your existing starPts helper) ---
+    case 'star4':     s = new fabric.Polygon(starPts(4, 60, 20), props); break;
+    case 'star':      s = new fabric.Polygon(starPts(5, 60, 25), props); break;
+    case 'star6':     s = new fabric.Polygon(starPts(6, 60, 25), props); break;
+    case 'star8':     s = new fabric.Polygon(starPts(8, 60, 30), props); break;
+    case 'starburst': s = new fabric.Polygon(starPts(14, 60, 35), props); break;
+    case 'pinwheel':  s = new fabric.Polygon(starPts(6, 60, 10), props); break;
+
+    // --- SYMBOLS (Using your existing Path constants) ---
+    case 'heart':     s = new fabric.Path(HEART_PATH, props); break;
+    case 'cloud':     s = new fabric.Path(CLOUD_PATH, props); break;
+    case 'shield':    s = new fabric.Path(SHIELD_PATH, props); break;
+    case 'lightning': s = new fabric.Path(LIGHTNING_PATH, props); break;
+    case 'moon':      s = new fabric.Path(CRESCENT_PATH, props); break;
+    case 'cross':     s = new fabric.Path(CROSS_PATH, props); break;
+    case 'badge':     s = new fabric.Path(BADGE_PATH, props); break;
+    case 'leaf':      s = new fabric.Path(LEAF_PATH, props); break;
+    case 'arrow':     s = new fabric.Path(ARROW_R_PATH, props); break;
+
+    // --- LINES ---
+    case 'line':      s = new fabric.Line([0,0,150,0], {left:x, top:y, stroke:defaultStroke, strokeWidth:4}); break;
+    case 'dashed':    s = new fabric.Line([0,0,150,0], {left:x, top:y, stroke:defaultStroke, strokeWidth:3, strokeDashArray:[10,5]}); break;
+  }
+
+  if(s){
+    // Normalize scale for paths since they might be large
+    if(s.type === 'path') s.scaleToWidth(100);
+    canvas.add(s);
+    canvas.setActiveObject(s);
+    hist();
+    renderLayers();
+  }
+}
+
+function makeStar(x, y, pts, r1, r2, fill, stroke) {
+  const pts2 = [], n = pts * 2;
+  for(let i=0; i<n; i++) {
+    const r = i % 2 === 0 ? r1 : r2, a = Math.PI / pts * i - Math.PI / 2;
+    pts2.push({x: x + r * Math.cos(a), y: y + r * Math.sin(a)});
+  }
+  return new fabric.Polygon(pts2, {
+    fill, 
+    stroke, 
+    strokeWidth: 2, 
+    originX: 'left', 
+    originY: 'top'
+  });
+}
+
+function makePoly(x, y, sides, r, fill, offset=0, stroke) {
+  const pts = [];
+  for(let i=0; i<sides; i++) {
+    const a = (Math.PI * 2 / sides) * i + offset - Math.PI / 2;
+    pts.push({x: x + r * Math.cos(a), y: y + r * Math.sin(a)});
+  }
+  return new fabric.Polygon(pts, { fill, stroke, strokeWidth: 2 });
+}
+
+function makeArrow(x, y, fill, stroke) {
+  return new fabric.Path('M 0 -14 L 56 -14 L 56 -28 L 88 0 L 56 28 L 56 14 L 0 14 Z', {
+    fill, 
+    stroke, 
+    strokeWidth: 2, 
+    left: x, 
+    top: y
+  });
+}
+
+function makeHeart(x, y, fill, stroke) {
+  return new fabric.Path('M 0,-30 C -30,-70 -80,-30 -80,10 C -80,50 -40,70 0,100 C 40,70 80,50 80,10 C 80,-30 30,-70 0,-30 Z', {
+    fill, 
+    stroke, 
+    strokeWidth: 2, 
+    left: x, 
+    top: y, 
+    scaleX: .55, 
+    scaleY: .55
+  });
+}
+// ─── TEXT ─────────────────────────────────────────────────────────────────────
+function addText(size,weight){const t=new fabric.IText('Click to edit',{left:40,top:60+Math.random()*30,fontFamily:'Inter',fontSize:size,fontWeight:weight,fill:'#1f2937'});canvas.add(t);canvas.setActiveObject(t);hist();}
+function applyFontStyle(family,size,weight){addText(size,weight);const obj=canvas.getActiveObject();if(obj){obj.set({fontFamily:family,fontWeight:weight});canvas.renderAll();}}
+function addPageNum(){const t=new fabric.IText(String(cur+1),{left:CW/2-8,top:CH-36,fontFamily:'Inter',fontSize:16,fill:'#9ca3af',textAlign:'center'});canvas.add(t);canvas.setActiveObject(t);hist();}
+function addDate(){const d=new Date().toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'});const t=new fabric.IText(d,{left:30,top:80,fontFamily:'Inter',fontSize:15,fill:'#6b7280'});canvas.add(t);canvas.setActiveObject(t);hist();}
+
+// ─── DRAW ─────────────────────────────────────────────────────────────────────
+let isDrawOn=false,drawTool='pen';
+
+function setTool(tool){drawTool=tool;if(!isDrawOn){isDrawOn=true;canvas.isDrawingMode=true;updateDrawUI();}updateBrush();}
+function setDrawMode(on,tool){drawTool=tool||drawTool;isDrawOn=on;canvas.isDrawingMode=on;updateBrush();['dbSelect','dbPen','dbMarker','dbEraser'].forEach(id=>document.getElementById(id)?.classList.remove('on'));const map={select:'dbSelect',pen:'dbPen',marker:'dbMarker',eraser:'dbEraser'};const id=map[on?tool:'select'];if(id)document.getElementById(id).classList.add('on');}
+function toggleDraw(){isDrawOn=!isDrawOn;canvas.isDrawingMode=isDrawOn;updateBrush();updateDrawUI();}
+function updateDrawUI(){const icon=document.getElementById('drawIcon');const btn=document.getElementById('drawToggle');icon.className=isDrawOn?'fa-solid fa-toggle-on':'fa-solid fa-toggle-off';btn.style.cssText=isDrawOn?'background:#e0e7ff;color:var(--pri);border-color:var(--pri)':'';}
+
+function updateBrush(){
+  const color=document.getElementById('brushColor').value;
+  const size=parseInt(document.getElementById('brushSize').value,10);
+  const opac=parseInt(document.getElementById('brushOpac').value,10)/100;
+  const r=parseInt(color.slice(1,3),16),g=parseInt(color.slice(3,5),16),b2=parseInt(color.slice(5,7),16);
+  const brush=new fabric.PencilBrush(canvas);
+  if(drawTool==='eraser'){brush.color=canvas.backgroundColor||'#ffffff';brush.width=size*2;}
+  else if(drawTool==='marker'){brush.color=`rgba(${r},${g},${b2},0.35)`;brush.width=size*3;}
+  else if(drawTool==='calli'){brush.color=`rgba(${r},${g},${b2},${opac})`;brush.width=size;brush.decimate=3;}
+  else{brush.color=`rgba(${r},${g},${b2},${opac})`;brush.width=size;}
+  canvas.freeDrawingBrush=brush;
+}
+function clearDrawings(){if(!confirm('Remove all drawings?'))return;canvas.getObjects('path').forEach(p=>canvas.remove(p));hist();renderLayers();}
+function showDrawBar(){document.getElementById('drawBar').classList.add('show');updateBrush();}
+function hideDrawBar(){document.getElementById('drawBar').classList.remove('show');canvas.isDrawingMode=false;isDrawOn=false;}
+
+// ─── FRAME LIBRARY ────────────────────────────────────────────────────────────
+// Helper: regular polygon points (centered at 0,0)
+function polyPts(n,r,rot=0){const pts=[];for(let i=0;i<n;i++){const a=(i*2*Math.PI/n)+rot-Math.PI/2;pts.push({x:r*Math.cos(a),y:r*Math.sin(a)});}return pts;}
+// Helper: star points (centered at 0,0)
+function starPts(n,r1,r2){const pts=[];for(let i=0;i<n*2;i++){const a=(i*Math.PI/n)-Math.PI/2;const r=i%2===0?r1:r2;pts.push({x:r*Math.cos(a),y:r*Math.sin(a)});}return pts;}
+
+const FD = {
+    fill: 'rgba(99,102,241,0.06)',
+    stroke: '#6366f1',
+    strokeWidth: 2,
+    strokeDashArray: [5, 3],
+    isFrame: true,
+    originX: 'center', // Standardize these
+    originY: 'center'
+};
+
+
+// SVG paths (normalized, approximate 150x150 frames)
+const HEART_PATH = 'M 75 115 C 75 115 15 80 15 45 Q 15 15 42 15 Q 58 15 75 35 Q 92 15 108 15 Q 135 15 135 45 C 135 80 75 115 75 115 Z';
+const CLOUD_PATH = 'M 30 95 Q 10 95 10 75 Q 10 58 28 55 Q 25 35 45 32 Q 52 18 68 24 Q 76 10 92 16 Q 110 12 112 32 Q 130 35 128 55 Q 140 62 136 78 Q 136 95 118 95 Z';
+const SHIELD_PATH = 'M 75 10 L 130 30 L 130 80 Q 130 115 75 135 Q 20 115 20 80 L 20 30 Z';
+const SPEECH_PATH = 'M 15 15 Q 10 10 15 10 L 135 10 Q 140 10 140 15 L 140 85 Q 140 90 135 90 L 90 90 L 75 115 L 60 90 L 15 90 Q 10 90 10 85 L 10 15 Q 10 10 15 15 Z';
+const THOUGHT_PATH = 'M 20 20 Q 8 20 8 42 Q 8 62 25 64 Q 20 80 35 82 Q 38 95 52 92 Q 58 100 70 96 Q 80 105 90 98 Q 105 102 108 88 Q 125 88 126 72 Q 138 68 136 52 Q 140 38 126 35 Q 122 20 108 22 Q 100 12 86 18 Q 78 10 64 16 Q 52 8 40 16 Q 28 12 20 20 Z M 30 115 A 8 8 0 1 0 46 115 A 8 8 0 1 0 30 115 Z M 50 130 A 5 5 0 1 0 60 130 A 5 5 0 1 0 50 130 Z';
+const LEAF_PATH = 'M 75 10 Q 140 35 130 90 Q 110 130 75 140 Q 40 130 20 90 Q 10 35 75 10 Z';
+const DROP_PATH = 'M 75 10 Q 115 60 115 95 A 40 40 0 0 1 35 95 Q 35 60 75 10 Z';
+const ARCH_PATH = 'M 15 135 L 15 60 A 60 60 0 0 1 135 60 L 135 135 Z';
+const STAR4_PATH = null; // will use polygon
+const LIGHTNING_PATH = 'M 90 10 L 55 75 L 80 75 L 60 140 L 95 68 L 70 68 Z';
+const CROSS_PATH = 'M 52 10 L 98 10 L 98 52 L 140 52 L 140 98 L 98 98 L 98 140 L 52 140 L 52 98 L 10 98 L 10 52 L 52 52 Z';
+const ARROW_R_PATH = 'M 10 55 L 80 55 L 80 25 L 140 75 L 80 125 L 80 95 L 10 95 Z';
+const ARROW_L_PATH = 'M 140 55 L 70 55 L 70 25 L 10 75 L 70 125 L 70 95 L 140 95 Z';
+const ARROW_U_PATH = 'M 55 140 L 55 70 L 25 70 L 75 10 L 125 70 L 95 70 L 95 140 Z';
+const ARROW_D_PATH = 'M 55 10 L 55 80 L 25 80 L 75 140 L 125 80 L 95 80 L 95 10 Z';
+const CHEVRON_R = 'M 20 10 L 90 75 L 20 140 L 60 140 L 130 75 L 60 10 Z';
+const CHEVRON_L = 'M 130 10 L 60 75 L 130 140 L 90 140 L 20 75 L 90 10 Z';
+const BADGE_PATH = 'M 75 5 L 88 22 L 108 18 L 108 38 L 128 45 L 120 64 L 135 78 L 122 92 L 128 112 L 108 115 L 100 134 L 80 128 L 75 145 L 70 128 L 50 134 L 42 115 L 22 112 L 28 92 L 15 78 L 30 64 L 22 45 L 42 38 L 42 18 L 62 22 Z';
+const RIBBON_PATH = 'M 10 20 L 75 60 L 140 20 L 140 130 L 75 90 L 10 130 Z';
+const CRESCENT_PATH = 'M 75 10 A 65 65 0 1 0 75 140 A 45 45 0 1 1 75 10 Z';
+const STAR3_PATH = null; // use polygon
+const PARALLELOGRAM_PATH = 'M 40 10 L 140 10 L 110 140 L 10 140 Z';
+const TRAPEZOID_PATH = 'M 30 10 L 120 10 L 150 140 L 0 140 Z'; // wait need scale
+const KITE_PATH = 'M 75 10 L 130 65 L 75 140 L 20 65 Z';
+const BLOB1_PATH = 'M 75 12 C 100 8 130 22 138 50 C 146 78 130 108 110 122 C 90 136 55 138 35 124 C 15 110 8 82 12 56 C 16 30 50 16 75 12 Z';
+const BLOB2_PATH = 'M 80 10 C 112 12 138 35 140 65 C 142 95 122 128 95 138 C 68 148 35 132 20 108 C 5 84 8 50 25 30 C 42 10 48 8 80 10 Z';
+const BLOB3_PATH = 'M 72 8 C 98 5 128 18 138 44 C 148 70 135 105 115 122 C 95 139 62 142 40 128 C 18 114 8 86 10 60 C 12 34 38 18 58 12 C 62 10 68 8 72 8 Z';
+const FLOWER4_PATH = 'M 75 10 Q 95 35 75 50 Q 140 55 115 75 Q 90 95 75 75 Q 70 140 50 115 Q 30 90 50 75 Q -15 70 10 50 Q 35 30 50 50 Q 55 -15 75 10 Z';
+const HOUSE_PATH = 'M 75 15 L 140 75 L 120 75 L 120 135 L 90 135 L 90 105 L 60 105 L 60 135 L 30 135 L 30 75 L 10 75 Z';
+const CROWN_PATH = 'M 10 120 L 10 55 L 38 90 L 75 20 L 112 90 L 140 55 L 140 120 Z';
+const FLAG_PATH = 'M 20 10 L 20 140 M 20 10 L 140 38 L 20 66';
+const WAVE_PATH = 'M 10 75 Q 35 45 60 75 Q 85 105 110 75 Q 135 45 160 75 L 160 135 L 10 135 Z';
+const POLAROID_PATH = 'M 15 10 L 135 10 L 135 125 L 15 125 Z'; // then add bottom bar
+const TICKET_PATH = 'M 10 30 Q 10 10 30 10 L 120 10 Q 140 10 140 30 L 140 55 Q 125 55 125 65 Q 125 75 140 75 L 140 110 Q 140 130 120 130 L 30 130 Q 10 130 10 110 L 10 75 Q 25 75 25 65 Q 25 55 10 55 Z';
+const LABEL_PATH = 'M 10 10 L 120 10 Q 140 10 140 35 Q 140 50 125 65 Q 140 80 140 95 L 120 140 L 10 140 Z';
+const FILM_PATH = 'M 10 10 L 140 10 L 140 140 L 10 140 Z M 15 18 L 30 18 L 30 30 L 15 30 Z M 120 18 L 135 18 L 135 30 L 120 30 Z M 15 118 L 30 118 L 30 130 L 15 130 Z M 120 118 L 135 118 L 135 130 L 120 130 Z';
+const DOUBLE_ARROW = 'M 10 75 L 40 45 L 40 60 L 110 60 L 110 45 L 140 75 L 110 105 L 110 90 L 40 90 L 40 105 Z';
+const SPLASH_PATH = 'M 75 20 L 85 45 L 112 38 L 100 60 L 130 65 L 108 80 L 128 100 L 102 98 L 105 125 L 80 112 L 75 140 L 70 112 L 45 125 L 48 98 L 22 100 L 42 80 L 20 65 L 50 60 L 38 38 L 65 45 Z';
+const RING_PATH = 'M 75 10 A 65 65 0 1 0 75 140 A 65 65 0 1 0 75 10 Z M 75 40 A 35 35 0 1 1 75 110 A 35 35 0 1 1 75 40 Z';
+const CLOVER_PATH = 'M 75 75 Q 55 55 50 30 A 25 25 0 0 1 100 30 Q 95 55 75 75 Z M 75 75 Q 95 55 120 50 A 25 25 0 0 1 120 100 Q 95 95 75 75 Z M 75 75 Q 95 95 100 120 A 25 25 0 0 1 50 120 Q 55 95 75 75 Z M 75 75 Q 55 95 30 100 A 25 25 0 0 1 30 50 Q 55 55 75 75 Z';
+const INFINITY_PATH = 'M 75 75 Q 55 45 35 45 A 30 30 0 0 0 35 105 Q 55 105 75 75 Q 95 45 115 45 A 30 30 0 0 1 115 105 Q 95 105 75 75 Z';
+
+// FRAME LIBRARY DEFINITION
+// Each frame: { id, cat, label, thumb (HTML string), makeFn }
+const FRAME_LIBRARY = [
+  // ── RECTANGLES ──
+  {id:'sq',      cat:'Rectangles', label:'Square',    thumb:'<div class="fthumb"></div>',                                         makeFn:()=>new fabric.Rect({...FD,width:150,height:150,rx:0,ry:0})},
+  {id:'port',    cat:'Rectangles', label:'Portrait',  thumb:'<div class="fthumb" style="height:40px;width:28px"></div>',          makeFn:()=>new fabric.Rect({...FD,width:115,height:160,rx:0,ry:0})},
+  {id:'land',    cat:'Rectangles', label:'Landscape', thumb:'<div class="fthumb" style="height:22px;width:36px"></div>',          makeFn:()=>new fabric.Rect({...FD,width:180,height:120,rx:0,ry:0})},
+  {id:'wide',    cat:'Rectangles', label:'16 : 9',    thumb:'<div class="fthumb" style="height:20px;width:36px"></div>',          makeFn:()=>new fabric.Rect({...FD,width:200,height:113,rx:0,ry:0})},
+  {id:'tall',    cat:'Rectangles', label:'9 : 16',    thumb:'<div class="fthumb" style="height:44px;width:22px"></div>',          makeFn:()=>new fabric.Rect({...FD,width:113,height:200,rx:0,ry:0})},
+  {id:'ultra',   cat:'Rectangles', label:'Ultra Wide',thumb:'<div class="fthumb" style="height:14px;width:36px"></div>',          makeFn:()=>new fabric.Rect({...FD,width:260,height:90,rx:0,ry:0})},
+  {id:'banner',  cat:'Rectangles', label:'Banner',    thumb:'<div class="fthumb" style="height:12px;width:36px"></div>',          makeFn:()=>new fabric.Rect({...FD,width:300,height:75,rx:0,ry:0})},
+  {id:'story',   cat:'Rectangles', label:'Story',     thumb:'<div class="fthumb" style="height:44px;width:18px"></div>',          makeFn:()=>new fabric.Rect({...FD,width:95,height:170,rx:0,ry:0})},
+  {id:'a4',      cat:'Rectangles', label:'A4 Page',   thumb:'<div class="fthumb" style="height:44px;width:32px"></div>',          makeFn:()=>new fabric.Rect({...FD,width:148,height:210,rx:0,ry:0})},
+  {id:'card',    cat:'Rectangles', label:'Biz Card',  thumb:'<div class="fthumb" style="height:20px;width:34px"></div>',          makeFn:()=>new fabric.Rect({...FD,width:200,height:115,rx:0,ry:0})},
+
+  // ── ROUNDED RECTS ──
+  {id:'rsm',     cat:'Rounded',    label:'Soft Round',  thumb:'<div class="fthumb" style="border-radius:5px"></div>',             makeFn:()=>new fabric.Rect({...FD,width:150,height:150,rx:12,ry:12})},
+  {id:'rmd',     cat:'Rounded',    label:'Med Round',   thumb:'<div class="fthumb" style="border-radius:9px"></div>',             makeFn:()=>new fabric.Rect({...FD,width:150,height:150,rx:25,ry:25})},
+  {id:'rlg',     cat:'Rounded',    label:'Large Round', thumb:'<div class="fthumb" style="border-radius:14px"></div>',            makeFn:()=>new fabric.Rect({...FD,width:150,height:150,rx:40,ry:40})},
+  {id:'squircle',cat:'Rounded',    label:'Squircle',    thumb:'<div class="fthumb" style="border-radius:38%"></div>',             makeFn:()=>new fabric.Rect({...FD,width:150,height:150,rx:55,ry:55})},
+  {id:'pillh',   cat:'Rounded',    label:'Pill Wide',   thumb:'<div class="fthumb" style="border-radius:50%;height:18px"></div>', makeFn:()=>new fabric.Rect({...FD,width:200,height:80,rx:40,ry:40})},
+  {id:'pillv',   cat:'Rounded',    label:'Pill Tall',   thumb:'<div class="fthumb" style="border-radius:50%;width:18px;height:44px"></div>', makeFn:()=>new fabric.Rect({...FD,width:80,height:200,rx:40,ry:40})},
+  {id:'rport',   cat:'Rounded',    label:'Round Port',  thumb:'<div class="fthumb" style="border-radius:10px;width:24px;height:38px"></div>', makeFn:()=>new fabric.Rect({...FD,width:115,height:160,rx:20,ry:20})},
+  {id:'rland',   cat:'Rounded',    label:'Round Land',  thumb:'<div class="fthumb" style="border-radius:10px;width:38px;height:24px"></div>', makeFn:()=>new fabric.Rect({...FD,width:180,height:120,rx:20,ry:20})},
+  {id:'rwide',   cat:'Rounded',    label:'Round Wide',  thumb:'<div class="fthumb" style="border-radius:8px;width:36px;height:20px"></div>',  makeFn:()=>new fabric.Rect({...FD,width:200,height:113,rx:20,ry:20})},
+  {id:'bubble',  cat:'Rounded',    label:'Bubble',      thumb:'<div class="fthumb" style="border-radius:16px"></div>',            makeFn:()=>new fabric.Rect({...FD,width:180,height:100,rx:50,ry:50})},
+
+  // ── CIRCLES & OVALS ──
+  {id:'circle',  cat:'Circles',    label:'Circle',      thumb:'<div class="fthumb circle"></div>',                                makeFn:()=>new fabric.Circle({...FD,radius:75})},
+  {id:'ovalh',   cat:'Circles',    label:'Oval Wide',   thumb:'<div class="fthumb" style="border-radius:50%;height:18px"></div>', makeFn:()=>new fabric.Ellipse({...FD,rx:95,ry:55})},
+  {id:'ovalv',   cat:'Circles',    label:'Oval Tall',   thumb:'<div class="fthumb" style="border-radius:50%;width:18px;height:40px"></div>', makeFn:()=>new fabric.Ellipse({...FD,rx:55,ry:95})},
+  {id:'ovalxw',  cat:'Circles',    label:'Super Wide',  thumb:'<div class="fthumb" style="border-radius:50%;height:12px"></div>', makeFn:()=>new fabric.Ellipse({...FD,rx:110,ry:40})},
+  {id:'sm-circ', cat:'Circles',    label:'Sm Circle',   thumb:'<div class="fthumb circle" style="width:22px;height:22px"></div>',makeFn:()=>new fabric.Circle({...FD,radius:50})},
+  {id:'lg-circ', cat:'Circles',    label:'Lg Circle',   thumb:'<div class="fthumb circle" style="width:38px;height:38px"></div>',makeFn:()=>new fabric.Circle({...FD,radius:100})},
+  {id:'egg',     cat:'Circles',    label:'Egg',         thumb:'<div class="fthumb" style="border-radius:50% 50% 50% 50%/60% 60% 40% 40%"></div>',makeFn:()=>new fabric.Ellipse({...FD,rx:60,ry:80})},
+  {id:'lens',    cat:'Circles',    label:'Lens',        thumb:'<div class="fthumb" style="border-radius:50%;height:20px"></div>', makeFn:()=>new fabric.Ellipse({...FD,rx:80,ry:35})},
+
+  // ── TRIANGLES ──
+  {id:'triup',   cat:'Triangles',  label:'Triangle Up', thumb:'<div class="fthumb" style="clip-path:polygon(50% 0%,0% 100%,100% 100%)"></div>', makeFn:()=>new fabric.Triangle({...FD,width:140,height:130})},
+  {id:'tridown', cat:'Triangles',  label:'Tri Down',    thumb:'<div class="fthumb" style="clip-path:polygon(0% 0%,100% 0%,50% 100%)"></div>',    makeFn:()=>new fabric.Polygon([{x:0,y:0},{x:140,y:0},{x:70,y:130}],{...FD})},
+  {id:'trileft', cat:'Triangles',  label:'Tri Left',    thumb:'<div class="fthumb" style="clip-path:polygon(100% 0%,100% 100%,0% 50%)"></div>',   makeFn:()=>new fabric.Polygon([{x:140,y:0},{x:140,y:130},{x:0,y:65}],{...FD})},
+  {id:'triright',cat:'Triangles',  label:'Tri Right',   thumb:'<div class="fthumb" style="clip-path:polygon(0% 0%,100% 50%,0% 100%)"></div>',     makeFn:()=>new fabric.Polygon([{x:0,y:0},{x:140,y:65},{x:0,y:130}],{...FD})},
+  {id:'triright_angle',cat:'Triangles',label:'Right Angle',thumb:'<div class="fthumb" style="clip-path:polygon(0% 0%,100% 100%,0% 100%)"></div>', makeFn:()=>new fabric.Polygon([{x:0,y:0},{x:140,y:130},{x:0,y:130}],{...FD})},
+  {id:'triacute',cat:'Triangles',  label:'Acute',       thumb:'<div class="fthumb" style="clip-path:polygon(50% 0%,10% 100%,90% 100%)"></div>',   makeFn:()=>new fabric.Triangle({...FD,width:130,height:160})},
+
+  // ── POLYGONS ──
+  {id:'diamond', cat:'Polygons',   label:'Diamond',     thumb:'<div class="fthumb" style="clip-path:polygon(50% 0%,100% 50%,50% 100%,0% 50%)"></div>',   makeFn:()=>new fabric.Polygon(polyPts(4,75,Math.PI/4),{...FD})},
+  {id:'pentagon',cat:'Polygons',   label:'Pentagon',    thumb:'<div class="fthumb" style="clip-path:polygon(50% 0%,100% 38%,82% 100%,18% 100%,0% 38%)"></div>', makeFn:()=>new fabric.Polygon(polyPts(5,75),{...FD})},
+  {id:'hexagon', cat:'Polygons',   label:'Hexagon',     thumb:'<div class="fthumb" style="clip-path:polygon(25% 0%,75% 0%,100% 50%,75% 100%,25% 100%,0% 50%)"></div>', makeFn:()=>new fabric.Polygon(polyPts(6,75),{...FD})},
+  {id:'heptagon',cat:'Polygons',   label:'Heptagon',    thumb:'<div class="fthumb" style="clip-path:polygon(50% 0%,87% 12%,100% 50%,87% 88%,50% 100%,13% 88%,0% 50%,13% 12%)"></div>', makeFn:()=>new fabric.Polygon(polyPts(7,75),{...FD})},
+  {id:'octagon', cat:'Polygons',   label:'Octagon',     thumb:'<div class="fthumb" style="clip-path:polygon(30% 0%,70% 0%,100% 30%,100% 70%,70% 100%,30% 100%,0% 70%,0% 30%)"></div>',  makeFn:()=>new fabric.Polygon(polyPts(8,75),{...FD})},
+  {id:'nonagon', cat:'Polygons',   label:'Nonagon',     thumb:'<div class="fthumb" style="clip-path:polygon(50% 0%,82% 10%,100% 40%,94% 73%,70% 95%,30% 95%,6% 73%,0% 40%,18% 10%)"></div>', makeFn:()=>new fabric.Polygon(polyPts(9,75),{...FD})},
+  {id:'decagon', cat:'Polygons',   label:'Decagon',     thumb:'<div class="fthumb" style="clip-path:polygon(50% 0%,80% 9%,100% 35%,100% 65%,80% 91%,50% 100%,20% 91%,0% 65%,0% 35%,20% 9%)"></div>', makeFn:()=>new fabric.Polygon(polyPts(10,75),{...FD})},
+  {id:'hexflat', cat:'Polygons',   label:'Hex Flat',    thumb:'<div class="fthumb" style="clip-path:polygon(0% 25%,50% 0%,100% 25%,100% 75%,50% 100%,0% 75%)"></div>', makeFn:()=>new fabric.Polygon(polyPts(6,75,Math.PI/6),{...FD})},
+  {id:'rhombus', cat:'Polygons',   label:'Rhombus',     thumb:'<div class="fthumb" style="clip-path:polygon(20% 0%,100% 0%,80% 100%,0% 100%);"></div>', makeFn:()=>new fabric.Polygon([{x:30,y:0},{x:150,y:0},{x:120,y:130},{x:0,y:130}],{...FD})},
+  {id:'trap',    cat:'Polygons',   label:'Trapezoid',   thumb:'<div class="fthumb" style="clip-path:polygon(20% 0%,80% 0%,100% 100%,0% 100%)"></div>',  makeFn:()=>new fabric.Polygon([{x:35,y:0},{x:115,y:0},{x:150,y:130},{x:0,y:130}],{...FD})},
+
+  // ── STARS ──
+  {id:'star3',   cat:'Stars',      label:'Star 3',      thumb:'<div class="fthumb" style="clip-path:polygon(50% 0%,100% 86%,0% 86%)"></div>',              makeFn:()=>new fabric.Polygon(starPts(3,75,30),{...FD})},
+  {id:'star4',   cat:'Stars',      label:'Star 4',      thumb:'<div class="fthumb" style="clip-path:polygon(50% 0%,56% 44%,100% 50%,56% 56%,50% 100%,44% 56%,0% 50%,44% 44%)"></div>', makeFn:()=>new fabric.Polygon(starPts(4,75,30),{...FD})},
+  {id:'star5',   cat:'Stars',      label:'Star 5',      thumb:'<div class="fthumb" style="clip-path:polygon(50% 0%,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%)"></div>', makeFn:()=>new fabric.Polygon(starPts(5,75,30),{...FD})},
+  {id:'star6',   cat:'Stars',      label:'Star 6',      thumb:'<div class="fthumb" style="clip-path:polygon(50% 0%,58% 27%,79% 9%,71% 36%,100% 29%,82% 50%,100% 71%,71% 64%,79% 91%,58% 73%,50% 100%,42% 73%,21% 91%,29% 64%,0% 71%,18% 50%,0% 29%,29% 36%,21% 9%,42% 27%)"></div>', makeFn:()=>new fabric.Polygon(starPts(6,75,28),{...FD})},
+  {id:'star8',   cat:'Stars',      label:'Star 8',      thumb:'<div class="fthumb" style="clip-path:polygon(50% 5%,60% 36%,79% 21%,64% 40%,95% 50%,64% 60%,79% 79%,60% 64%,50% 95%,40% 64%,21% 79%,36% 60%,5% 50%,36% 40%,21% 21%,40% 36%)"></div>', makeFn:()=>new fabric.Polygon(starPts(8,75,30),{...FD})},
+  {id:'star12',  cat:'Stars',      label:'Star 12',     thumb:'<div class="fthumb" style="clip-path:polygon(50% 0%,57% 20%,67% 7%,65% 28%,80% 20%,71% 39%,93% 37%,78% 53%,100% 57%,80% 65%,93% 77%,70% 74%,74% 97%,55% 87%,50% 110%,45% 87%,26% 97%,30% 74%,7% 77%,20% 65%,0% 57%,22% 53%,7% 37%,29% 39%,20% 20%,35% 28%,33% 7%,43% 20%)"></div>', makeFn:()=>new fabric.Polygon(starPts(12,75,40),{...FD})},
+  {id:'starburst',cat:'Stars',     label:'Starburst',   thumb:'<div class="fthumb" style="clip-path:polygon(50% 5%,55% 40%,70% 10%,62% 44%,85% 20%,68% 50%,95% 38%,73% 56%,100% 57%,74% 62%,93% 77%,68% 65%,74% 92%,57% 72%,50% 99%,43% 72%,26% 92%,32% 65%,7% 77%,26% 62%,0% 57%,27% 56%,5% 38%,32% 50%,15% 20%,38% 44%,30% 10%,45% 40%)"></div>', makeFn:()=>new fabric.Polygon(starPts(14,75,25),{...FD})},
+  {id:'pinwheel',cat:'Stars',      label:'Pinwheel',    thumb:'<i class="fa-solid fa-asterisk"></i>',                                                        makeFn:()=>new fabric.Polygon(starPts(6,75,20),{...FD})},
+
+  // ── ARROWS ──
+  {id:'arrowr',  cat:'Arrows',     label:'Arrow →',     thumb:'<i class="fa-solid fa-arrow-right"></i>',                                                    makeFn:()=>new fabric.Path(ARROW_R_PATH,{...FD,scaleX:1,scaleY:1})},
+  {id:'arrowl',  cat:'Arrows',     label:'Arrow ←',     thumb:'<i class="fa-solid fa-arrow-left"></i>',                                                     makeFn:()=>new fabric.Path(ARROW_L_PATH,{...FD})},
+  {id:'arrowu',  cat:'Arrows',     label:'Arrow ↑',     thumb:'<i class="fa-solid fa-arrow-up"></i>',                                                       makeFn:()=>new fabric.Path(ARROW_U_PATH,{...FD})},
+  {id:'arrowd',  cat:'Arrows',     label:'Arrow ↓',     thumb:'<i class="fa-solid fa-arrow-down"></i>',                                                     makeFn:()=>new fabric.Path(ARROW_D_PATH,{...FD})},
+  {id:'chevronr',cat:'Arrows',     label:'Chevron →',   thumb:'<i class="fa-solid fa-chevron-right" style="font-size:22px"></i>',                           makeFn:()=>new fabric.Path(CHEVRON_R,{...FD})},
+  {id:'chevronl',cat:'Arrows',     label:'Chevron ←',   thumb:'<i class="fa-solid fa-chevron-left" style="font-size:22px"></i>',                            makeFn:()=>new fabric.Path(CHEVRON_L,{...FD})},
+  {id:'dbarrow', cat:'Arrows',     label:'Double →',    thumb:'<i class="fa-solid fa-arrows-left-right"></i>',                                              makeFn:()=>new fabric.Path(DOUBLE_ARROW,{...FD})},
+
+  // ── CREATIVE ──
+  {id:'heart',   cat:'Creative',   label:'Heart',       thumb:'<i class="fa-solid fa-heart"></i>',                                                          makeFn:()=>new fabric.Path(HEART_PATH,{...FD})},
+  {id:'cloud',   cat:'Creative',   label:'Cloud',       thumb:'<i class="fa-solid fa-cloud"></i>',                                                          makeFn:()=>new fabric.Path(CLOUD_PATH,{...FD})},
+  {id:'speech',  cat:'Creative',   label:'Speech',      thumb:'<i class="fa-regular fa-comment"></i>',                                                      makeFn:()=>new fabric.Path(SPEECH_PATH,{...FD})},
+  {id:'thought', cat:'Creative',   label:'Thought',     thumb:'<i class="fa-regular fa-comment-dots"></i>',                                                 makeFn:()=>new fabric.Path(THOUGHT_PATH,{...FD})},
+  {id:'shield',  cat:'Creative',   label:'Shield',      thumb:'<i class="fa-solid fa-shield"></i>',                                                         makeFn:()=>new fabric.Path(SHIELD_PATH,{...FD})},
+  {id:'badge',   cat:'Creative',   label:'Badge',       thumb:'<i class="fa-solid fa-certificate"></i>',                                                    makeFn:()=>new fabric.Path(BADGE_PATH,{...FD})},
+  {id:'leaf',    cat:'Creative',   label:'Leaf',        thumb:'<i class="fa-solid fa-leaf"></i>',                                                           makeFn:()=>new fabric.Path(LEAF_PATH,{...FD})},
+  {id:'drop',    cat:'Creative',   label:'Teardrop',    thumb:'<i class="fa-solid fa-droplet"></i>',                                                        makeFn:()=>new fabric.Path(DROP_PATH,{...FD})},
+  {id:'arch',    cat:'Creative',   label:'Arch',        thumb:'<div class="fthumb" style="clip-path:polygon(0% 100%,0% 50%,50% 0%,100% 50%,100% 100%)"></div>', makeFn:()=>new fabric.Path(ARCH_PATH,{...FD})},
+  {id:'semi',    cat:'Creative',   label:'Semicircle',  thumb:'<div class="fthumb" style="clip-path:polygon(0% 100%,0% 50%,50% 0%,100% 50%,100% 100%)"></div>', makeFn:()=>new fabric.Polygon([...polyPts(16,75).slice(8)].concat([{x:75,y:75}]),{...FD})},
+  {id:'crescent',cat:'Creative',   label:'Crescent',    thumb:'<i class="fa-solid fa-moon"></i>',                                                           makeFn:()=>new fabric.Path(CRESCENT_PATH,{...FD})},
+  {id:'cross',   cat:'Creative',   label:'Cross',       thumb:'<i class="fa-solid fa-plus"></i>',                                                           makeFn:()=>new fabric.Path(CROSS_PATH,{...FD})},
+  {id:'lightning',cat:'Creative',  label:'Lightning',   thumb:'<i class="fa-solid fa-bolt"></i>',                                                           makeFn:()=>new fabric.Path(LIGHTNING_PATH,{...FD})},
+  {id:'ribbon',  cat:'Creative',   label:'Ribbon',      thumb:'<i class="fa-solid fa-ribbon"></i>',                                                         makeFn:()=>new fabric.Path(RIBBON_PATH,{...FD})},
+  {id:'crown',   cat:'Creative',   label:'Crown',       thumb:'<i class="fa-solid fa-crown"></i>',                                                          makeFn:()=>new fabric.Path(CROWN_PATH,{...FD})},
+  {id:'house',   cat:'Creative',   label:'House',       thumb:'<i class="fa-solid fa-house"></i>',                                                          makeFn:()=>new fabric.Path(HOUSE_PATH,{...FD})},
+  {id:'flower4', cat:'Creative',   label:'Flower',      thumb:'<i class="fa-solid fa-clover"></i>',                                                         makeFn:()=>new fabric.Path(FLOWER4_PATH,{...FD})},
+  {id:'clover',  cat:'Creative',   label:'Clover',      thumb:'<i class="fa-solid fa-clover"></i>',                                                         makeFn:()=>new fabric.Path(CLOVER_PATH,{...FD})},
+  {id:'kite',    cat:'Creative',   label:'Kite',        thumb:'<div class="fthumb" style="clip-path:polygon(50% 0%,100% 45%,50% 100%,0% 45%)"></div>',     makeFn:()=>new fabric.Path(KITE_PATH,{...FD})},
+  {id:'infinity',cat:'Creative',   label:'Infinity',    thumb:'<i class="fa-solid fa-infinity"></i>',                                                       makeFn:()=>new fabric.Path(INFINITY_PATH,{...FD})},
+  {id:'parallelogram',cat:'Creative',label:'Parallelogram',thumb:'<div class="fthumb" style="clip-path:polygon(25% 0%,100% 0%,75% 100%,0% 100%)"></div>',  makeFn:()=>new fabric.Path(PARALLELOGRAM_PATH,{...FD})},
+
+  // ── SPECIAL / DECORATIVE ──
+  {id:'ticket',  cat:'Special',    label:'Ticket',      thumb:'<i class="fa-solid fa-ticket"></i>',                                                         makeFn:()=>new fabric.Path(TICKET_PATH,{...FD})},
+  {id:'label',   cat:'Special',    label:'Label',       thumb:'<i class="fa-solid fa-tag"></i>',                                                            makeFn:()=>new fabric.Path(LABEL_PATH,{...FD})},
+  {id:'film',    cat:'Special',    label:'Film',        thumb:'<i class="fa-solid fa-film"></i>',                                                           makeFn:()=>new fabric.Path(FILM_PATH,{...FD})},
+  {id:'ring',    cat:'Special',    label:'Ring',        thumb:'<div class="fthumb circle" style="box-shadow:0 0 0 10px rgba(99,102,241,.3) inset;background:transparent"></div>', makeFn:()=>new fabric.Path(RING_PATH,{...FD,fillRule:'evenodd'})},
+  {id:'splash',  cat:'Special',    label:'Splash',      thumb:'<i class="fa-solid fa-star-of-life"></i>',                                                   makeFn:()=>new fabric.Path(SPLASH_PATH,{...FD})},
+  {id:'wave',    cat:'Special',    label:'Wave',        thumb:'<div class="fthumb" style="clip-path:polygon(0% 60%,25% 30%,50% 60%,75% 30%,100% 60%,100% 100%,0% 100%)"></div>', makeFn:()=>new fabric.Path(WAVE_PATH,{...FD})},
+  {id:'blob1',   cat:'Special',    label:'Blob 1',      thumb:'<div class="fthumb" style="border-radius:62% 38% 70% 30%/30% 62% 38% 70%"></div>',          makeFn:()=>new fabric.Path(BLOB1_PATH,{...FD})},
+  {id:'blob2',   cat:'Special',    label:'Blob 2',      thumb:'<div class="fthumb" style="border-radius:40% 60% 50% 50%/50% 40% 60% 50%"></div>',          makeFn:()=>new fabric.Path(BLOB2_PATH,{...FD})},
+  {id:'blob3',   cat:'Special',    label:'Blob 3',      thumb:'<div class="fthumb" style="border-radius:30% 70% 40% 60%/60% 30% 70% 40%"></div>',          makeFn:()=>new fabric.Path(BLOB3_PATH,{...FD})},
+  {id:'polaroid',cat:'Special',    label:'Polaroid',    thumb:'<i class="fa-regular fa-image"></i>',                                                        makeFn:()=>mkPolaroidFrame()},
+  {id:'dbl-rect',cat:'Special',    label:'Dbl Border',  thumb:'<div class="fthumb" style="outline:2px solid rgba(99,102,241,.4);outline-offset:3px"></div>',makeFn:()=>mkDoubleBorderFrame()},
+];
+
+// Build the frames panel HTML
+function buildFramePanel() {
+  const container = document.getElementById('framePanelContent');
+  const cats = [...new Set(FRAME_LIBRARY.map(f => f.cat))];
+  let html = '';
+  cats.forEach(cat => {
+    html += `<div class="section" data-frame-cat="${cat}">${cat} <span style="color:#c7c9cd;font-weight:400">(${FRAME_LIBRARY.filter(f=>f.cat===cat).length})</span></div>`;
+    html += `<div class="frame-grid" data-frame-grid="${cat}">`;
+    FRAME_LIBRARY.filter(f => f.cat === cat).forEach(f => {
+      html += `<button class="frame-btn" onclick="addFrameById('${f.id}')" title="${f.label}" data-frame-id="${f.id}" data-frame-label="${f.label.toLowerCase()}">${f.thumb}<span>${f.label}</span></button>`;
+    });
+    html += '</div>';
+  });
+  container.innerHTML = html;
+}
+
+function filterFrames(q) {
+  q = q.toLowerCase().trim();
+  document.querySelectorAll('.frame-btn').forEach(btn => {
+    const lbl = btn.dataset.frameLabel || '';
+    btn.style.display = (!q || lbl.includes(q)) ? '' : 'none';
+  });
+  document.querySelectorAll('[data-frame-cat]').forEach(sec => {
+    const cat = sec.dataset.frameCat;
+    const grid = document.querySelector(`[data-frame-grid="${cat}"]`);
+    const anyVisible = [...(grid?.querySelectorAll('.frame-btn') || [])].some(b => b.style.display !== 'none');
+    sec.style.display = anyVisible ? '' : 'none';
+    if (grid) grid.style.display = anyVisible ? '' : 'none';
+  });
+}
+
+function addFrameById(id) {
+  const def = FRAME_LIBRARY.find(f => f.id === id);
+  if (!def) return;
+  try {
+    const frame = def.makeFn();
+    if (!frame) return;
+    const x = 50 + Math.random() * 30;
+    const y = 50 + Math.random() * 30;
+    frame.set({ left: x, top: y, isFrame: true });
+    canvas.add(frame);
+    canvas.setActiveObject(frame);
+    canvas.requestRenderAll();
+    hist(); renderLayers();
+  } catch(e) { console.warn('Frame creation error:', e); }
+}
+
+function mkPolaroidFrame() {
+  const group = canvas.getActiveObject();
+  const outer = new fabric.Rect({...FD, width:150, height:170, rx:3, ry:3, left:0, top:0});
+  const inner = new fabric.Rect({...FD, width:130, height:130, rx:0, ry:0, left:10, top:10, stroke:'rgba(99,102,241,.3)', strokeWidth:1});
+  // Return just outer for simplicity
+  return new fabric.Rect({...FD, width:150, height:175, rx:3, ry:3});
+}
+
+function mkDoubleBorderFrame() {
+  return new fabric.Rect({
+    ...FD, width:150, height:150, rx:0, ry:0,
+    strokeWidth:8, stroke:'#6366f1',
+    shadow:new fabric.Shadow({color:'rgba(99,102,241,.3)',blur:0,offsetX:0,offsetY:0}),
+  });
+}
+
+// ─── FRAME HOVER & FIT ────────────────────────────────────────────────────────
+let _hoverFrame = null;
+
+canvas.on('object:moving', function(e) {
+  const obj = e.target;
+
+  // Snap to grid if enabled
+  if (snapOn && obj) {
+    const GRID = 20;
+    obj.set({
+      left: Math.round(obj.left / GRID) * GRID,
+      top:  Math.round(obj.top  / GRID) * GRID
+    });
+  }
+
+  // Frame hover detection (only for images)
+  if (!obj || obj.type !== 'image') {
+    if (_hoverFrame) { clearFrameHighlight(_hoverFrame); _hoverFrame = null; hideDropHint(); }
+    return;
+  }
+
+  const center = obj.getCenterPoint();
+  const frames = canvas.getObjects().filter(o => o.isFrame && o !== obj);
+
+  // Clear previous hover
+  if (_hoverFrame) { clearFrameHighlight(_hoverFrame); _hoverFrame = null; }
+
+  // Find frame under image center
+  for (const frame of frames) {
+    const fb = frame.getBoundingRect(true);
+    if (center.x >= fb.left && center.x <= fb.left + fb.width &&
+        center.y >= fb.top  && center.y <= fb.top  + fb.height) {
+      _hoverFrame = frame;
+      setFrameHighlight(frame);
+      showDropHint();
+      break;
+    }
+  }
+
+  if (!_hoverFrame) hideDropHint();
+  canvas.requestRenderAll();
+});
+
+canvas.on('mouse:up', function() {
+  if (_hoverFrame) {
+    const obj = canvas.getActiveObject();
+    if (obj && obj.type === 'image') {
+      clearFrameHighlight(_hoverFrame);
+      fitImageToFrame(_hoverFrame, obj);
+    } else {
+      clearFrameHighlight(_hoverFrame);
+    }
+    _hoverFrame = null;
+    hideDropHint();
+  }
+});
+
+function setFrameHighlight(frame) {
+  frame._savedStroke      = frame.stroke;
+  frame._savedStrokeWidth = frame.strokeWidth;
+  frame._savedDash        = frame.strokeDashArray;
+  frame._savedShadow      = frame.shadow;
+  frame.set({
+    stroke: '#6366f1',
+    strokeWidth: 4,
+    strokeDashArray: null,
+    shadow: new fabric.Shadow({ color: 'rgba(99,102,241,0.55)', blur: 24, offsetX: 0, offsetY: 0 })
+  });
+}
+
+function clearFrameHighlight(frame) {
+  if (!frame) return;
+  frame.set({
+    stroke: frame._savedStroke || '#6366f1',
+    strokeWidth: frame._savedStrokeWidth != null ? frame._savedStrokeWidth : 2,
+    strokeDashArray: frame._savedDash || [5, 3],
+    shadow: frame._savedShadow || null
+  });
+  canvas.requestRenderAll();
+}
+
+function showDropHint() { document.getElementById('frameDropHint').classList.add('show'); }
+function hideDropHint() { document.getElementById('frameDropHint').classList.remove('show'); }
+function fitImageToFrame(frame, img) {
+  // 1. Frame-oda absolute coordinates-ah eduthukonga
+  const fb = frame.getBoundingRect(true); 
+  if (!fb.width || !fb.height) return;
+
+  // 2. Image-ah frame-ku thagundhapola scale pannuvom (Aspect Fill)
+  // Image frame-ah mothama cover panna Math.max use panrom
+  const scale = Math.max(fb.width / img.width, fb.height / img.height);
+
+  img.set({
+    scaleX: scale,
+    scaleY: scale,
+    originX: 'center',
+    originY: 'center',
+    left: frame.left, // Frame-oda center position-ke image-ah kondu varom
+    top: frame.top
+  });
+  img.setCoords();
+
+  // 3. Canvas-la irundhu remove pannittu Group-a maathuvom
+  canvas.remove(img);
+  canvas.remove(frame);
+
+  // Rendaiyum 'center' origin-ku maathina dhaan group-kulla alignment correct-ah irukkum
+  frame.set({ originX: 'center', originY: 'center', left: 0, top: 0 });
+  img.set({ originX: 'center', originY: 'center', left: 0, top: 0 });
+
+  // 4. Group create pannuvom [Frame background-la irukkum, Image mela irukkum]
+  const grp = new fabric.Group([frame, img], {
+    left: fb.left + fb.width / 2,
+    top: fb.top + fb.height / 2,
+    originX: 'center',
+    originY: 'center',
+    isFrameGroup: true,
+    selectable: true
+  });
+
+  // 5. Frame-ah mattum clone panni 'clipPath'-ah set pannuvom
+  frame.clone(function(clip) {
+    clip.set({
+      originX: 'center',
+      originY: 'center',
+      left: 0, 
+      top: 0,
+      absolutePositioned: false // Idhu dhaan group koodave clipping-ah move panna veikkum
+    });
+    
+    grp.clipPath = clip;
+    
+    canvas.add(grp);
+    canvas.setActiveObject(grp);
+    canvas.requestRenderAll();
+    
+    hist(); 
+    renderLayers();
+  });
+}
+
+
+
+// ─── CHARTS ───────────────────────────────────────────────────────────────────
+let chartType = 'bar';
+let chartColors = ['#6366f1','#8b5cf6','#a78bfa','#c4b5fd','#ddd6fe'];
+
+function selChart(type, el) { chartType=type; document.querySelectorAll('.ct-btn').forEach(b=>b.classList.remove('sel')); el.classList.add('sel'); }
+function setChartColors(arr) { chartColors = arr; }
+
+function insertChart() {
+  const labels = document.getElementById('ctLabels').value.split(',').map(s=>s.trim());
+  const values = document.getElementById('ctVals').value.split(',').map(Number);
+  const title  = document.getElementById('ctTitle').value;
+  const el = document.createElement('canvas');
+  el.width=380; el.height=280;
+  const ctx = el.getContext('2d');
+  ctx.fillStyle='#f9fafb'; ctx.fillRect(0,0,380,280);
+  new Chart(ctx,{type:chartType,data:{labels,datasets:[{label:title,data:values,backgroundColor:chartColors.slice(0,values.length),borderColor:chartColors.slice(0,values.length),borderWidth:2,tension:.4,fill:chartType==='line'}]},options:{responsive:false,animation:false,plugins:{legend:{display:true},title:{display:!!title,text:title,font:{size:14,weight:'bold'}}},scales:(['pie','doughnut','polarArea','radar'].includes(chartType))?{}:{x:{grid:{color:'rgba(0,0,0,.04)'}},y:{grid:{color:'rgba(0,0,0,.04)'}}}}});
+  setTimeout(()=>{const url=el.toDataURL('image/png');fabric.Image.fromURL(url,img=>{img.scaleToWidth(Math.min(360,CW-40));img.set({left:20,top:40});canvas.add(img);canvas.setActiveObject(img);hist();});},300);
+}
+
+// ─── UPLOADS ─────────────────────────────────────────────────────────────────
+function uploadMedia(e,type){
+  Array.from(e.target.files).forEach(file=>{
+    const reader = new FileReader();
+reader.onload = function(e) {
+    const base64Video = e.target.result;
+    // Save this in customVideoSrc
+};
+reader.readAsDataURL(file);
+
+
+    if(type==='image'||type==='svg'){
+      addThumb(url);
+      fabric.Image.fromURL(url,img=>{img.scaleToWidth(Math.min(260,CW-40));canvas.add(img);canvas.setActiveObject(img);hist();});
+    } else if(type==='video'){
+      const vid=document.createElement('video');
+      vid.src=url;vid.crossOrigin='anonymous';vid.muted=true;vid.loop=true;
+      document.getElementById('video-container').appendChild(vid);
+      vid.addEventListener('loadeddata',()=>{vid.width=vid.videoWidth;vid.height=vid.videoHeight;const img=new fabric.Image(vid,{left:40,top:40,customVideoSrc:url});img.scaleToWidth(250);canvas.add(img);canvas.setActiveObject(img);hist();vid.play();(function tick(){canvas.renderAll();requestAnimationFrame(tick);})();});
+    }
+  });
+}
+
+function addThumb(url){const g=document.getElementById('uploadGallery');const d=document.createElement('div');d.className='upload-thumb';d.style.backgroundImage=`url(${url})`;d.onclick=()=>fabric.Image.fromURL(url,img=>{img.scaleToWidth(Math.min(260,CW-40));canvas.add(img);canvas.setActiveObject(img);hist();});g.insertBefore(d,g.firstChild);}
+function restoreVideos(){canvas.getObjects().forEach(obj=>{if(obj.customVideoSrc&&obj.type==='image'){const vid=document.createElement('video');vid.src=obj.customVideoSrc;vid.muted=true;vid.loop=true;document.getElementById('video-container').appendChild(vid);vid.addEventListener('loadeddata',()=>{obj.setElement(vid);vid.play();(function tick(){canvas.renderAll();requestAnimationFrame(tick);})();});}});}
+function uploadLogo(e){const file=e.target.files[0];if(!file)return;const url=URL.createObjectURL(file);document.getElementById('logoPreview').innerHTML=`<img src="${url}" style="max-width:100%;border-radius:5px;border:1px solid var(--bdr)"><button class="tool wide" style="margin-top:6px" onclick="addLogoToCanvas('${url}')"><i class="fa-solid fa-plus"></i>Add to Canvas</button>`;}
+function addLogoToCanvas(url){fabric.Image.fromURL(url,img=>{img.scaleToWidth(100);canvas.add(img);canvas.setActiveObject(img);hist();});}
+
+// ─── BRAND ────────────────────────────────────────────────────────────────────
+let brandColors=['#6366f1','#10b981','#f59e0b','#111827','#ffffff'];
+let brandFonts=['Inter','Montserrat'];
+
+function renderBrand(){
+  const bc=document.getElementById('brandColors');bc.innerHTML='';
+  brandColors.forEach(c=>{const d=document.createElement('div');d.className='cswatch';d.style.background=c;d.title=c;d.onclick=()=>cp('fill',c);bc.appendChild(d);});
+  const bf=document.getElementById('brandFonts');bf.innerHTML='';
+  brandFonts.forEach(f=>{const d=document.createElement('div');d.className='font-row';d.style.fontFamily=`'${f}'`;d.textContent=f;d.onclick=()=>cp('fontFamily',f);bf.appendChild(d);});
+}
+function addBrandColor(){const c=document.getElementById('newColor').value;if(!brandColors.includes(c))brandColors.push(c);renderBrand();}
+function addBrandFont(){const f=document.getElementById('newFont').value;if(!brandFonts.includes(f))brandFonts.push(f);renderBrand();}
+renderBrand();
+
+// ─── BACKGROUND ───────────────────────────────────────────────────────────────
+const bgPresets=['#ffffff','#111827','#f9fafb','#fee2e2','#dbeafe','#d1fae5','#fef3c7','#ede9fe','#fce7f3','#0f172a'];
+const bgGradsData=[
+  {label:'Purple Dusk',stops:['#6366f1','#8b5cf6']},{label:'Ocean',stops:['#0ea5e9','#2563eb']},
+  {label:'Sunrise',stops:['#f59e0b','#ef4444']},{label:'Emerald',stops:['#10b981','#0891b2']},
+  {label:'Rose',stops:['#f43f5e','#fb923c']},{label:'Midnight',stops:['#1e1b4b','#111827']},
+  {label:'Pastel',stops:['#fce7f3','#e0e7ff']},{label:'Forest',stops:['#14532d','#166534']},
+];
+(function initBg(){
+  const presets=document.getElementById('bgPresets');
+  bgPresets.forEach(c=>{const d=document.createElement('div');d.style.cssText=`width:26px;height:26px;border-radius:5px;background:${c};cursor:pointer;border:1.5px solid #e5e7eb;transition:.15s`;d.title=c;d.onclick=()=>setBgColor(c);presets.appendChild(d);});
+  const grads=document.getElementById('bgGrads');
+  bgGradsData.forEach(g=>{const d=document.createElement('div');const grad=`linear-gradient(135deg,${g.stops[0]},${g.stops[1]})`;d.style.cssText=`height:32px;border-radius:6px;background:${grad};cursor:pointer;border:2px solid transparent;margin-bottom:5px;font-size:.72rem;font-weight:600;display:flex;align-items:center;justify-content:center;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.4)`;d.textContent=g.label;d.onmouseover=()=>d.style.border='2px solid var(--pri)';d.onmouseout=()=>d.style.border='2px solid transparent';d.onclick=()=>applyGradientBg(g.stops[0],g.stops[1]);grads.appendChild(d);});
+})();
+
+function setBgColor(c){canvas.setBackgroundColor(c,()=>canvas.renderAll());hist();}
+function applyGradientBg(c1, c2) {
+  const grad = new fabric.LinearGradient({
+    x1: 0,
+    y1: 0,
+    x2: 0, // Set to 0 and y2 to CH for a vertical gradient
+    y2: CH, 
+    colorStops: [
+      { offset: 0, color: c1 },
+      { offset: 1, color: c2 }
+    ]
+  });
+  canvas.setBackgroundColor(grad, () => canvas.renderAll());
+  hist(); // Ensure this is saved to history
+}
+
+
+function setBgImg(e){const file=e.target.files[0];if(!file)return;const url=URL.createObjectURL(file);fabric.Image.fromURL(url,img=>{canvas.setBackgroundImage(img,canvas.renderAll.bind(canvas),{scaleX:CW/img.width,scaleY:CH/img.height});hist();});}
+function removeBgImg(){canvas.setBackgroundImage(null,canvas.renderAll.bind(canvas));hist();}
+
+// ─── APPS ─────────────────────────────────────────────────────────────────────
+function addTable(){
+  const rows=3,cols=3,cw=100,ch=34,ox=30,oy=60;
+  for(let r=0;r<rows;r++){for(let c=0;c<cols;c++){
+    const rect=new fabric.Rect({left:ox+c*cw,top:oy+r*ch,width:cw,height:ch,fill:r===0?'#6366f1':'#ffffff',stroke:'#e5e7eb',strokeWidth:1});
+    const txt=new fabric.IText(r===0?`Header ${c+1}`:'Cell',{left:ox+c*cw+6,top:oy+r*ch+8,fontSize:11,fontFamily:'Inter',fill:r===0?'#fff':'#374151',selectable:false});
+    canvas.add(rect);canvas.add(txt);
+  }}
+  hist();renderLayers();
+}
+function addQR(){const url=prompt('Enter URL for QR Code:','https://droidal.com');if(!url)return;const qrUrl=`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(url)}`;fabric.Image.fromURL(qrUrl,img=>{img.set({left:80,top:80});canvas.add(img);canvas.setActiveObject(img);hist();});}
+function openPositionModal(){const obj=canvas.getActiveObject();if(obj){const b=obj.getBoundingRect();document.getElementById('mX').value=Math.round(obj.left||0);document.getElementById('mY').value=Math.round(obj.top||0);document.getElementById('mW').value=Math.round(b.width);document.getElementById('mH').value=Math.round(b.height);document.getElementById('mA').value=Math.round(obj.angle||0);document.getElementById('mO').value=obj.opacity!=null?obj.opacity:1;}openModal('modalPos');}
+
+// ─── GRID / SNAP ──────────────────────────────────────────────────────────────
+let gridOn=false,snapOn=false;
+function toggleGrid(){gridOn=!gridOn;document.getElementById('gridOv').style.display=gridOn?'block':'none';document.getElementById('gridBtn').style.cssText=gridOn?'background:#e0e7ff;color:var(--pri)':'';}
+function toggleSnap(){snapOn=!snapOn;document.getElementById('snapBtn').style.cssText=snapOn?'background:#e0e7ff;color:var(--pri)':'';}
+
+// ─── ZOOM ─────────────────────────────────────────────────────────────────────
+let zoom=100;
+function applyZoom(z) {
+  zoom = Math.max(25, Math.min(200, z));
+  const f = zoom / 100;
+  // Use fabric.js native zoom — preserves correct pointer coordinates
+  canvas.setZoom(f);
+  canvas.setDimensions({ width: CW * f, height: CH * f });
+  document.getElementById('zoomLbl').textContent = zoom + '%';
+  document.getElementById('zoomRange').value = zoom;
+  document.getElementById('pageHdr').style.width = (CW * f) + 'px';
+  document.querySelector('.add-page-btn').style.width = (CW * f) + 'px';
+}
+function zoomIn()  {applyZoom(zoom+10);}
+function zoomOut() {applyZoom(zoom-10);}
+
+// ─── EXPORT ───────────────────────────────────────────────────────────────────
+function exportAs(fmt){canvas.discardActiveObject();canvas.renderAll();const q=+document.getElementById('expQ').value||2;const link=document.createElement('a');link.download=`Droidal_Page${cur+1}.${fmt==='jpeg'?'jpg':fmt}`;link.href=canvas.toDataURL({format:fmt==='jpeg'?'jpeg':'png',quality:.92,multiplier:q});link.click();}
+function exportSVG(){const svg=canvas.toSVG();const blob=new Blob([svg],{type:'image/svg+xml'});const link=document.createElement('a');link.download=`Droidal_Page${cur+1}.svg`;link.href=URL.createObjectURL(blob);link.click();}
+function exportAll(){pages[cur]=getJSON();pages.forEach((pd,i)=>{if(!pd)return;setTimeout(()=>{canvas.loadFromJSON(pd,()=>{canvas.renderAll();setTimeout(()=>{const link=document.createElement('a');link.download=`Droidal_Page${i+1}.png`;link.href=canvas.toDataURL({format:'png',multiplier:2});link.click();},200);});},i*600);});}
+function resizeCanvas(){const w=+document.getElementById('cvW').value||420;const h=+document.getElementById('cvH').value||594;CW=w;CH=h;canvas.setDimensions({width:w*(zoom/100),height:h*(zoom/100)});canvas.setZoom(zoom/100);document.getElementById('pageHdr').style.width=(w*(zoom/100))+'px';document.querySelector('.add-page-btn').style.width=(w*(zoom/100))+'px';canvas.renderAll();closeModal('modalExport');refreshUI();}
+function exportAsVideo() {
+    syncToLS();
+    // Open preview with a special URL parameter
+    window.open('flip.html?mode=record', '_blank');
+}
+
+
+// ─── HISTORY ──────────────────────────────────────────────────────────────────
+let histStack=[],histPos=0,histLock=false;
+function histReset(){histStack=[JSON.stringify(getJSON())];histPos=1;}
+function hist(){if(histLock)return;if(histPos<histStack.length)histStack.length=histPos;histStack.push(JSON.stringify(getJSON()));histPos=histStack.length;pages[cur]=getJSON();scheduleSync();}
+function undo(){if(histPos<=1)return;histLock=true;histPos--;canvas.loadFromJSON(JSON.parse(histStack[histPos-1]),()=>{canvas.renderAll();restoreVideos();renderLayers();histLock=false;scheduleSync();});}
+function redo(){if(histPos>=histStack.length)return;histLock=true;canvas.loadFromJSON(JSON.parse(histStack[histPos]),()=>{canvas.renderAll();restoreVideos();renderLayers();histPos++;histLock=false;scheduleSync();});}
+
+// ─── AUTO-SAVE ────────────────────────────────────────────────────────────────
+let syncTimer=null,badgeTimer=null;
+function scheduleSync(){clearTimeout(syncTimer);syncTimer=setTimeout(syncToLS,500);}
+function autoSync(){scheduleSync();}
+
+function syncToLS(){
+  try{
+    pages[cur]=getJSON();
+    const flipPages=pages.map((pd,i)=>({page_number:i,canvas_json:pd||{version:'5.3.1',objects:[],background:'#ffffff'}}));
+    localStorage.setItem(LS_KEY,JSON.stringify(flipPages));
+    localStorage.setItem(LS_META,JSON.stringify({currentPage:cur,total:pages.length,savedAt:new Date().toISOString()}));
+    showBadge();
+  }catch(e){console.warn('Sync failed',e);}
+}
+
+function showBadge(){const b=document.getElementById('saveBadge');b.style.opacity='1';clearTimeout(badgeTimer);badgeTimer=setTimeout(()=>{b.style.opacity='0';},2000);}
+// ─── LOAD SESSION ─────────────────────────────────────────────────────────────
+(function loadSession(){
+  try{
+    const raw=localStorage.getItem(LS_KEY);if(!raw)return;
+    const saved=JSON.parse(raw);if(!saved||!saved.length)return;
+    const meta=JSON.parse(localStorage.getItem(LS_META)||'{}');
+    const time=meta.savedAt?new Date(meta.savedAt).toLocaleString():'previously';
+    if(!confirm(`Resume ${saved.length} page(s) saved ${time}?\n\nOK = continue  |  Cancel = start fresh`))return;
+    pages=saved.map(fp=>fp.canvas_json||null);
+    const idx=Math.min(meta.currentPage||0,pages.length-1);cur=idx;
+    if(pages[idx]){canvas.loadFromJSON(pages[idx],()=>{canvas.renderAll();restoreVideos();histReset();refreshUI();});}
+    else{histReset();refreshUI();}
+  }catch(e){console.warn('Load session failed',e);}
+})();
+
+// ─── NOTES ────────────────────────────────────────────────────────────────────
+function saveNote(){const txt=document.getElementById('noteInput').value.trim();if(!txt)return;if(!pageNotes[cur])pageNotes[cur]=[];pageNotes[cur].push(txt);document.getElementById('noteInput').value='';renderNotes();}
+function renderNotes(){const list=document.getElementById('notesList');list.innerHTML='';let any=false;Object.entries(pageNotes).forEach(([pg,notes])=>{notes.forEach(n=>{any=true;list.innerHTML+=`<div class="note-item"><div class="note-pg">Page ${+pg+1}</div><div class="note-txt">${n}</div></div>`;});});if(!any)list.innerHTML='<div style="color:var(--muted);font-size:.82rem;text-align:center;padding:16px">No notes yet</div>';}
+
+// ─── TIMER ────────────────────────────────────────────────────────────────────
+let tSecs=300,tInterval=null,tRunning=false;
+function setTimer(mins){tSecs=mins*60;updateTimerDisp();}
+function setTimerCustom(){const m=+document.getElementById('tMin').value||0;const s=+document.getElementById('tSec').value||0;tSecs=m*60+s;updateTimerDisp();}
+function updateTimerDisp(){const m=Math.floor(tSecs/60),s=tSecs%60;const d=document.getElementById('timerDisp');d.textContent=`${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;d.style.color=tSecs<=10?'var(--red)':'var(--pri)';}
+function startTimer(){if(tRunning)return;tRunning=true;tInterval=setInterval(()=>{tSecs--;updateTimerDisp();if(tSecs<=0){clearInterval(tInterval);tRunning=false;alert("⏰ Time's up!");}},1000);}
+function pauseTimer(){clearInterval(tInterval);tRunning=false;}
+function resetTimer(){clearInterval(tInterval);tRunning=false;tSecs=300;updateTimerDisp();}
+
+// ─── MODALS ───────────────────────────────────────────────────────────────────
+function openModal(id){document.getElementById(id).classList.add('open');if(id==='modalNotes'){document.getElementById('notePageSpan').textContent=cur+1;renderNotes();}}
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+document.querySelectorAll('.overlay').forEach(m=>{m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('open');});});
+
+// ─── FULLSCREEN ───────────────────────────────────────────────────────────────
+function toggleFullscreen(){if(!document.fullscreenElement)document.documentElement.requestFullscreen();else document.exitFullscreen();}
+
+
+let currentProjectId = null;
+
+async function initEditor() {
+    const params = new URLSearchParams(window.location.search);
+    currentProjectId = params.get('id');
+
+    if (currentProjectId) {
+        try {
+            const res = await fetch(`/api/project/${currentProjectId}`);
+            const project = await res.json();
+            if (project && project.data) {
+                pages = Array.isArray(project.data) ? project.data : [project.data];
+                cur = 0;
+                loadCurrentPage();
+                return; // Stop here if we loaded from DB
+            }
+        } catch (e) {
+            console.warn("Could not load from DB, checking local storage...");
+        }
+    }
+    
+    // Fallback to local storage if no ID or DB failed
+    loadSession(); 
+}
+
+function loadCurrentPage() {
+    const pd = pages[cur];
+    if (pd) {
+        canvas.loadFromJSON(pd, () => {
+            canvas.renderAll();
+            restoreVideos();
+            histReset();
+            refreshUI();
+        });
+    } else {
+        canvas.clear();
+        canvas.backgroundColor = '#ffffff';
+        canvas.renderAll();
+        refreshUI();
+    }
+}
+
+
+function setJumpTarget() {
+    const o = canvas.getActiveObject();
+    if (!o) return;
+    
+    const target = prompt("Enter the Page Number to jump to when clicked:", (o.customPageTarget || 0) + 1);
+    
+    if (target !== null) {
+        // We subtract 1 because our array starts at 0, but users count from 1
+        o.set('customPageTarget', parseInt(target) - 1);
+        alert("Success: This element will now jump to Page " + target);
+        hist(); // Save to history
+    }
+}
+
+// Ensure the property is saved in JSON
+// Update your existing getJSON function:
+
+function getJSON() {
+    // Crucial: Includes all custom metadata in the export
+    return canvas.toJSON(CUSTOM_PROPS);
+}
+
+async function actualSaveLogic() {
+    const projectData = {
+        id: currentProjectId,  // ✅ FIXED
+        user_id: CURRENT_USER_ID,
+        title: "Untitled",
+        type: "flipbook",
+        data: pages
+    };
+
+    const response = await fetch("/api/projects/save", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(projectData)
+    });
+
+    if (!response.ok) {
+        const text = await response.text();
+        throw new Error(text);
+    }
+
+    const result = await response.json();
+
+    // If new project created → store its ID
+    if (result.id) {
+        currentProjectId = result.id;
+    }
+
+    return result;
+}
+// Replace your current save button function
+async function saveAllPages() {
+    const btn = document.getElementById("saveBtn");
+
+    btn.innerHTML = "Saving...";
+    btn.disabled = true;
+
+    try {
+        await actualSaveLogic(); // your existing API call
+
+        btn.innerHTML = "✓ Saved";
+        btn.classList.remove("btn-primary");
+        btn.classList.add("btn-green");
+
+        setTimeout(() => {
+            btn.innerHTML = '<i class="fa-solid fa-cloud-arrow-up"></i> Save';
+            btn.classList.remove("btn-green");
+            btn.classList.add("btn-primary");
+            btn.disabled = false;
+        }, 2000);
+
+    } catch (e) {
+      console.error("SAVE ERROR:", e);   // 👈 ADD THIS
+    btn.innerHTML = "Error";
+    btn.disabled = false;
+    }
+}
+const currentUserId = localStorage.getItem('user_id') || 1;
+if (!currentUserId) {
+    console.warn("No user ID found, redirecting to login...");
+    window.location.href = "/";
+}
+
+
+
+function saveAsCustomElement() {
+    let obj = canvas.getActiveObject();
+
+    if (!obj) {
+        alert("Select something first");
+        return;
+    }
+
+    // If multiple objects are selected, they must be converted to a group for a single snapshot
+    if (obj.type === "activeSelection") {
+        obj = obj.toGroup();
+        canvas.setActiveObject(obj);
+        canvas.renderAll();
+    }
+
+    const json = obj.toJSON([
+        'customJumpPage',
+        'customVideoSrc'
+    ]);
+
+    // --- FIXED THUMBNAIL LOGIC ---
+    // Use obj.toDataURL instead of canvas.toDataURL to capture only the element
+    const thumbURL = obj.toDataURL({
+        format: "png",
+        quality: 1,
+        multiplier: 1 // Increases resolution of the small element snapshot
+    });
+
+    fetch("/api/custom-elements/save", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({
+            user_id: CURRENT_USER_ID,
+            name: prompt("Enter element name:", "New Component") || "Untitled",
+            element_data: json,
+            thumbnail: thumbURL
+        })
+    }).then(() => {
+        loadCustomElements();
+        alert("Saved to My Elements");
+    });
+}
+
+
+async function loadCustomElements() {
+    try {
+        // currentUserId should be defined as discussed previously
+        const res = await fetch(`/api/custom-elements/${currentUserId}`);
+        const data = await res.json();
+
+        const container = document.getElementById('customElements'); 
+        if (!container) return;
+
+        container.innerHTML = ''; // Clear the "Loading..." text or old items
+
+        if (data.length === 0) {
+            container.innerHTML = '<p style="padding:10px; font-size:12px; opacity:0.6;">No saved elements yet.</p>';
+            return;
+        }
+
+        data.forEach(item => {
+            // Create a wrapper div for the element card
+            const elDiv = document.createElement('div');
+            elDiv.className = 'custom-item-card'; // Add CSS for this below
+            elDiv.style = "border:1px solid #ddd; margin:5px; padding:5px; cursor:pointer; text-align:center; background:#f9f9f9; border-radius:4px;";
+            
+            // Add the thumbnail and name
+            elDiv.innerHTML = `
+                <img src="${item.thumbnail || 'https://via.placeholder.com/100'}" style="width:100%; height:60px; object-fit:contain; display:block;">
+                <span style="font-size:11px; display:block; margin-top:5px; color:#333;">${item.name}</span>
+            `;
+
+            // When clicked, add the element to the canvas
+            elDiv.onclick = () => {
+                fabric.util.enlivenObjects([item.data], function(objects) {
+                    objects.forEach(obj => {
+                        obj.set({ left: 100, top: 100 }); // Position on canvas
+                        canvas.add(obj);
+                    });
+                    canvas.renderAll();
+                });
+            };
+
+            container.appendChild(elDiv);
+        });
+    } catch (err) {
+        console.error("Error loading elements:", err);
+    }
+}
+
+
+// Call init at the very bottom of editor.html
+initEditor();
+
+
+// ─── KEYBOARD SHORTCUTS ───────────────────────────────────────────────────────
+window.addEventListener('keydown',e=>{
+  const tag=e.target.tagName.toLowerCase();
+  if(tag==='input'||tag==='textarea'||tag==='select')return;
+  if((e.key==='Delete'||e.key==='Backspace')&&!canvas.isDrawingMode)delObj();
+  if(e.ctrlKey&&e.key==='z'){e.preventDefault();undo();}
+  if(e.ctrlKey&&(e.key==='y'||e.key==='Y')){e.preventDefault();redo();}
+  if(e.ctrlKey&&e.key==='d'){e.preventDefault();dupObj();}
+  if(e.ctrlKey&&e.key==='a'){e.preventDefault();canvas.setActiveObject(new fabric.ActiveSelection(canvas.getObjects(),{canvas}));canvas.requestRenderAll();}
+  if(e.key==='Escape'){canvas.discardActiveObject();canvas.requestRenderAll();}
+  const obj=canvas.getActiveObject();
+  if(obj&&!canvas.isDrawingMode){
+    const d=e.shiftKey?10:1;
+    if(e.key==='ArrowLeft') {obj.set('left',(obj.left||0)-d);obj.setCoords();canvas.requestRenderAll();}
+    if(e.key==='ArrowRight'){obj.set('left',(obj.left||0)+d);obj.setCoords();canvas.requestRenderAll();}
+    if(e.key==='ArrowUp')   {obj.set('top', (obj.top||0)-d); obj.setCoords();canvas.requestRenderAll();}
+    if(e.key==='ArrowDown') {obj.set('top', (obj.top||0)+d); obj.setCoords();canvas.requestRenderAll();}
+  }
+});
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+histReset();
+refreshUI();
+updateBrush();
+applyZoom(100);
+buildFramePanel();
+initEditor();
+buildFramePanel();
+renderBrand();
+
+function previewBook(){
+    syncToLS(); // Ensure data is saved to LocalStorage first
+    // Change 'flip.html' to the route defined in FastAPI
+    window.open('/preview', '_blank'); 
+}
+</script>
+</body>
+</html>

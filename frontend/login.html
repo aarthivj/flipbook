@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Droidal - Sign In to Your Adventure</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    
+    <style>
+        :root { 
+            --pri: #6366f1; 
+            --accent: #a855f7;
+            --bg-dark: #030712; 
+        }
+
+        body, html {
+            height: 100%;
+            margin: 0;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: var(--bg-dark);
+            color: white;
+            overflow: hidden;
+        }
+
+        .main-container {
+            height: 100vh;
+            display: flex;
+        }
+
+        /* --- LEFT SIDE: THE SPACE ADVENTURE --- */
+        .visual-side {
+            flex: 1.3;
+            background: radial-gradient(circle at center, #1e1b4b 0%, #020617 100%);
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 60px;
+            overflow: hidden;
+        }
+
+        /* Planet 1 (Top Left) */
+        .planet-main {
+            position: absolute;
+            width: 450px;
+            height: 450px;
+            background: linear-gradient(135deg, #22d3ee 0%, #6366f1 100%);
+            border-radius: 50%;
+            top: -80px;
+            left: -80px;
+            box-shadow: inset -30px -30px 60px rgba(0,0,0,0.5), 0 0 80px rgba(34, 211, 238, 0.2);
+            opacity: 0.9;
+        }
+
+        /* Planet 2 (Center Right) */
+        .planet-secondary {
+            position: absolute;
+            width: 180px;
+            height: 180px;
+            background: linear-gradient(135deg, #a855f7 0%, #4338ca 100%);
+            border-radius: 50%;
+            top: 40%;
+            right: 15%;
+            box-shadow: inset -15px -15px 30px rgba(0,0,0,0.4), 0 0 40px rgba(168, 85, 247, 0.2);
+        }
+
+        /* Shooting Stars Animation */
+        .star {
+            position: absolute;
+            width: 2px;
+            height: 60px;
+            background: linear-gradient(to top, white, transparent);
+            transform: rotate(45deg);
+            opacity: 0;
+            animation: shoot 4s infinite linear;
+        }
+        @keyframes shoot {
+            0% { transform: translate(400px, -100px) rotate(45deg); opacity: 0; }
+            10% { opacity: 0.6; }
+            30% { transform: translate(-100px, 400px) rotate(45deg); opacity: 0; }
+            100% { opacity: 0; }
+        }
+
+        .visual-content {
+            position: relative;
+            z-index: 10;
+        }
+
+        .brand-logo {
+            font-size: 1.8rem;
+            font-weight: 800;
+            letter-spacing: -1px;
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .adventure-title {
+            font-size: 3.8rem;
+            font-weight: 900;
+            line-height: 1;
+            margin-top: auto;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            max-width: 450px;
+        }
+
+        /* --- RIGHT SIDE: THE LOGIN FORM --- */
+        .form-side {
+            flex: 1;
+            background-color: #030712;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+            border-left: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .login-card {
+            width: 100%;
+            max-width: 420px;
+            background: rgba(255, 255, 255, 0.02);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 24px;
+            padding: 40px;
+        }
+
+        .form-header h2 {
+            font-size: 2.2rem;
+            font-weight: 800;
+            margin-bottom: 8px;
+        }
+
+        .form-header p {
+            color: #94a3b8;
+            font-size: 0.9rem;
+            margin-bottom: 30px;
+        }
+
+        .input-group-custom {
+            position: relative;
+            margin-bottom: 20px;
+        }
+
+        .input-group-custom i {
+            position: absolute;
+            left: 16px;
+            top: 15px;
+            color: #64748b;
+            z-index: 5;
+        }
+
+        .form-control-custom {
+            background: rgba(30, 41, 59, 0.5) !important;
+            border: 1px solid #334155 !important;
+            border-radius: 12px !important;
+            padding: 12px 16px 12px 48px !important;
+            color: white !important;
+            transition: 0.3s;
+        }
+
+        .form-control-custom:focus {
+            border-color: var(--pri) !important;
+            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.2) !important;
+            background: rgba(30, 41, 59, 0.8) !important;
+        }
+
+        .btn-signup {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(90deg, #6366f1 0%, #a855f7 100%);
+            border: none;
+            border-radius: 12px;
+            color: white;
+            font-weight: 700;
+            margin-top: 10px;
+            transition: 0.3s;
+        }
+
+        .btn-signup:hover {
+            filter: brightness(1.2);
+            transform: translateY(-2px);
+        }
+
+        .divider {
+            display: flex;
+            align-items: center;
+            margin: 30px 0;
+            color: #64748b;
+            font-size: 0.8rem;
+        }
+
+        .divider::before, .divider::after {
+            content: "";
+            flex: 1;
+            height: 1px;
+            background: #334155;
+        }
+
+        .divider span { padding: 0 15px; }
+
+        .social-btn {
+            background: #1e293b;
+            border: 1px solid #334155;
+            color: white;
+            border-radius: 12px;
+            padding: 10px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: 0.2s;
+        }
+
+        .social-btn:hover {
+            background: #334155;
+            color: white;
+        }
+
+        .footer-text {
+            margin-top: 30px;
+            font-size: 0.75rem;
+            color: #64748b;
+            text-align: center;
+        }
+
+        .footer-text a {
+            color: var(--accent);
+            text-decoration: none;
+        }
+
+        /* Responsive */
+        @media (max-width: 992px) {
+            .visual-side { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="main-container">
+        <div class="visual-side">
+            <div class="planet-main"></div>
+            <div class="planet-secondary"></div>
+            
+            <div class="star" style="top: 10%; left: 30%; animation-delay: 0s;"></div>
+            <div class="star" style="top: 40%; left: 60%; animation-delay: 1.5s;"></div>
+            <div class="star" style="top: 70%; left: 20%; animation-delay: 3s;"></div>
+
+            <div class="visual-content">
+                <div class="brand-logo">
+                    <i class="fa-solid fa-wand-magic-sparkles" style="color: var(--pri);"></i> DROIDAL
+                </div>
+            </div>
+
+            <h1 class="adventure-title">Sign in to your adventure!</h1>
+        </div>
+
+        <div class="form-side">
+            <div class="login-card">
+                <div class="form-header text-center text-sm-start">
+                    <h2>SIGN IN</h2>
+                    <p>Enter your details to enter the Droidal creative studio.</p>
+                </div>
+
+                <div class="input-group-custom">
+                    <i class="fa-solid fa-envelope"></i>
+                    <input type="text" id="user" class="form-control form-control-custom" placeholder="Yourname@gmail.com" autocomplete="off">
+                </div>
+
+                <div class="input-group-custom">
+                    <i class="fa-solid fa-lock"></i>
+                    <input type="password" id="pass" class="form-control form-control-custom" placeholder="Password">
+                </div>
+
+                <button class="btn-signup" onclick="doLogin()">Sign up</button>
+
+                <div class="divider">
+                    <span>Or continue with</span>
+                </div>
+
+                <p class="footer-text">Don't have an account? <a href="/signup">Create one here</a></p>
+
+                <p class="footer-text">By registering you with our <a href="#">Terms and Conditions</a></p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+       async function doLogin() {
+    const user = document.getElementById('user').value;
+    const pass = document.getElementById('pass').value;
+    const btn = document.querySelector('.btn-signup');
+    
+    if(!user || !pass) return alert("Please enter credentials");
+
+    btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Loading...';
+    btn.disabled = true;
+
+    try {
+        const res = await fetch("/api/login", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ username: user, password: pass })
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+            // IF THE USER IS NOT FOUND (401), REDIRECT TO SIGNUP
+            if (res.status === 401) {
+                if(confirm("Account not found. Would you like to create a new adventure account?")) {
+                    window.location.href = "/signup"; 
+                }
+            } else {
+                alert(data.detail || "An error occurred");
+            }
+            
+            // Reset button state
+            btn.innerHTML = 'Sign up';
+            btn.disabled = false;
+            return;
+        }
+
+        // SUCCESS: Save user and go to dashboard
+        localStorage.setItem("droidal_user", JSON.stringify(data));
+        localStorage.setItem('user_id', data.user_id);
+        window.location.href = "/dashboard";
+
+    } catch (err) {
+        alert("Failed to connect to backend. Make sure main.py is running!");
+        btn.innerHTML = 'Sign up';
+        btn.disabled = false;
+    }
+}
+   
+   </script>
+</body>
+</html>
