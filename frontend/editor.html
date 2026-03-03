@@ -148,6 +148,20 @@ textarea.minput:focus{border-color:var(--pri)}
     grid-template-columns: repeat(2, 1fr);
     gap: 8px;
 }
+/* This ensures the video overlay sits perfectly on the canvas */
+.video-overlay-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    pointer-events: none; /* So you can still click the canvas beneath */
+    z-index: 5;
+}
+.video-entity {
+    position: absolute;
+    pointer-events: none;
+    object-fit: fill;
+}
+
 t[type=file]{display:none}
 input[type=range]{accent-color:var(--pri)}
 ::-webkit-scrollbar{width:4px;height:4px}
@@ -707,6 +721,8 @@ input[type=range]{accent-color:var(--pri)}
 <div id="video-container" style="display:none"></div>
 
 <script>
+  // Add this near your canvas init to fix the warning
+fabric.Text.prototype.canvasTextBaseline = 'alphabetic';
 // ─── CANVAS INIT ──────────────────────────────────────────────────────────────
 let CW = 420, CH = 594;
 const canvas = new fabric.Canvas('c', {
@@ -894,12 +910,20 @@ function onSel() {
 function syncBar() {
   const obj = canvas.getActiveObject();
   if (!obj) return;
+
   const b = obj.getBoundingRect();
-  document.getElementById('pX').value   = Math.round(obj.left || 0);
-  document.getElementById('pY').value   = Math.round(obj.top  || 0);
-  document.getElementById('pW').value   = Math.round(b.width);
-  document.getElementById('pH').value   = Math.round(b.height);
-  document.getElementById('pAng').value = Math.round(obj.angle || 0);
+
+  // Helper function to prevent NaN errors
+  function safe(val) {
+    return isNaN(val) || val === null || val === undefined ? 0 : Math.round(val);
+  }
+
+  // Update inputs with safe values
+  document.getElementById('pX').value   = safe(obj.left);
+  document.getElementById('pY').value   = safe(obj.top);
+  document.getElementById('pW').value   = safe(b.width);
+  document.getElementById('pH').value   = safe(b.height);
+  document.getElementById('pAng').value = safe(obj.angle);
 }
 
 function cp(prop, val) {
@@ -1677,31 +1701,166 @@ function insertChart() {
 }
 
 // ─── UPLOADS ─────────────────────────────────────────────────────────────────
-function uploadMedia(e,type){
-  Array.from(e.target.files).forEach(file=>{
-    const reader = new FileReader();
-reader.onload = function(e) {
-    const base64Video = e.target.result;
-    // Save this in customVideoSrc
-};
-reader.readAsDataURL(file);
+// 1. MAIN UPLOAD FUNCTION
+async function uploadMedia(e, type) {
+    const files = Array.from(e.target.files);
 
+    for (const file of files) {
+        // --- IMAGE HANDLING ---
+        if (type === 'image' || type === 'svg') {
+            const reader = new FileReader();
+            reader.onload = function(ev) {
+                const dataUrl = ev.target.result;
+                fabric.Image.fromURL(dataUrl, function(img) {
+                    img.set({ left: 100, top: 100 });
+                    img.scaleToWidth(Math.min(260, CW - 40));
+                    canvas.add(img);
+                    canvas.setActiveObject(img);
+                    addThumb(dataUrl); // Add to the sidebar gallery
+                    hist(); 
+                });
+            };
+            reader.readAsDataURL(file);
+        } 
+        
+        // --- VIDEO HANDLING ---
+        else if (type === 'video') {
+            const formData = new FormData();
+            formData.append("video", file);
 
-    if(type==='image'||type==='svg'){
-      addThumb(url);
-      fabric.Image.fromURL(url,img=>{img.scaleToWidth(Math.min(260,CW-40));canvas.add(img);canvas.setActiveObject(img);hist();});
-    } else if(type==='video'){
-      const vid=document.createElement('video');
-      vid.src=url;vid.crossOrigin='anonymous';vid.muted=true;vid.loop=true;
-      document.getElementById('video-container').appendChild(vid);
-      vid.addEventListener('loadeddata',()=>{vid.width=vid.videoWidth;vid.height=vid.videoHeight;const img=new fabric.Image(vid,{left:40,top:40,customVideoSrc:url});img.scaleToWidth(250);canvas.add(img);canvas.setActiveObject(img);hist();vid.play();(function tick(){canvas.renderAll();requestAnimationFrame(tick);})();});
+            try {
+                // Upload to FastAPI backend
+                const res = await fetch("http://127.0.0.1:8000/upload_video", {
+                    method: "POST",
+                    body: formData
+                });
+
+                if (!res.ok) throw new Error("Upload failed");
+                const data = await res.json();
+                
+                // Use the server URL (e.g., /uploads/xyz.mp4)
+                addVideoToCanvas(data.url);
+            } catch (err) {
+                console.error("Video Upload Error:", err);
+                alert("Failed to upload video. Check if main.py is running.");
+            }
+        }
     }
-  });
 }
 
+// 2. SPECIALIZED VIDEO RENDERER
+function addVideoToCanvas(url) {
+    // Create a Placeholder Box in Fabric
+    const placeholder = new fabric.Rect({
+        left: 100,
+        top: 100,
+        width: 200,
+        height: 150,
+        fill: '#222', // Dark grey box
+        opacity: 0.5,
+        customVideoSrc: url,
+        objectCaching: false
+    });
+
+    // Add a label so the user knows it's a video
+    const label = new fabric.IText("VIDEO", {
+        fontSize: 20,
+        fill: '#fff',
+        originX: 'center',
+        originY: 'center',
+        left: 100,
+        top: 75,
+        selectable: false
+    });
+
+    const group = new fabric.Group([placeholder, label], {
+        left: 100,
+        top: 100,
+        customVideoSrc: url, // Keep the URL here
+        isVideoButton: true
+    });
+
+    canvas.add(group);
+    canvas.setActiveObject(group);
+    
+    // Create the actual HTML Video element to "float" over it
+    createVideoOverlay(group, url);
+    hist();
+}
+function createVideoOverlay(fabricObj, url) {
+    // Create the HTML Video element
+    const vid = document.createElement('video');
+    vid.src = url;
+    vid.muted = true;
+    vid.loop = true;
+    vid.autoplay = true;
+    vid.playsInline = true;
+    vid.className = 'video-entity';
+    
+    // Create a container for all overlays if it doesn't exist
+    let container = document.getElementById('video-overlay-wrap');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'video-overlay-wrap';
+        container.className = 'video-overlay-container';
+        // Put it inside the .cv-wrap div
+        document.querySelector('.cv-wrap').appendChild(container);
+    }
+    container.appendChild(vid);
+
+    // Sync loop: Updates the HTML video position to match the Fabric object
+    function sync() {
+        if (!fabricObj.canvas) { // If object was deleted
+            vid.remove();
+            return;
+        }
+
+        const rect = fabricObj.getBoundingRect();
+        const zoom = canvas.getZoom();
+
+        vid.style.width = (rect.width * zoom) + 'px';
+        vid.style.height = (rect.height * zoom) + 'px';
+        vid.style.left = (rect.left * zoom) + 'px';
+        vid.style.top = (rect.top * zoom) + 'px';
+        vid.style.transform = `rotate(${fabricObj.angle}deg)`;
+
+        requestAnimationFrame(sync);
+    }
+    sync();
+}
+
+
+
 function addThumb(url){const g=document.getElementById('uploadGallery');const d=document.createElement('div');d.className='upload-thumb';d.style.backgroundImage=`url(${url})`;d.onclick=()=>fabric.Image.fromURL(url,img=>{img.scaleToWidth(Math.min(260,CW-40));canvas.add(img);canvas.setActiveObject(img);hist();});g.insertBefore(d,g.firstChild);}
-function restoreVideos(){canvas.getObjects().forEach(obj=>{if(obj.customVideoSrc&&obj.type==='image'){const vid=document.createElement('video');vid.src=obj.customVideoSrc;vid.muted=true;vid.loop=true;document.getElementById('video-container').appendChild(vid);vid.addEventListener('loadeddata',()=>{obj.setElement(vid);vid.play();(function tick(){canvas.renderAll();requestAnimationFrame(tick);})();});}});}
-function uploadLogo(e){const file=e.target.files[0];if(!file)return;const url=URL.createObjectURL(file);document.getElementById('logoPreview').innerHTML=`<img src="${url}" style="max-width:100%;border-radius:5px;border:1px solid var(--bdr)"><button class="tool wide" style="margin-top:6px" onclick="addLogoToCanvas('${url}')"><i class="fa-solid fa-plus"></i>Add to Canvas</button>`;}
+
+function restoreVideos() {
+    // Clear existing overlays first
+    const wrap = document.getElementById('video-overlay-wrap');
+    if (wrap) wrap.innerHTML = '';
+
+    canvas.getObjects().forEach(obj => {
+        if (obj.customVideoSrc) {
+            createVideoOverlay(obj, obj.customVideoSrc);
+        }
+    });
+}
+
+function uploadLogo(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = function(ev) {
+    const dataUrl = ev.target.result;
+    document.getElementById('logoPreview').innerHTML = `
+      <img src="${dataUrl}" style="max-width:100%;border-radius:5px;border:1px solid var(--bdr)">
+      <button class="tool wide" style="margin-top:6px" onclick="addLogoToCanvas('${dataUrl}')">
+        <i class="fa-solid fa-plus"></i>Add to Canvas
+      </button>`;
+  };
+  reader.readAsDataURL(file);
+}
+
 function addLogoToCanvas(url){fabric.Image.fromURL(url,img=>{img.scaleToWidth(100);canvas.add(img);canvas.setActiveObject(img);hist();});}
 
 // ─── BRAND ────────────────────────────────────────────────────────────────────
@@ -1884,12 +2043,14 @@ async function initEditor() {
     loadSession(); 
 }
 
+// Example for loadCurrentPage
 function loadCurrentPage() {
     const pd = pages[cur];
     if (pd) {
+        // The second argument is a callback that runs after loading
         canvas.loadFromJSON(pd, () => {
             canvas.renderAll();
-            restoreVideos();
+            restoreVideos(); // <--- Call it here
             histReset();
             refreshUI();
         });
@@ -1900,7 +2061,6 @@ function loadCurrentPage() {
         refreshUI();
     }
 }
-
 
 function setJumpTarget() {
     const o = canvas.getActiveObject();
@@ -2102,6 +2262,16 @@ window.addEventListener('keydown',e=>{
     if(e.key==='ArrowDown') {obj.set('top', (obj.top||0)+d); obj.setCoords();canvas.requestRenderAll();}
   }
 });
+
+function startRenderLoop() {
+    fabric.util.requestAnimFrame(function render() {
+        canvas.renderAll();
+        fabric.util.requestAnimFrame(render);
+    });
+}
+
+// Call it once when the page loads
+startRenderLoop();
 
 // ─── INIT ─────────────────────────────────────────────────────────────────────
 histReset();

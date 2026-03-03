@@ -1,0 +1,27 @@
+# Virtual Environment (Very important to ignore)
+.venv/
+venv/
+env/
+ENV/
+
+# Python Bytecode (The stuff in your screenshot)
+**/__pycache__/
+*.pyc
+backend/videos/
+*.mp4
+*.mp3
+
+
+# Database
+droidal.db
+
+# Media & Uploads (Git is not for hosting videos/audio)
+backend/videos/*
+uploads/
+*.mp4
+*.mp3
+
+# Editor/System files
+.vscode/
+.DS_Store
+Thumbs.db
