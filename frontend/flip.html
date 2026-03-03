@@ -18,9 +18,20 @@
         #book{width:840px;height:600px;position:relative;margin:0 auto 20px;transition:transform .6s cubic-bezier(.4,0,.2,1)}
         .my-page{background-color:#ffffff;position:absolute;top:0;left:0;width:100%;height:100%;overflow:hidden;box-shadow:inset 0 0 1px rgba(0,0,0,.1)}
         .my-page::before{content:'';position:absolute;top:0;left:0;right:0;bottom:0;background-image:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.008) 2px,rgba(0,0,0,.008) 4px);pointer-events:none;opacity:.6;z-index:50}
-        .interactive-layer{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:10}
-        .interactive-layer a{pointer-events:auto}
-        .interactive-layer video{pointer-events:auto}
+.interactive-layer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none; /* Allows book turning clicks to pass through background */
+    z-index: 100; /* Ensure it is above the canvas */
+}   
+     .interactive-layer div, 
+.interactive-layer a, 
+.interactive-layer video {
+    pointer-events: auto; /* Enables clicking on the actual buttons/links */
+}
         .loading-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:#0a4d68;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;transition:opacity .5s ease;gap:14px}
         .loading-overlay.hidden{opacity:0;pointer-events:none}
         .loader{width:48px;height:48px;border:4px solid rgba(16,185,129,.2);border-top-color:#10b981;border-radius:50%;animation:spin .8s linear infinite}
@@ -81,23 +92,49 @@ const BOOK_ID = 'droidal_book', LS_KEY = `droidal_pages_${BOOK_ID}`, PAGE_W = 42
 let pageFlip, totalPages = 0;
 
 document.addEventListener('DOMContentLoaded', async () => {
-    setTxt('Loading pages...');
-    const pages = await loadPages();
-    if (!pages || !pages.length) {
+    setTxt('Initializing dynamic layout...');
+    
+    const params = new URLSearchParams(window.location.search);
+    const pId = params.get('id');
+    
+    let pagesData = null;
+    if (pId) {
+        try {
+            const r = await fetch(`/api/project/${pId}`);
+            const proj = await r.json();
+            pagesData = proj.data.map((json, i) => ({ page_number: i, canvas_json: json }));
+        } catch (e) { console.error("Database Load failed", e); }
+    }
+
+    if (!pagesData) {
+        pagesData = await loadPages(); 
+    }
+
+    if (!pagesData || !pagesData.length) {
         document.getElementById('loadOverlay').classList.add('hidden');
         document.getElementById('emptyState').classList.add('show');
         return;
     }
-    setTxt(`Rendering ${pages.length} page(s)...`);
-    await buildDOM(pages);
-    initFlip(pages.length);
-    
-    window.addEventListener('storage', e => {
-        if (e.key === LS_KEY) document.getElementById('updateBanner').classList.add('show');
-    });
 
+    // --- DYNAMIC SPREAD LOGIC ---
+    const renderList = [...pagesData];
 
+    // Rule: To have a single cover and a single back cover with spreads in between,
+    // the total number of physical pages must be EVEN.
+    if (renderList.length % 2 !== 0) {
+        // If odd (e.g., 3 pages), add 1 blank page to make it 4 (Cover, 2/3, Back)
+        renderList.push({ page_number: renderList.length, canvas_json: null });
+    } else {
+        // If even (e.g., 4 pages), the last page is already the back cover.
+        // If you want an EXTRA blank back page regardless, uncomment the line below:
+        // renderList.push({ page_number: renderList.length, canvas_json: null }, { page_number: renderList.length+1, canvas_json: null });
+    }
+
+    totalPages = renderList.length;
+    setTxt(`Rendering ${totalPages} dynamic pages...`);
     
+    await buildDOM(renderList);
+    initFlip(totalPages);
 });
 
 
@@ -177,36 +214,56 @@ async function buildDOM(pagesData) {
     const bookEl = document.getElementById('book');
     bookEl.innerHTML = ''; 
 
+    // Create a copy of the pages array
     const renderList = [...pagesData];
+
+    // FIX: If you have an odd number (like 9), add a blank page (10)
+    // This allows the last page to actually turn over as a back cover.
     if (renderList.length % 2 !== 0) {
-        renderList.push({ page_number: 999, canvas_json: null });
+        renderList.push({ canvas_json: null }); 
     }
 
-    totalPages = renderList.length;
-
-    for (let i = 0; i < renderList.length; i++) {
-        const info = renderList[i];
+    // We keep totalPages as the ORIGINAL count for the UI (1/9)
+    // but the book will have an extra blank page for physics.
+    
+    const promises = renderList.map((info, i) => {
         const pageDiv = document.createElement('div');
         pageDiv.className = 'my-page';
         
+        // Mark first and last elements as "hard" covers
+        if (i === 0 || i === renderList.length - 1) {
+            pageDiv.setAttribute('data-density', 'hard');
+        }
+
         const cvEl = document.createElement('canvas');
         cvEl.id = `rc-${i}`;
-        pageDiv.appendChild(cvEl);
+        cvEl.width = PAGE_W;
+        cvEl.height = PAGE_H;
         
         const overlay = document.createElement('div');
         overlay.className = 'interactive-layer';
-        pageDiv.appendChild(overlay);
         
+        pageDiv.appendChild(cvEl);
+        pageDiv.appendChild(overlay);
         bookEl.appendChild(pageDiv);
-        // Only one renderPage call here
-        await renderPage(cvEl.id, info.canvas_json, overlay);
-    }
-}
-// ... (Keep your CSS and HTML structure) ...
 
+        return renderPage(cvEl.id, info.canvas_json, overlay);
+    });
+
+    await Promise.all(promises);
+}
+
+
+// ... (Keep your CSS and HTML structure) ...
 async function renderPage(canvasId, jsonData, overlay) {
     return new Promise(resolve => {
-        const sc = new fabric.StaticCanvas(canvasId, { width: PAGE_W, height: PAGE_H });
+        const sc = new fabric.Canvas(canvasId, { 
+            width: PAGE_W, 
+            height: PAGE_H,
+            interactive: false,
+            selection: false
+        });
+
         if (!jsonData) {
             sc.backgroundColor = '#ffffff';
             sc.renderAll();
@@ -215,58 +272,105 @@ async function renderPage(canvasId, jsonData, overlay) {
         
         const data = typeof jsonData === 'string' ? JSON.parse(jsonData) : jsonData;
         
-        // Pass CUSTOM_PROPS to ensure they are loaded into the objects
         sc.loadFromJSON(data, () => {
             sc.renderAll();
+            
             sc.getObjects().forEach(obj => {
-                
+                // Use getBoundingRect to get absolute top-left coordinates
+                const rect = obj.getBoundingRect();
+
+                 if (obj.customPageTarget !== undefined && obj.customPageTarget !== null) {
+                    const jumpBtn = document.createElement('div');
+                    jumpBtn.style.cssText = `
+                        position:absolute; 
+                        left:${rect.left}px; 
+                        top:${rect.top}px; 
+                        width:${rect.width}px; 
+                        height:${rect.height}px; 
+                        cursor:pointer; 
+                        pointer-events:auto; 
+                        z-index:20; 
+                        background:rgba(0,0,0,0); /* Transparent but clickable */
+                    `;
+                    
+                    jumpBtn.onclick = (e) => {
+                        e.preventDefault(); 
+                        e.stopPropagation();
+                        const target = parseInt(obj.customPageTarget);
+                        if (pageFlip && !isNaN(target)) {
+                            pageFlip.flip(target); 
+                        }
+                    };
+                    overlay.appendChild(jumpBtn);
+                }
+
                 // 1. VIDEO LOGIC
                 if (obj.customVideoSrc) {
-            // Create a NATIVE HTML5 Video
-            const vid = document.createElement('video');
-            vid.src = obj.customVideoSrc.startsWith('http') 
-                ? obj.customVideoSrc 
-                : `http://127.0.0.1:8000${obj.customVideoSrc}`;
-            
-            vid.autoplay = true;
-            vid.muted = true;
-            vid.loop = true;
-            vid.playsInline = true;
-            
-            // Calculate position based on the Fabric Object
-            const rect = obj.getBoundingRect();
-            
-            vid.style.cssText = `
-                position: absolute;
-                left: ${rect.left}px;
-                top: ${rect.top}px;
-                width: ${rect.width}px;
-                height: ${rect.height}px;
-                transform: rotate(${obj.angle}deg);
-                object-fit: fill;
-                z-index: 100;
-            `;
-            
-            overlay.appendChild(vid);
-        }
-                // 2. EXTERNAL LINK
+                    const vid = document.createElement('video');
+                    vid.crossOrigin = "anonymous"; 
+                    const videoPath = obj.customVideoSrc.startsWith('http') 
+                        ? obj.customVideoSrc 
+                        : `http://127.0.0.1:8000${obj.customVideoSrc}`;
+                    
+                    vid.src = videoPath;
+                    vid.autoplay = true; 
+                    vid.muted = true;
+                    vid.loop = true;
+                    vid.playsInline = true;
+                    
+                    vid.style.cssText = `
+                        position: absolute;
+                        left: ${rect.left}px;
+                        top: ${rect.top}px;
+                        width: ${rect.width}px;
+                        height: ${rect.height}px;
+                        object-fit: cover;
+                        z-index: 5;
+                        pointer-events: none;
+                    `;
+                    overlay.appendChild(vid);
+                }
+
+                // 2. EXTERNAL LINK LOGIC
                 if (obj.customLink) {
                     const a = document.createElement('a');
-                    a.href = obj.customLink; a.target = '_blank';
-                    a.style.cssText = `position:absolute;left:${obj.left}px;top:${obj.top}px;width:${obj.getScaledWidth()}px;height:${obj.getScaledHeight()}px;cursor:pointer;pointer-events:auto;z-index:10;`;
+                    a.href = obj.customLink; 
+                    a.target = '_blank';
+                    a.style.cssText = `
+                        position: absolute;
+                        left: ${rect.left}px;
+                        top: ${rect.top}px;
+                        width: ${rect.width}px;
+                        height: ${rect.height}px;
+                        cursor: pointer;
+                        pointer-events: auto;
+                        z-index: 10;
+                    `;
                     overlay.appendChild(a);
                 }
 
-                // 3. INTERNAL JUMP (The Menu/Buttons)
+                // 3. INTERNAL PAGE JUMP LOGIC (Fixed)
                 if (obj.customPageTarget !== undefined && obj.customPageTarget !== null) {
                     const jumpBtn = document.createElement('div');
-                    jumpBtn.style.cssText = `position:absolute;left:${obj.left}px;top:${obj.top}px;width:${obj.getScaledWidth()}px;height:${obj.getScaledHeight()}px;cursor:pointer;pointer-events:auto;z-index:20;`;
+                    jumpBtn.style.cssText = `
+                        position: absolute;
+                        left: ${rect.left}px;
+                        top: ${rect.top}px;
+                        width: ${rect.width}px;
+                        height: ${rect.height}px;
+                        cursor: pointer;
+                        pointer-events: auto;
+                        z-index: 20;
+                        background: rgba(255,255,255,0.01); /* Necessary for some browsers to register click */
+                    `;
                     
                     jumpBtn.onclick = (e) => {
                         e.preventDefault();
+                        e.stopPropagation();
                         const target = parseInt(obj.customPageTarget);
+                        console.log("Jumping to page index:", target);
                         if (pageFlip && !isNaN(target)) {
-                            pageFlip.flip(target);
+                            pageFlip.flip(target); 
                         }
                     };
                     overlay.appendChild(jumpBtn);
@@ -277,8 +381,40 @@ async function renderPage(canvasId, jsonData, overlay) {
     });
 }
 
+function initFlip(n) {
+    const bookEl = document.getElementById('book');
+    const pageSound = document.getElementById('pageSound');
 
+    pageFlip = new St.PageFlip(bookEl, {
+        width: PAGE_W, height: PAGE_H,
+        size: 'fixed',
+        showCover: true, 
+        usePortrait: false, 
+        flippingTime: 800,
+        useMouseEvents: true,
+        clickEventForward: false
+    });
 
+    pageFlip.loadFromHTML(document.querySelectorAll('#book .my-page'));
+
+    const recenter = (idx) => {
+        if (idx === 0) bookEl.style.transform = 'translateX(-210px)';
+        else if (idx >= n - 1) bookEl.style.transform = 'translateX(210px)';
+        else bookEl.style.transform = 'translateX(0px)';
+    };
+
+    recenter(0);
+    setTimeout(() => document.getElementById('loadOverlay').classList.add('hidden'), 500);
+
+    pageFlip.on('flip', e => {
+        if (pageSound) { pageSound.currentTime = 0; pageSound.play().catch(() => {}); }
+        recenter(e.data);
+        updateUI(e.data);
+    });
+
+    buildDots(); 
+    updateUI(0);
+}
 function initFlip(n) {
     const bookEl = document.getElementById('book');
     const pageSound = document.getElementById('pageSound');
@@ -322,24 +458,34 @@ function initFlip(n) {
     updateUI(0);
 }
 
-
-function buildDots(n) {
-    const wrap = document.getElementById('dotWrap');
-    wrap.innerHTML = '';
-    if (n <= 30) {
-        for (let i = 0; i < n; i++) {
-            const d = document.createElement('button');
-            d.className = 'p-dot' + (i === 0 ? ' a' : '');
-            d.onclick = () => { if (pageFlip) pageFlip.flip(i); };
-            wrap.appendChild(d);
-        }
-    }
-}
-
 function updateUI(idx) {
     const ind = document.getElementById('pgInd');
-    if (ind) ind.textContent = `Page ${idx + 1} / ${totalPages}`;
+    if (ind) {
+        // We use Math.min so it never shows "Page 10/9" on the blank page
+        const displayIdx = Math.min(idx + 1, totalPages);
+        ind.textContent = `Page ${displayIdx} / ${totalPages}`;
+    }
     document.querySelectorAll('.p-dot').forEach((d, i) => d.classList.toggle('a', i === idx));
+}
+
+function buildDots() {
+    const wrap = document.getElementById('dotWrap');
+    wrap.innerHTML = '';
+    // Number of dots = 1 (Cover) + (Spreads) + 1 (Back Cover)
+    const totalViews = (totalPages / 2) + 1; 
+
+    for (let i = 0; i < totalViews; i++) {
+        const d = document.createElement('button');
+        d.className = 'p-dot' + (i === 0 ? ' a' : '');
+        d.onclick = () => {
+            if (pageFlip) {
+                // Map the view dot back to the first page of that spread
+                const targetIdx = i === 0 ? 0 : (i * 2) - 1;
+                pageFlip.flip(targetIdx);
+            }
+        };
+        wrap.appendChild(d);
+    }
 }
 
 
