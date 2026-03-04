@@ -4,9 +4,12 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>Droidal – Flipbook Preview</title>
-    <script src="https://cdn.jsdelivr.net/npm/page-flip@2.0.7/dist/js/page-flip.browser.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700;900&family=Inter:wght@300;400;500;600;700&family=Roboto:wght@400;700&family=Oswald:wght@400;700&family=Montserrat:wght@400;600;700&family=Poppins:wght@400;600&family=Raleway:wght@400;700&family=Lato:wght@400;700&family=Open+Sans:wght@400;600&family=Merriweather:wght@400;700&family=Dancing+Script:wght@600&family=Bebas+Neue&display=swap" rel="stylesheet">
+ <script src="https://cdn.jsdelivr.net/npm/page-flip@2.0.7/dist/js/page-flip.browser.min.js"></script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
+
+
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700;900&family=Inter:wght@300;400;500;600;700&family=Roboto:wght@400;700&family=Oswald:wght@400;700&family=Montserrat:wght@400;600;700&family=Poppins:wght@400;600&family=Raleway:wght@400;700&family=Lato:wght@400;700&family=Open+Sans:wght@400;600&family=Merriweather:wght@400;700&family=Dancing+Script:wght@600&family=Bebas+Neue&display=swap" rel="stylesheet">
     <style>
         *{box-sizing:border-box;margin:0;padding:0}
         body{background:#0f172a;min-height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:40px 20px 60px;font-family:'Inter',sans-serif;overflow:hidden}
@@ -15,7 +18,7 @@
         #book{width:840px;height:600px;position:relative;margin:0 auto 20px;transition:transform .6s cubic-bezier(.4,0,.2,1)}
         .my-page{background-color:#ffffff;position:absolute;top:0;left:0;width:100%;height:100%;overflow:hidden;box-shadow:inset 0 0 1px rgba(0,0,0,.1)}
         .my-page::before{content:'';position:absolute;top:0;left:0;right:0;bottom:0;background-image:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.008) 2px,rgba(0,0,0,.008) 4px);pointer-events:none;opacity:.6;z-index:50}
-        .interactive-layer{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:100}
+        .interactive-layer{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:9999}
         .interactive-layer div,.interactive-layer a,.interactive-layer video{pointer-events:auto}
         .loading-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:#0a4d68;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;transition:opacity .5s ease;gap:14px}
         .loading-overlay.hidden{opacity:0;pointer-events:none}
@@ -70,10 +73,15 @@
     </div>
     <div class="update-banner" id="updateBanner" onclick="location.reload()">📝 Editor updated — click to reload</div>
     <audio id="pageSound" preload="auto">
-        <source src="data:audio/mpeg;base64,//uQxAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAACAAACcQCAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICA//////////////////////////////////////////////////////////////////8AAAA5TEFNRTMuMTAwAZYAAAAAAAAAABQ4JALqQgAAOAAAcQFFGy0AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" type="audio/mpeg">
-    </audio>
+    <source src="/sounds/flip_page.mp3" type="audio/mpeg">
+</audio>
 
 <script>
+    document.addEventListener("click", () => {
+    const s = document.getElementById("pageSound");
+    if (s) s.play().then(()=>s.pause()).catch(()=>{});
+}, { once: true });
+
 const BOOK_ID = 'droidal_book';
 const LS_KEY  = `droidal_pages_${BOOK_ID}`;
 const PAGE_W  = 420;
@@ -223,18 +231,53 @@ async function renderPage(canvasId, jsonData, overlay, pageIndex) {
                 }
 
                 // PAGE JUMP
-                if (obj.customPageTarget !== undefined && obj.customPageTarget !== null) {
-                    const btn = document.createElement('div');
-                    btn.style.cssText = `position:absolute;left:${rect.left}px;top:${rect.top}px;width:${rect.width}px;height:${rect.height}px;cursor:pointer;pointer-events:auto;z-index:20;background:rgba(255,255,255,0.01);`;
-                    btn.onclick = e => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        const target = parseInt(obj.customPageTarget);
-                        if (pageFlip && !isNaN(target)) pageFlip.flip(target);
-                    };
-                    overlay.appendChild(btn);
-                }
-            });
+if (obj.customPageTarget != null) {
+
+    const btn = document.createElement('div');
+
+    btn.style.cssText = `
+        position:absolute;
+        left:${rect.left}px;
+        top:${rect.top}px;
+        width:${rect.width}px;
+        height:${rect.height}px;
+        cursor:pointer;
+        pointer-events:auto;
+        z-index:9999;
+        background:transparent;
+    `;
+btn.onclick = e => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    console.log("Jump clicked:", obj.customPageTarget);
+
+    let page = parseInt(obj.customPageTarget) + 1; // convert index → page
+
+    if (!pageFlip || isNaN(page)) return;
+
+    const total = pageFlip.getPageCount();
+    let flipIndex;
+
+    if (page === 1) {
+        flipIndex = 0;
+    } 
+    else if (page === total) {
+        flipIndex = total - 1;
+    } 
+    else {
+        const spreadPage = (page % 2 === 0) ? page : page - 1;
+        flipIndex = spreadPage - 1;
+    }
+
+    console.log("Real page:", page, "Flip index:", flipIndex);
+
+    pageFlip.turnToPage(flipIndex);   // 🔥 IMPORTANT CHANGE
+};
+    overlay.appendChild(btn);
+}
+
+});
 
             resolve();
         });
@@ -352,7 +395,7 @@ function initFlip() {
         maxShadowOpacity: 0.5,
         showPageCorners: true,
         useMouseEvents: true,
-        clickEventForward: false
+        clickEventForward: true
     });
 
     pageFlip.loadFromHTML(document.querySelectorAll('#book .my-page'));
@@ -368,14 +411,23 @@ function initFlip() {
     setTimeout(() => document.getElementById('loadOverlay').classList.add('hidden'), 500);
 
     // On every flip → play animations for the newly visible spread
-    pageFlip.on('flip', e => {
-        if (pageSound) { pageSound.currentTime = 0; pageSound.play().catch(() => {}); }
-        recenter(e.data);
-        updateUI(e.data);
-        // e.data = left page index; right page = e.data + 1
-        playPageAnimations(e.data);
-        playPageAnimations(e.data + 1);
-    });
+  pageFlip.on('flip', e => {
+
+    const pageSound = document.getElementById("pageSound");
+
+    if(pageSound){
+        pageSound.pause();
+        pageSound.currentTime = 0.65;
+        pageSound.play().catch(()=>{});
+    }
+
+    recenter(e.data);
+    updateUI(e.data);
+
+    playPageAnimations(e.data);
+    playPageAnimations(e.data + 1);
+});
+
 
     buildDots();
     updateUI(0);
@@ -387,21 +439,55 @@ function initFlip() {
 // ─── UI HELPERS ───────────────────────────────────────────────────────────────
 function updateUI(idx) {
     const ind = document.getElementById('pgInd');
-    if (ind) ind.textContent = `Page ${Math.min(idx + 1, totalPages)} / ${totalPages}`;
-    document.querySelectorAll('.p-dot').forEach((d, i) => d.classList.toggle('a', i === idx));
+    const total = pageFlip.getPageCount();
+    let label = "";
+
+    if (idx === 0) {
+        label = "Page 1 (Cover)";
+    } else if (idx >= total - 1) {
+        label = `Page ${total} (Back Cover)`;
+    } else {
+        // Since spreads start on ODD indices (idx), 
+        // the left page is idx + 1 and the right is idx + 2
+        const left = idx + 1;
+        const right = idx + 2;
+        label = `Pages ${left} - ${right}`;
+    }
+    
+    if (ind) ind.textContent = label;
+
+    // Update Dots: Each dot represents one "view" (one spread or one cover)
+    const viewIdx = idx === 0 ? 0 : Math.ceil(idx / 2);
+    document.querySelectorAll('.p-dot').forEach((d, i) => {
+        d.classList.toggle('a', i === viewIdx);
+    });
 }
 
 function buildDots() {
     const wrap = document.getElementById('dotWrap');
+    if (!wrap) return;
     wrap.innerHTML = '';
-    for (let i = 0; i < totalPages; i++) {
+    
+    const total = pageFlip.getPageCount();
+    // Total Views = 1 (Cover) + (Internal Spreads) + 1 (Back Cover)
+    const totalViews = Math.floor(total / 2) + 1; 
+
+    for (let i = 0; i < totalViews; i++) {
         const d = document.createElement('button');
         d.className = 'p-dot' + (i === 0 ? ' a' : '');
-        d.onclick = () => { if (pageFlip) pageFlip.flip(i); };
+        d.onclick = () => {
+            if (pageFlip) {
+                // Map the view index back to the starting physical index
+                // View 0 -> Index 0
+                // View 1 -> Index 1 (Pages 2/3)
+                // View 2 -> Index 3 (Pages 4/5)
+                const targetIdx = (i === 0) ? 0 : (i * 2) - 1;
+                pageFlip.flip(targetIdx);
+            }
+        };
         wrap.appendChild(d);
     }
 }
-
 function setTxt(t) { document.getElementById('loadTxt').textContent = t; }
 function goPrev()  { if (pageFlip) pageFlip.flipPrev(); }
 function goNext()  { if (pageFlip) pageFlip.flipNext(); }

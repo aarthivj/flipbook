@@ -43,10 +43,81 @@ body{display:flex;flex-direction:column;height:100vh;background:var(--bg);overfl
 .section{font-size:.72rem;font-weight:600;color:var(--muted);margin:10px 0 7px;text-transform:uppercase;letter-spacing:.06em;flex-shrink:0}
 .g2{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:4px}
 .g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px}
-.tool{padding:4px 4px;border:1px solid var(--bdr);border-radius:7px;background:#fff;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:5px;font-size:.75rem;color:var(--txt);transition:.15s;font-weight:500;font-family:inherit}
-.tool:hover{background:#f9fafb;border-color:#c7c9cd;box-shadow:0 2px 5px rgba(0,0,0,.05)}
+.tool{
+padding:10px 8px;
+border:1px solid var(--bdr);
+border-radius:10px;
+background:#fff;
+cursor:pointer;
+
+display:flex;
+flex-direction:column;
+align-items:center;
+justify-content:center;
+
+gap:6px;
+font-size:.75rem;
+font-weight:500;
+
+transition:all .18s ease;
+box-shadow:0 2px 6px rgba(0,0,0,.05);
+}
+
+.tool:hover{
+transform:translateY(-2px);
+box-shadow:0 8px 18px rgba(0,0,0,.12);
+border-color:#6366f1;
+}
+.upload-card{
+  position:relative;
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:14px;
+  border-radius:12px;
+  background:#f3f4f6;
+  border:1px solid var(--bdr);
+  cursor:pointer;
+  font-weight:600;
+  transition:.2s;
+  margin-bottom:10px;
+}
+
+.upload-card:hover{
+  transform:translateY(-2px);
+  box-shadow:0 6px 15px rgba(0,0,0,.08);
+}
+
+.upload-card i{
+  font-size:18px;
+}
+
+.upload-card span{
+  flex:1;
+  font-size:.85rem;
+}
+
+.upload-card input{
+  position:absolute;
+  inset:0;
+  opacity:0;
+  cursor:pointer;
+}
+
+/* variants */
+
+.upload-card.pri{
+  background:linear-gradient(135deg,#6366f1,#8b5cf6);
+  color:#fff;
+}
+
+.upload-card.grn{
+  background:linear-gradient(135deg,#10b981,#059669);
+  color:#fff;
+}
+
 .tool i{font-size:1.2rem;color:var(--muted)}
-.tool.wide{grid-column:span 2;flex-direction:row;justify-content:center;gap:7px;padding:10px}
+.tool.wide{grid-column:span 2;margin-bottom:10px;   flex-direction:row;justify-content:center;gap:7px;padding:10px}
 .tool.pri{background:var(--pri);color:#fff;border-color:var(--pri)}.tool.pri i{color:#fff}.tool.pri:hover{background:var(--pri-d)}
 .tool.grn{background:var(--grn);color:#fff;border-color:var(--grn)}.tool.grn i{color:#fff}
 
@@ -160,6 +231,76 @@ textarea.minput:focus{border-color:var(--pri)}
     position: absolute;
     pointer-events: none;
     object-fit: fill;
+}
+
+/* gradient picker layout */
+.grad-picker{
+display:flex;
+gap:10px;
+margin:10px 0;
+}
+
+/* solid picker */
+.solid-picker{
+display:flex;
+gap:10px;
+margin:0px 0;
+}
+
+/* color square */
+.color-box{
+position:relative;
+width:36px;
+height:36px;
+cursor:pointer;
+}
+
+.color-box.big{
+width:42px;
+height:42px;
+}
+
+.color-box input{
+opacity:0;
+position:absolute;
+width:100%;
+height:100%;
+cursor:pointer;
+}
+
+.color-box span{
+display:block;
+width:100%;
+height:100%;
+border-radius:8px;
+border:1.5px solid #e5e7eb;
+box-shadow:0 2px 6px rgba(0,0,0,.08);
+transition:.15s;
+}
+
+.color-box:hover span{
+transform:scale(1.05);
+box-shadow:0 6px 14px rgba(0,0,0,.15);
+}
+
+#gradDir{
+width:100%;
+padding:8px 10px;
+border:1px solid var(--bdr);
+border-radius:8px;
+background:#fff;
+font-size:.8rem;
+cursor:pointer;
+appearance:none;
+background-image:url("data:image/svg+xml;utf8,<svg fill='gray' height='20' viewBox='0 0 24 24' width='20' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/></svg>");
+background-repeat:no-repeat;
+background-position:right 8px center;
+background-size:14px;
+margin-bottom: 10px;
+}
+
+#gradDir:hover{
+border-color:var(--pri);
 }
 
 t[type=file]{display:none}
@@ -409,19 +550,23 @@ input[type=range]{accent-color:var(--pri)}
 
     <!-- UPLOADS -->
     <div id="tabUploads" class="panel">
-      <div class="panel-title">Upload Media</div>
-      <label class="tool pri wide" for="img-up" style="cursor:pointer;margin-bottom:8px">
-        <i class="fa-solid fa-image"></i>Upload Image(s)
-        <input type="file" id="img-up" accept="image/*" multiple onchange="uploadMedia(event,'image')">
-      </label>
-      <label class="tool grn wide" for="vid-up" style="cursor:pointer;margin-bottom:8px">
-        <i class="fa-solid fa-video"></i>Upload Video
-        <input type="file" id="vid-up" accept="video/*" onchange="uploadMedia(event,'video')">
-      </label>
-      <label class="tool wide" for="svg-up" style="cursor:pointer;margin-bottom:8px">
-        <i class="fa-solid fa-bezier-curve"></i>Upload SVG
-        <input type="file" id="svg-up" accept=".svg" onchange="uploadMedia(event,'svg')">
-      </label>
+      <div class="upload-card pri">
+  <i class="fa-solid fa-image"></i>
+  <span>Upload Image(s)</span>
+  <input type="file" id="img-up" accept="image/*" multiple onchange="uploadMedia(event,'image')">
+</div>
+
+<div class="upload-card grn">
+  <i class="fa-solid fa-video"></i>
+  <span>Upload Video</span>
+  <input type="file" id="vid-up" accept="video/*" onchange="uploadMedia(event,'video')">
+</div>
+
+<div class="upload-card">
+  <i class="fa-solid fa-bezier-curve"></i>
+  <span>Upload SVG</span>
+  <input type="file" id="svg-up" accept=".svg" onchange="uploadMedia(event,'svg')">
+</div>
       <div class="section">Recent Uploads</div>
       <div class="g3" id="uploadGallery"></div>
     </div>
@@ -556,15 +701,59 @@ input[type=range]{accent-color:var(--pri)}
     <div id="tabBg" class="panel">
       <div class="panel-title">Background</div>
       <div class="section">Solid Color</div>
-      <input type="color" id="bgColor" onchange="setBgColor(this.value)" style="width:100%;height:40px;border:1px solid var(--bdr);border-radius:6px;cursor:pointer;padding:2px;margin-bottom:10px">
+<div class="solid-picker">
+<label class="color-box">
+<input type="color" id="bgColor" value="#f59e0b" onchange="setBackground(this.value)">
+<span id="solidPreview" style="background:#ffffff"></span>
+</label>
+</div>
+
+      <div class="section">Custom Gradient</div>
+
+      <div class="grad-picker">
+
+<label class="color-box">
+<input type="color" id="grad1" value="#6366f1">
+<span id="grad1Preview" style="background:#ffffff"></span>
+</label>
+
+<label class="color-box">
+<input type="color" id="grad2" value="#f59e0b">
+<span id="grad2Preview" style="background:#ffffff"></span>
+</label>
+
+</div>
+
+      <select id="gradDir">
+      <option value="to right">Horizontal</option>
+      <option value="to bottom">Vertical</option>
+      <option value="45deg">Diagonal</option>
+      </select>
+
+      <button class="tool wide" onclick="applyCustomGradient()">
+      <i class="fa-solid fa-palette"></i> Apply Gradient
+      </button>
+   
       <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:12px" id="bgPresets"></div>
       <div class="section">Gradients</div>
       <div id="bgGrads" style="margin-bottom:12px"></div>
       <div class="section">Background Image</div>
-      <label class="tool wide" for="bg-up" style="cursor:pointer;margin-bottom:7px">
-        <i class="fa-solid fa-image"></i>Upload BG Image
-        <input type="file" id="bg-up" accept="image/*" onchange="setBgImg(event)">
-      </label>
+     <label class="tool pri wide">
+<i class="fa-solid fa-image"></i>
+Choose Image
+<input type="file" accept="image/*"
+onchange="setBgImg(event,'image')" hidden>
+</label>
+
+      <!-- <div class="section">Background Video</div>
+
+    <label class="tool grn wide">
+<i class="fa-solid fa-video"></i>
+Choose Video
+<input type="file" accept="video/*"
+onchange="setBgVideo(event,'video')" hidden> -->
+</label>
+
       <button class="tool wide" onclick="removeBgImg()"><i class="fa-solid fa-trash"></i>Remove BG Image</button>
     </div>
 
@@ -578,8 +767,6 @@ input[type=range]{accent-color:var(--pri)}
           <span id="pageLbl">Page 1 – Cover</span>
           <div class="page-hdr-btns">
             <button onclick="dupPage()" title="Duplicate"><i class="fa-regular fa-copy"></i></button>
-            <button onclick="movePage(-1)" title="Move Left"><i class="fa-solid fa-arrow-left"></i></button>
-            <button onclick="movePage(1)" title="Move Right"><i class="fa-solid fa-arrow-right"></i></button>
             <button onclick="delPage()" title="Delete" style="color:var(--red)"><i class="fa-solid fa-trash"></i></button>
           </div>
         </div>
@@ -742,6 +929,18 @@ const CURRENT_USER_ID = localStorage.getItem('droidal_user_id') || 1;
 
 
 document.addEventListener("DOMContentLoaded", () => {
+
+  document.getElementById("grad1").addEventListener("input",function(){
+document.getElementById("grad1Preview").style.background=this.value
+})
+
+document.getElementById("grad2").addEventListener("input",function(){
+document.getElementById("grad2Preview").style.background=this.value
+})
+
+document.getElementById("bgColor").addEventListener("input",function(){
+document.getElementById("solidPreview").style.background=this.value
+})
     loadCustomElements();
 });
 
@@ -1552,6 +1751,47 @@ function mkDoubleBorderFrame() {
   });
 }
 
+
+
+function setBgVideo(event){
+
+const file = event.target.files[0]
+
+if(!file) return
+
+const url = URL.createObjectURL(file)
+
+const canvas = getCurrentCanvas()
+
+let vid = document.createElement("video")
+
+vid.src = url
+vid.autoplay = true
+vid.loop = true
+vid.muted = true
+
+vid.style.position = "absolute"
+vid.style.left = "0"
+vid.style.top = "0"
+vid.style.width = "100%"
+vid.style.height = "100%"
+vid.style.objectFit = "cover"
+vid.style.zIndex = "-1"
+
+canvas.wrapperEl.appendChild(vid)
+
+}
+
+
+function setGradient(bg){
+
+const canvas = getCurrentCanvas()
+
+canvas.setBackgroundColor(bg, canvas.renderAll.bind(canvas))
+
+}
+
+
 // ─── FRAME HOVER & FIT ────────────────────────────────────────────────────────
 let _hoverFrame = null;
 
@@ -1901,30 +2141,84 @@ const bgGradsData=[
 ];
 (function initBg(){
   const presets=document.getElementById('bgPresets');
-  bgPresets.forEach(c=>{const d=document.createElement('div');d.style.cssText=`width:26px;height:26px;border-radius:5px;background:${c};cursor:pointer;border:1.5px solid #e5e7eb;transition:.15s`;d.title=c;d.onclick=()=>setBgColor(c);presets.appendChild(d);});
+  bgPresets.forEach(c=>{const d=document.createElement('div');d.style.cssText=`width:26px;height:26px;border-radius:5px;background:${c};cursor:pointer;border:1.5px solid #e5e7eb;transition:.15s`;d.title=c;d.onclick=()=>setBackground(c);presets.appendChild(d);});
   const grads=document.getElementById('bgGrads');
-  bgGradsData.forEach(g=>{const d=document.createElement('div');const grad=`linear-gradient(135deg,${g.stops[0]},${g.stops[1]})`;d.style.cssText=`height:32px;border-radius:6px;background:${grad};cursor:pointer;border:2px solid transparent;margin-bottom:5px;font-size:.72rem;font-weight:600;display:flex;align-items:center;justify-content:center;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.4)`;d.textContent=g.label;d.onmouseover=()=>d.style.border='2px solid var(--pri)';d.onmouseout=()=>d.style.border='2px solid transparent';d.onclick=()=>applyGradientBg(g.stops[0],g.stops[1]);grads.appendChild(d);});
+  bgGradsData.forEach(g=>{const d=document.createElement('div');const grad=`linear-gradient(135deg,${g.stops[0]},${g.stops[1]})`;d.style.cssText=`height:32px;border-radius:6px;background:${grad};cursor:pointer;border:2px solid transparent;margin-bottom:5px;font-size:.72rem;font-weight:600;display:flex;align-items:center;justify-content:center;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.4)`;d.textContent=g.label;d.onmouseover=()=>d.style.border='2px solid var(--pri)';d.onmouseout=()=>d.style.border='2px solid transparent';d.onclick=()=>setBackground(g.stops[0],g.stops[1]);grads.appendChild(d);});
 })();
 
-function setBgColor(c){canvas.setBackgroundColor(c,()=>canvas.renderAll());hist();}
-function applyGradientBg(c1, c2) {
-  const grad = new fabric.LinearGradient({
-    x1: 0,
-    y1: 0,
-    x2: 0, // Set to 0 and y2 to CH for a vertical gradient
-    y2: CH, 
-    colorStops: [
-      { offset: 0, color: c1 },
-      { offset: 1, color: c2 }
-    ]
-  });
-  canvas.setBackgroundColor(grad, () => canvas.renderAll());
-  hist(); // Ensure this is saved to history
+function applyCustomGradient(){
+
+const c1=document.getElementById("grad1").value
+const c2=document.getElementById("grad2").value
+const dir=document.getElementById("gradDir").value
+
+let coords
+
+if(dir==="to right"){
+coords={x1:0,y1:0,x2:CW,y2:0}
+}
+else if(dir==="45deg"){
+coords={x1:0,y1:0,x2:CW,y2:CH}
+}
+else{
+coords={x1:0,y1:0,x2:0,y2:CH}
+}
+
+const grad=new fabric.Gradient({
+type:'linear',
+coords:coords,
+colorStops:[
+{offset:0,color:c1},
+{offset:1,color:c2}
+]
+})
+
+canvas.setBackgroundColor(grad,canvas.renderAll.bind(canvas))
+hist()
+
+}
+
+function setBackground(c1, c2 = null){
+
+  // SOLID COLOR
+  if(!c2 || c1 === c2){
+
+    canvas.setBackgroundColor(c1, canvas.renderAll.bind(canvas))
+
+  }
+
+  // GRADIENT
+  else{
+
+    const grad = new fabric.Gradient({
+      type:'linear',
+      coords:{
+        x1:0,
+        y1:0,
+        x2:0,
+        y2:CH
+      },
+      colorStops:[
+        {offset:0,color:c1},
+        {offset:1,color:c2}
+      ]
+    })
+
+    canvas.setBackgroundColor(grad, canvas.renderAll.bind(canvas))
+
+  }
+
+  hist()
+
+}
+
+function setBgImg(e){const file=e.target.files[0];if(!file)return;const url=URL.createObjectURL(file);fabric.Image.fromURL(url,img=>{canvas.setBackgroundImage(img,canvas.renderAll.bind(canvas),{scaleX:CW/img.width,scaleY:CH/img.height});hist();});}
+function removeBgImg(){
+canvas.setBackgroundImage(null,canvas.renderAll.bind(canvas));
+hist();
 }
 
 
-function setBgImg(e){const file=e.target.files[0];if(!file)return;const url=URL.createObjectURL(file);fabric.Image.fromURL(url,img=>{canvas.setBackgroundImage(img,canvas.renderAll.bind(canvas),{scaleX:CW/img.width,scaleY:CH/img.height});hist();});}
-function removeBgImg(){canvas.setBackgroundImage(null,canvas.renderAll.bind(canvas));hist();}
 
 // ─── APPS ─────────────────────────────────────────────────────────────────────
 function addTable(){
