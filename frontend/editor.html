@@ -915,8 +915,34 @@ let CW = 420, CH = 594;
 const canvas = new fabric.Canvas('c', {
   width: CW, height: CH,
   backgroundColor: '#ffffff',
-  preserveObjectStacking: true
+  preserveObjectStacking: true,
+  
 });
+
+canvas.on("text:changed", function(e){
+
+    const obj = e.target;
+
+    if(obj.type === "textbox"){
+
+        const maxWidth = canvas.getWidth() - obj.left - 20;
+
+        if(obj.width > maxWidth){
+            obj.set({
+                width: maxWidth
+            });
+        }
+
+        obj.set({
+            splitByGrapheme: true
+        });
+
+        canvas.renderAll();
+    }
+
+});
+
+addHeaderFooter();
 const BOOK_ID = 'droidal_book';
 const LS_KEY  = `droidal_pages_${BOOK_ID}`;
 const LS_META = `droidal_meta_${BOOK_ID}`;
@@ -951,6 +977,35 @@ function saveAndSwitch(idx) {
     loadCurrentPage();
     scheduleSync(); // Still sync to LS for the previewer
 }
+function addHeaderFooter(){
+
+  const header = new fabric.Textbox("Click to edit header",{
+    left:20,
+    top:10,
+    width: canvas.getWidth() - 40,
+    fontSize:22,
+    textAlign:"center",
+    fill:"#888",
+    fontWeight:"600",
+    editable:true,
+    customType:"header"
+  });
+
+  const footer = new fabric.Textbox("Click to edit footer",{
+    left:20,
+    top: canvas.getHeight() - 40,
+    width: canvas.getWidth() - 40,
+    fontSize:16,
+    textAlign:"center",
+    fill:"#888",
+    editable:true,
+    customType:"footer"
+  });
+
+  canvas.add(header);
+  canvas.add(footer);
+  canvas.renderAll();
+}
 
 function refreshUI() {
   updatePageLabel(); renderDots(); renderLayers();
@@ -982,10 +1037,22 @@ function renderDots() {
   bar.appendChild(wrap);
 }
 
-function addPage() {
-    pages[cur] = getJSON();
-    pages.splice(cur + 1, 0, null);
-    saveAndSwitch(cur + 1);
+function addPage(){
+
+  pages[cur] = getJSON();
+
+  pages.push(null);
+  cur = pages.length - 1;
+
+  canvas.clear();
+  canvas.setBackgroundColor("#ffffff", canvas.renderAll.bind(canvas));
+
+  addHeaderFooter(); // ⭐ THIS LINE IS IMPORTANT
+
+  pages[cur] = getJSON();
+
+  loadCurrentPage();
+  renderPageDots();
 }
 
 function dupPage()  { const j = getJSON(); pages[cur] = j; pages.splice(cur+1,0,JSON.parse(JSON.stringify(j))); saveAndSwitch(cur+1); }
@@ -1055,7 +1122,21 @@ function updateSaveBtn() {
     btn.style.display = "inline-flex";
 }
 canvas.on('object:modified', () => { hist(); renderLayers(); syncBar(); });
-canvas.on('object:scaling', syncBar);
+canvas.on("object:scaling", function(e){
+
+    const obj = e.target;
+
+    if(obj.type === "textbox"){
+
+        const maxWidth = canvas.getWidth() - obj.left - 20;
+
+        if(obj.getScaledWidth() > maxWidth){
+            obj.scaleX = maxWidth / obj.width;
+        }
+
+    }
+
+});
 canvas.on('object:moving', syncBar);
 canvas.on('object:rotating', syncBar);
 
@@ -1215,7 +1296,10 @@ function renderLayers() {
     const el=document.createElement('div');
     el.className='layer-item'+(obj===active?' sel':'');
     let icon='fa-shapes',name='Shape';
-    if(obj.type==='i-text'||obj.type==='text'){icon='fa-t';name=(obj.text||'').slice(0,12)+'…';}
+    if(obj.type==='i-text'||obj.type==='text')
+    {icon='fa-t';name=(obj.text||'').slice(0,12)+'…';}
+    
+    
     if(obj.type==='image'){icon='fa-image';name='Image';}
     if(obj.type==='group'){icon='fa-object-group';name='Group';}
     if(obj.type==='path') {icon='fa-pen-nib';name='Drawing';}
@@ -1486,7 +1570,24 @@ function makeHeart(x, y, fill, stroke) {
   });
 }
 // ─── TEXT ─────────────────────────────────────────────────────────────────────
-function addText(size,weight){const t=new fabric.IText('Click to edit',{left:40,top:60+Math.random()*30,fontFamily:'Inter',fontSize:size,fontWeight:weight,fill:'#1f2937'});canvas.add(t);canvas.setActiveObject(t);hist();}
+function addText(size,weight){
+
+const t = new fabric.Textbox('Click to edit',{
+    left:40,
+    top:60 + Math.random()*30,
+    width: canvas.getWidth() - 80,   // limit width
+    fontFamily:'Inter',
+    fontSize:size,
+    fontWeight:weight,
+    fill:'#1f2937',
+    splitByGrapheme:true
+});
+
+canvas.add(t);
+canvas.setActiveObject(t);
+hist();
+
+}
 function applyFontStyle(family,size,weight){addText(size,weight);const obj=canvas.getActiveObject();if(obj){obj.set({fontFamily:family,fontWeight:weight});canvas.renderAll();}}
 function addPageNum(){const t=new fabric.IText(String(cur+1),{left:CW/2-8,top:CH-36,fontFamily:'Inter',fontSize:16,fill:'#9ca3af',textAlign:'center'});canvas.add(t);canvas.setActiveObject(t);hist();}
 function addDate(){const d=new Date().toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'});const t=new fabric.IText(d,{left:30,top:80,fontFamily:'Inter',fontSize:15,fill:'#6b7280'});canvas.add(t);canvas.setActiveObject(t);hist();}
@@ -2376,14 +2477,19 @@ function loadCurrentPage() {
 function setJumpTarget() {
     const o = canvas.getActiveObject();
     if (!o) return;
-    
-    const target = prompt("Enter the Page Number to jump to when clicked:", (o.customPageTarget || 0) + 1);
-    
+
+    // Show user-facing page number (1-based), store as 0-based
+    const currentDisplay = (o.customPageTarget != null) ? o.customPageTarget + 1 : 1;
+    const target = prompt("Enter the Page Number to jump to when clicked:", currentDisplay);
+
     if (target !== null) {
-        // We subtract 1 because our array starts at 0, but users count from 1
-        o.set('customPageTarget', parseInt(target) - 1);
-        alert("Success: This element will now jump to Page " + target);
-        hist(); // Save to history
+        const pageNum = parseInt(target);
+        if (isNaN(pageNum) || pageNum < 1) return alert("Invalid page number");
+
+        // Store as 0-based index
+        o.set('customPageTarget', pageNum - 1);
+        alert("Success: This element will now jump to Page " + pageNum);
+        hist();
     }
 }
 

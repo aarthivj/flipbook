@@ -77,6 +77,9 @@
 </audio>
 
 <script>
+
+    let _jumpLock = false;
+
     document.addEventListener("click", () => {
     const s = document.getElementById("pageSound");
     if (s) s.play().then(()=>s.pause()).catch(()=>{});
@@ -204,6 +207,58 @@ async function renderPage(canvasId, jsonData, overlay, pageIndex) {
             sc.getObjects().forEach(obj => {
                 obj.setCoords();
                 const rect = obj.getBoundingRect();
+                
+                // PAGE JUMP
+if (obj.customPageTarget !== undefined && obj.customPageTarget !== null) {
+    const jumpBtn = document.createElement('div');
+    jumpBtn.style.cssText = `
+    position: absolute;
+    left: ${rect.left}px;
+    top: ${rect.top}px;
+    width: ${rect.width}px;
+    height: ${rect.height}px;
+    cursor: pointer;
+    pointer-events: auto;
+    z-index: 20;
+    background: rgba(255,255,255,0.01);
+`;
+
+// ADD: stop the event reaching StPageFlip's internal listener
+jumpBtn.addEventListener('mousedown', e => e.stopPropagation());
+jumpBtn.addEventListener('touchstart', e => e.stopPropagation(), { passive: false });
+    
+jumpBtn.onclick = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (_jumpLock) return;
+    _jumpLock = true;
+    setTimeout(() => { _jumpLock = false; }, 1000);
+
+    const target = parseInt(obj.customPageTarget); // already 0-based index
+    if (pageFlip && !isNaN(target)) {
+        const total = pageFlip.getPageCount();
+
+        let flipIndex;
+        if (target <= 0) {
+            flipIndex = 0;                    // cover
+        } else if (target >= total - 1) {
+            flipIndex = total - 1;            // back cover
+        } else {
+            // target is 0-based; spreads open on odd indices (1,3,5...)
+            // even target = right page of a spread → open its spread at target-1
+            flipIndex = target % 2 === 0 ? target - 1 : target;
+        }
+
+        console.log("target:", target, "→ flipIndex:", flipIndex);
+        pageFlip.flip(flipIndex);
+    }
+};
+
+
+overlay.appendChild(jumpBtn);
+}
+
 
                 // VIDEO
                 if (obj.customVideoSrc) {
@@ -226,56 +281,9 @@ async function renderPage(canvasId, jsonData, overlay, pageIndex) {
                     const a  = document.createElement('a');
                     a.href   = obj.customLink;
                     a.target = '_blank';
-                    a.style.cssText = `position:absolute;left:${rect.left}px;top:${rect.top}px;width:${rect.width}px;height:${rect.height}px;cursor:pointer;pointer-events:auto;z-index:10;`;
+                    a.style.cssText = `position:absolute;left:${rect.left}px;top:${rect.top}px;width:${rect.width}px;height:${rect.height}px;cursor:pointer;pointer-events:auto !important;z-index:10;`;
                     overlay.appendChild(a);
                 }
-
-                // PAGE JUMP
-if (obj.customPageTarget != null) {
-
-    const btn = document.createElement('div');
-
-    btn.style.cssText = `
-        position:absolute;
-        left:${rect.left}px;
-        top:${rect.top}px;
-        width:${rect.width}px;
-        height:${rect.height}px;
-        cursor:pointer;
-        pointer-events:auto;
-        z-index:9999;
-        background:transparent;
-    `;
-btn.onclick = e => {
-    e.preventDefault();
-    e.stopPropagation();
-
-    console.log("Jump clicked:", obj.customPageTarget);
-
-    let page = parseInt(obj.customPageTarget) + 1; // convert index → page
-
-    if (!pageFlip || isNaN(page)) return;
-
-    const total = pageFlip.getPageCount();
-    let flipIndex;
-
-    if (page === 1) {
-        flipIndex = 0;
-    } 
-    else if (page === total) {
-        flipIndex = total - 1;
-    } 
-    else {
-        const spreadPage = (page % 2 === 0) ? page : page - 1;
-        flipIndex = spreadPage - 1;
-    }
-
-    console.log("Real page:", page, "Flip index:", flipIndex);
-
-    pageFlip.turnToPage(flipIndex);   // 🔥 IMPORTANT CHANGE
-};
-    overlay.appendChild(btn);
-}
 
 });
 
@@ -381,9 +389,9 @@ function playPageAnimations(pageIndex) {
 
 // ─── INIT FLIPBOOK ────────────────────────────────────────────────────────────
 function initFlip() {
-    const bookEl    = document.getElementById('book');
-    const pageSound = document.getElementById('pageSound');
+    const bookEl = document.getElementById('book');
 
+    // 1. CREATE pageFlip FIRST
     pageFlip = new St.PageFlip(bookEl, {
         width: PAGE_W,
         height: PAGE_H,
@@ -395,9 +403,13 @@ function initFlip() {
         maxShadowOpacity: 0.5,
         showPageCorners: true,
         useMouseEvents: true,
-        clickEventForward: true
+        clickEventForward: false
     });
 
+    window.pageFlip = pageFlip;  // ← expose to window so console can reach it
+
+
+    // 2. LOAD pages
     pageFlip.loadFromHTML(document.querySelectorAll('#book .my-page'));
 
     function recenter(idx) {
@@ -410,31 +422,25 @@ function initFlip() {
     recenter(0);
     setTimeout(() => document.getElementById('loadOverlay').classList.add('hidden'), 500);
 
-    // On every flip → play animations for the newly visible spread
-  pageFlip.on('flip', e => {
-
-    const pageSound = document.getElementById("pageSound");
-
-    if(pageSound){
-        pageSound.pause();
-        pageSound.currentTime = 0.65;
-        pageSound.play().catch(()=>{});
-    }
-
-    recenter(e.data);
-    updateUI(e.data);
-
-    playPageAnimations(e.data);
-    playPageAnimations(e.data + 1);
-});
-
+    // 5. FLIP EVENT
+    pageFlip.on('flip', e => {
+        const pageSound = document.getElementById("pageSound");
+        if (pageSound) {
+            pageSound.pause();
+            pageSound.currentTime = 0.65;
+            pageSound.play().catch(() => {});
+        }
+        recenter(e.data);
+        updateUI(e.data);
+        playPageAnimations(e.data);
+        playPageAnimations(e.data + 1);
+    });
 
     buildDots();
     updateUI(0);
-
-    // Play first-page animations after loader disappears
     setTimeout(() => playPageAnimations(0), 600);
 }
+
 
 // ─── UI HELPERS ───────────────────────────────────────────────────────────────
 function updateUI(idx) {
@@ -494,3 +500,6 @@ function goNext()  { if (pageFlip) pageFlip.flipNext(); }
 </script>
 </body>
 </html>
+
+
+
