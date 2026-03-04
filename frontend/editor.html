@@ -1047,113 +1047,127 @@ function applyAnim(type) {
 
   const dur = parseInt(document.getElementById('animDur').value) || 800;
 
-  // Store the animation metadata inside the object
   obj.set('animData', {
     type: type,
-    duration: dur,
-    origLeft: obj.left,
-    origTop: obj.top,
-    origOpacity: obj.opacity,
-    origScaleX: obj.scaleX,
-    origScaleY: obj.scaleY
+    duration: dur
   });
 
   playCurrentAnim();
   hist();
 }
 
+// Reusable function for BOTH Editor and Preview
+function playObjectAnimation(obj) {
+  if (!obj || !obj.animData) return;
+  const data = obj.animData;
+  const dur = data.duration;
+  const c = obj.canvas;
+
+  // 1. Reset to start state based on type
+  if (data.type === 'fade') obj.set('opacity', 0);
+  if (data.type === 'pop') obj.set({ scaleX: 0, scaleY: 0 });
+  if (data.type === 'slideL') obj.set('left', data.origLeft + 50);
+  if (data.type === 'slideR') obj.set('left', data.origLeft - 50);
+  if (data.type === 'slideU') obj.set('top', data.origTop + 50);
+  if (data.type === 'slideD') obj.set('top', data.origTop - 50);
+
+  // 2. Run the actual animation
+  switch (data.type) {
+    case 'fade':
+      obj.animate('opacity', data.origOpacity, { duration: dur, onChange: c.renderAll.bind(c) });
+      break;
+    case 'pop':
+      obj.animate({ scaleX: data.origScaleX, scaleY: data.origScaleY }, { 
+        duration: dur, easing: fabric.util.ease.easeOutBack, onChange: c.renderAll.bind(c) 
+      });
+      break;
+    case 'slideL':
+    case 'slideR':
+      obj.animate('left', data.origLeft, { duration: dur, easing: fabric.util.ease.easeOutCubic, onChange: c.renderAll.bind(c) });
+      break;
+    case 'slideU':
+    case 'slideD':
+      obj.animate('top', data.origTop, { duration: dur, easing: fabric.util.ease.easeOutCubic, onChange: c.renderAll.bind(c) });
+      break;
+    case 'bounce':
+      obj.animate('top', data.origTop - 40, {
+        duration: dur / 2, easing: fabric.util.ease.easeOutCubic, onChange: c.renderAll.bind(c),
+        onComplete: () => obj.animate('top', data.origTop, { duration: dur / 2, easing: fabric.util.ease.easeOutBounce, onChange: c.renderAll.bind(c) })
+      });
+      break;
+    case 'pulse':
+      obj.animate({ scaleX: data.origScaleX * 1.2, scaleY: data.origScaleY * 1.2 }, {
+        duration: dur / 2, onChange: c.renderAll.bind(c),
+        onComplete: () => obj.animate({ scaleX: data.origScaleX, scaleY: data.origScaleY }, { duration: dur / 2, onChange: c.renderAll.bind(c) })
+      });
+      break;
+  }
+}
+
+// Update your play button to use this
 function playCurrentAnim() {
   const obj = canvas.getActiveObject();
   if (!obj || !obj.animData) return;
+  runAnim(obj, canvas.renderAll.bind(canvas));
+}
+function runAnim(obj, renderFn) {
+  if (!obj || !obj.animData) return;
 
   const data = obj.animData;
-  const dur = data.duration;
+  const dur  = data.duration || 800;
 
-  // Reset to initial state before playing
-  obj.set({
-    opacity: data.origOpacity,
-    left: data.origLeft,
-    top: data.origTop,
-    scaleX: data.origScaleX,
-    scaleY: data.origScaleY
-  });
+  const origLeft    = obj.left;
+  const origTop     = obj.top;
+  const origOpacity = obj.opacity != null ? obj.opacity : 1;
+  const origScaleX  = obj.scaleX  != null ? obj.scaleX  : 1;
+  const origScaleY  = obj.scaleY  != null ? obj.scaleY  : 1;
 
   switch (data.type) {
     case 'fade':
       obj.set('opacity', 0);
-      obj.animate('opacity', data.origOpacity, { duration: dur, onChange: canvas.renderAll.bind(canvas) });
+      obj.animate('opacity', origOpacity, { duration: dur, onChange: renderFn });
       break;
-
     case 'pop':
-      obj.set({ scaleX: 0, scaleY: 0 });
-      obj.animate({ scaleX: data.origScaleX, scaleY: data.origScaleY }, { 
-        duration: dur, 
-        easing: fabric.util.ease.easeOutBack,
-        onChange: canvas.renderAll.bind(canvas) 
-      });
+      obj.set({ scaleX: 0.01, scaleY: 0.01 });
+      obj.animate({ scaleX: origScaleX, scaleY: origScaleY }, { duration: dur, easing: fabric.util.ease.easeOutBack, onChange: renderFn });
       break;
-
     case 'slideL':
-      obj.set('left', data.origLeft + 100);
-      obj.animate('left', data.origLeft, { duration: dur, easing: fabric.util.ease.easeOutCubic, onChange: canvas.renderAll.bind(canvas) });
+      obj.set('left', origLeft + 100);
+      obj.animate('left', origLeft, { duration: dur, easing: fabric.util.ease.easeOutCubic, onChange: renderFn });
       break;
-
     case 'slideR':
-      obj.set('left', data.origLeft - 100);
-      obj.animate('left', data.origLeft, { duration: dur, easing: fabric.util.ease.easeOutCubic, onChange: canvas.renderAll.bind(canvas) });
+      obj.set('left', origLeft - 100);
+      obj.animate('left', origLeft, { duration: dur, easing: fabric.util.ease.easeOutCubic, onChange: renderFn });
       break;
-
     case 'slideU':
-      obj.set('top', data.origTop + 100);
-      obj.animate('top', data.origTop, { duration: dur, easing: fabric.util.ease.easeOutCubic, onChange: canvas.renderAll.bind(canvas) });
+      obj.set('top', origTop + 100);
+      obj.animate('top', origTop, { duration: dur, easing: fabric.util.ease.easeOutCubic, onChange: renderFn });
       break;
-
+    case 'slideD':
+      obj.set('top', origTop - 100);
+      obj.animate('top', origTop, { duration: dur, easing: fabric.util.ease.easeOutCubic, onChange: renderFn });
+      break;
     case 'bounce':
-      obj.animate('top', data.origTop - 50, {
-        duration: dur / 2,
-        easing: fabric.util.ease.easeOutCubic,
-        onChange: canvas.renderAll.bind(canvas),
-        onComplete: () => {
-          obj.animate('top', data.origTop, { duration: dur / 2, easing: fabric.util.ease.easeOutBounce, onChange: canvas.renderAll.bind(canvas) });
-        }
-      });
+      obj.animate('top', origTop - 50, { duration: dur / 2, easing: fabric.util.ease.easeOutCubic, onChange: renderFn,
+        onComplete: () => obj.animate('top', origTop, { duration: dur / 2, easing: fabric.util.ease.easeOutBounce, onChange: renderFn }) });
       break;
-
     case 'pulse':
-      obj.animate({ scaleX: data.origScaleX * 1.2, scaleY: data.origScaleY * 1.2 }, {
-        duration: dur / 2,
-        onChange: canvas.renderAll.bind(canvas),
-        onComplete: () => {
-          obj.animate({ scaleX: data.origScaleX, scaleY: data.origScaleY }, { duration: dur / 2, onChange: canvas.renderAll.bind(canvas) });
-        }
-      });
+      obj.animate({ scaleX: origScaleX * 1.2, scaleY: origScaleY * 1.2 }, { duration: dur / 2, onChange: renderFn,
+        onComplete: () => obj.animate({ scaleX: origScaleX, scaleY: origScaleY }, { duration: dur / 2, onChange: renderFn }) });
       break;
-      
     case 'shake':
-        obj.animate('left', data.origLeft - 10, {
-            duration: 100,
-            onChange: canvas.renderAll.bind(canvas),
-            onComplete: () => {
-                obj.animate('left', data.origLeft + 10, {
-                    duration: 100,
-                    onChange: canvas.renderAll.bind(canvas),
-                    onComplete: () => { obj.animate('left', data.origLeft, { duration: 100, onChange: canvas.renderAll.bind(canvas) }); }
-                });
-            }
-        });
-        break;
+      obj.animate('left', origLeft - 10, { duration: 80, onChange: renderFn,
+        onComplete: () => obj.animate('left', origLeft + 10, { duration: 80, onChange: renderFn,
+          onComplete: () => obj.animate('left', origLeft - 8, { duration: 80, onChange: renderFn,
+            onComplete: () => obj.animate('left', origLeft + 8, { duration: 80, onChange: renderFn,
+              onComplete: () => obj.animate('left', origLeft, { duration: 80, onChange: renderFn }) }) }) }) });
+      break;
+    case 'float':
+      obj.animate('top', origTop - 15, { duration: dur / 2, easing: fabric.util.ease.easeInOutSine, onChange: renderFn,
+        onComplete: () => obj.animate('top', origTop, { duration: dur / 2, easing: fabric.util.ease.easeInOutSine, onChange: renderFn }) });
+      break;
   }
 }
-
-function clearAnim() {
-  const obj = canvas.getActiveObject();
-  if (obj) {
-    obj.set('animData', null);
-    alert("Animation removed.");
-    hist();
-  }
-}
-
 
 // ─── SHAPES ───────────────────────────────────────────────────────────────────
 const palette=['#6366f1','#10b981','#f59e0b','#ef4444','#3b82f6','#8b5cf6','#ec4899'];
@@ -2047,12 +2061,15 @@ async function initEditor() {
 function loadCurrentPage() {
     const pd = pages[cur];
     if (pd) {
-        // The second argument is a callback that runs after loading
         canvas.loadFromJSON(pd, () => {
             canvas.renderAll();
-            restoreVideos(); // <--- Call it here
+            restoreVideos();
             histReset();
             refreshUI();
+            // Auto-play all animations on this page after load
+            canvas.getObjects().forEach(obj => {
+                if (obj.animData) runAnim(obj, canvas.renderAll.bind(canvas));
+            });
         });
     } else {
         canvas.clear();

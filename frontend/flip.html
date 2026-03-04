@@ -1,6 +1,3 @@
-//flip.html
-
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -18,20 +15,8 @@
         #book{width:840px;height:600px;position:relative;margin:0 auto 20px;transition:transform .6s cubic-bezier(.4,0,.2,1)}
         .my-page{background-color:#ffffff;position:absolute;top:0;left:0;width:100%;height:100%;overflow:hidden;box-shadow:inset 0 0 1px rgba(0,0,0,.1)}
         .my-page::before{content:'';position:absolute;top:0;left:0;right:0;bottom:0;background-image:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.008) 2px,rgba(0,0,0,.008) 4px);pointer-events:none;opacity:.6;z-index:50}
-.interactive-layer {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    pointer-events: none; /* Allows book turning clicks to pass through background */
-    z-index: 100; /* Ensure it is above the canvas */
-}   
-     .interactive-layer div, 
-.interactive-layer a, 
-.interactive-layer video {
-    pointer-events: auto; /* Enables clicking on the actual buttons/links */
-}
+        .interactive-layer{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:100}
+        .interactive-layer div,.interactive-layer a,.interactive-layer video{pointer-events:auto}
         .loading-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:#0a4d68;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;transition:opacity .5s ease;gap:14px}
         .loading-overlay.hidden{opacity:0;pointer-events:none}
         .loader{width:48px;height:48px;border:4px solid rgba(16,185,129,.2);border-top-color:#10b981;border-radius:50%;animation:spin .8s linear infinite}
@@ -66,7 +51,7 @@
     </div>
     <div class="empty-state" id="emptyState">
         <h2>📚 No pages found</h2>
-        <p>Open the Droidal Editor, add content to the canvas, then click <strong>Preview</strong>. It auto-saves on every change.</p>
+        <p>Open the Droidal Editor, add content to the canvas, then click <strong>Preview</strong>.</p>
         <a href="editor.html">← Open Editor</a>
     </div>
     <div class="book-wrapper">
@@ -87,90 +72,56 @@
     <audio id="pageSound" preload="auto">
         <source src="data:audio/mpeg;base64,//uQxAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAACAAACcQCAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICA//////////////////////////////////////////////////////////////////8AAAA5TEFNRTMuMTAwAZYAAAAAAAAAABQ4JALqQgAAOAAAcQFFGy0AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" type="audio/mpeg">
     </audio>
-   <script>
-const BOOK_ID = 'droidal_book', LS_KEY = `droidal_pages_${BOOK_ID}`, PAGE_W = 420, PAGE_H = 594;
-let pageFlip, totalPages = 0;
 
+<script>
+const BOOK_ID = 'droidal_book';
+const LS_KEY  = `droidal_pages_${BOOK_ID}`;
+const PAGE_W  = 420;
+const PAGE_H  = 594;
+
+let pageFlip   = null;
+let totalPages = 0;
+
+// Stores one fabric.Canvas per page index so we can replay animations on flip
+const pageCanvases = {};
+
+// ─── BOOT ─────────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', async () => {
-    setTxt('Initializing dynamic layout...');
-    
+    setTxt('Loading pages...');
+
     const params = new URLSearchParams(window.location.search);
-    const pId = params.get('id');
-    
+    const pId    = params.get('id');
     let pagesData = null;
+
+    // 1. Try DB if project id is in URL
     if (pId) {
         try {
-            const r = await fetch(`/api/project/${pId}`);
+            const r    = await fetch(`/api/project/${pId}`);
             const proj = await r.json();
-            pagesData = proj.data.map((json, i) => ({ page_number: i, canvas_json: json }));
-        } catch (e) { console.error("Database Load failed", e); }
+            pagesData  = proj.data.map((json, i) => ({ page_number: i, canvas_json: json }));
+        } catch (e) { console.warn('DB load failed, falling back to localStorage', e); }
     }
 
-    if (!pagesData) {
-        pagesData = await loadPages(); 
-    }
+    // 2. Fallback: localStorage
+    if (!pagesData) pagesData = await loadPages();
 
+    // 3. Nothing found → show empty state
     if (!pagesData || !pagesData.length) {
         document.getElementById('loadOverlay').classList.add('hidden');
         document.getElementById('emptyState').classList.add('show');
         return;
     }
 
-    // --- DYNAMIC SPREAD LOGIC ---
-    const renderList = [...pagesData];
+    setTxt(`Rendering ${pagesData.length} page(s)...`);
+    await buildDOM(pagesData);
+    initFlip();
 
-    // Rule: To have a single cover and a single back cover with spreads in between,
-    // the total number of physical pages must be EVEN.
-    if (renderList.length % 2 !== 0) {
-        // If odd (e.g., 3 pages), add 1 blank page to make it 4 (Cover, 2/3, Back)
-        renderList.push({ page_number: renderList.length, canvas_json: null });
-    } else {
-        // If even (e.g., 4 pages), the last page is already the back cover.
-        // If you want an EXTRA blank back page regardless, uncomment the line below:
-        // renderList.push({ page_number: renderList.length, canvas_json: null }, { page_number: renderList.length+1, canvas_json: null });
-    }
-
-    totalPages = renderList.length;
-    setTxt(`Rendering ${totalPages} dynamic pages...`);
-    
-    await buildDOM(renderList);
-    initFlip(totalPages);
+    window.addEventListener('storage', e => {
+        if (e.key === LS_KEY) document.getElementById('updateBanner').classList.add('show');
+    });
 });
 
-
-document.addEventListener('DOMContentLoaded', async () => {
-    setTxt('Checking for updates...');
-    
-    // Priority: Check URL for project ID first
-    const params = new URLSearchParams(window.location.search);
-    const pId = params.get('id');
-    
-    let pages = null;
-    if (pId) {
-        try {
-            const r = await fetch(`/api/project/${pId}`);
-            const proj = await r.json();
-            pages = proj.data.map((json, i) => ({ page_number: i, canvas_json: json }));
-        } catch (e) { console.error("DB Load failed", e); }
-    }
-
-    if (!pages) {
-        pages = await loadPages(); // Fallback to LocalStorage
-    }
-
-    if (!pages || !pages.length) {
-        document.getElementById('loadOverlay').classList.add('hidden');
-        document.getElementById('emptyState').classList.add('show');
-        return;
-    }
-
-    setTxt(`Preparing ${pages.length} pages...`);
-    await buildDOM(pages);
-    initFlip(pages.length);
-});
-
-function setTxt(t) { document.getElementById('loadTxt').textContent = t }
-
+// ─── LOAD FROM LOCALSTORAGE ───────────────────────────────────────────────────
 async function loadPages() {
     try {
         const raw = localStorage.getItem(LS_KEY);
@@ -185,238 +136,209 @@ async function loadPages() {
     return null;
 }
 
-async function loadPages() {
-    try {
-        const raw = localStorage.getItem(LS_KEY);
-        if (raw) {
-            const a = JSON.parse(raw);
-            if (Array.isArray(a) && a.length) {
-                a.sort((x, y) => x.page_number - y.page_number);
-                return a;
-            }
-        }
-    } catch (e) {}
-    try {
-        setTxt('Trying server...');
-        const r = await fetch(`http://127.0.0.1:8000/get_book_pages?book_id=${BOOK_ID}`, { signal: AbortSignal.timeout(3000) });
-        if (r.ok) {
-            const a = await r.json();
-            if (Array.isArray(a) && a.length) {
-                a.sort((x, y) => x.page_number - y.page_number);
-                return a;
-            }
-        }
-    } catch (e) {}
-    return null;
-}
-
+// ─── BUILD DOM ────────────────────────────────────────────────────────────────
 async function buildDOM(pagesData) {
     const bookEl = document.getElementById('book');
-    bookEl.innerHTML = ''; 
+    bookEl.innerHTML = '';
 
-    // Create a copy of the pages array
     const renderList = [...pagesData];
 
-    // FIX: If you have an odd number (like 9), add a blank page (10)
-    // This allows the last page to actually turn over as a back cover.
+    // page-flip needs an even number of pages for the spread layout
     if (renderList.length % 2 !== 0) {
-        renderList.push({ canvas_json: null }); 
+        renderList.push({ page_number: 999, canvas_json: null });
     }
 
-    // We keep totalPages as the ORIGINAL count for the UI (1/9)
-    // but the book will have an extra blank page for physics.
-    
-    const promises = renderList.map((info, i) => {
+    totalPages = pagesData.length; // real count (no blank padding)
+
+    for (let i = 0; i < renderList.length; i++) {
         const pageDiv = document.createElement('div');
         pageDiv.className = 'my-page';
-        
-        // Mark first and last elements as "hard" covers
-        if (i === 0 || i === renderList.length - 1) {
-            pageDiv.setAttribute('data-density', 'hard');
-        }
 
         const cvEl = document.createElement('canvas');
         cvEl.id = `rc-${i}`;
-        cvEl.width = PAGE_W;
-        cvEl.height = PAGE_H;
-        
+
         const overlay = document.createElement('div');
         overlay.className = 'interactive-layer';
-        
+
         pageDiv.appendChild(cvEl);
         pageDiv.appendChild(overlay);
         bookEl.appendChild(pageDiv);
 
-        return renderPage(cvEl.id, info.canvas_json, overlay);
-    });
-
-    await Promise.all(promises);
+        await renderPage(cvEl.id, renderList[i].canvas_json, overlay, i);
+    }
 }
 
-
-// ... (Keep your CSS and HTML structure) ...
-async function renderPage(canvasId, jsonData, overlay) {
+// ─── RENDER ONE PAGE ──────────────────────────────────────────────────────────
+async function renderPage(canvasId, jsonData, overlay, pageIndex) {
     return new Promise(resolve => {
-        const sc = new fabric.Canvas(canvasId, { 
-            width: PAGE_W, 
+        const sc = new fabric.Canvas(canvasId, {
+            width: PAGE_W,
             height: PAGE_H,
             interactive: false,
             selection: false
         });
+
+        // Store reference — playPageAnimations() needs this later
+        pageCanvases[pageIndex] = sc;
 
         if (!jsonData) {
             sc.backgroundColor = '#ffffff';
             sc.renderAll();
             return resolve();
         }
-        
+
         const data = typeof jsonData === 'string' ? JSON.parse(jsonData) : jsonData;
-        
+
         sc.loadFromJSON(data, () => {
             sc.renderAll();
-            
+
+            // Build interactive overlays (video / external link / page jump)
             sc.getObjects().forEach(obj => {
-                // Use getBoundingRect to get absolute top-left coordinates
+                obj.setCoords();
                 const rect = obj.getBoundingRect();
 
-                 if (obj.customPageTarget !== undefined && obj.customPageTarget !== null) {
-                    const jumpBtn = document.createElement('div');
-                    jumpBtn.style.cssText = `
-                        position:absolute; 
-                        left:${rect.left}px; 
-                        top:${rect.top}px; 
-                        width:${rect.width}px; 
-                        height:${rect.height}px; 
-                        cursor:pointer; 
-                        pointer-events:auto; 
-                        z-index:20; 
-                        background:rgba(0,0,0,0); /* Transparent but clickable */
-                    `;
-                    
-                    jumpBtn.onclick = (e) => {
-                        e.preventDefault(); 
-                        e.stopPropagation();
-                        const target = parseInt(obj.customPageTarget);
-                        if (pageFlip && !isNaN(target)) {
-                            pageFlip.flip(target); 
-                        }
-                    };
-                    overlay.appendChild(jumpBtn);
-                }
-
-                // 1. VIDEO LOGIC
+                // VIDEO
                 if (obj.customVideoSrc) {
-                    const vid = document.createElement('video');
-                    vid.crossOrigin = "anonymous"; 
-                    const videoPath = obj.customVideoSrc.startsWith('http') 
-                        ? obj.customVideoSrc 
+                    const vid       = document.createElement('video');
+                    vid.crossOrigin = 'anonymous';
+                    vid.src         = obj.customVideoSrc.startsWith('http')
+                        ? obj.customVideoSrc
                         : `http://127.0.0.1:8000${obj.customVideoSrc}`;
-                    
-                    vid.src = videoPath;
-                    vid.autoplay = true; 
-                    vid.muted = true;
-                    vid.loop = true;
+                    vid.autoplay    = true;
+                    vid.muted       = true;
+                    vid.loop        = true;
                     vid.playsInline = true;
-                    
-                    vid.style.cssText = `
-                        position: absolute;
-                        left: ${rect.left}px;
-                        top: ${rect.top}px;
-                        width: ${rect.width}px;
-                        height: ${rect.height}px;
-                        object-fit: cover;
-                        z-index: 5;
-                        pointer-events: none;
-                    `;
+                    vid.style.cssText = `position:absolute;left:${rect.left}px;top:${rect.top}px;width:${rect.width}px;height:${rect.height}px;object-fit:cover;z-index:5;pointer-events:none;`;
+                    vid.oncanplay = () => vid.play().catch(() => {});
                     overlay.appendChild(vid);
                 }
 
-                // 2. EXTERNAL LINK LOGIC
+                // EXTERNAL LINK
                 if (obj.customLink) {
-                    const a = document.createElement('a');
-                    a.href = obj.customLink; 
+                    const a  = document.createElement('a');
+                    a.href   = obj.customLink;
                     a.target = '_blank';
-                    a.style.cssText = `
-                        position: absolute;
-                        left: ${rect.left}px;
-                        top: ${rect.top}px;
-                        width: ${rect.width}px;
-                        height: ${rect.height}px;
-                        cursor: pointer;
-                        pointer-events: auto;
-                        z-index: 10;
-                    `;
+                    a.style.cssText = `position:absolute;left:${rect.left}px;top:${rect.top}px;width:${rect.width}px;height:${rect.height}px;cursor:pointer;pointer-events:auto;z-index:10;`;
                     overlay.appendChild(a);
                 }
 
-                // 3. INTERNAL PAGE JUMP LOGIC (Fixed)
+                // PAGE JUMP
                 if (obj.customPageTarget !== undefined && obj.customPageTarget !== null) {
-                    const jumpBtn = document.createElement('div');
-                    jumpBtn.style.cssText = `
-                        position: absolute;
-                        left: ${rect.left}px;
-                        top: ${rect.top}px;
-                        width: ${rect.width}px;
-                        height: ${rect.height}px;
-                        cursor: pointer;
-                        pointer-events: auto;
-                        z-index: 20;
-                        background: rgba(255,255,255,0.01); /* Necessary for some browsers to register click */
-                    `;
-                    
-                    jumpBtn.onclick = (e) => {
+                    const btn = document.createElement('div');
+                    btn.style.cssText = `position:absolute;left:${rect.left}px;top:${rect.top}px;width:${rect.width}px;height:${rect.height}px;cursor:pointer;pointer-events:auto;z-index:20;background:rgba(255,255,255,0.01);`;
+                    btn.onclick = e => {
                         e.preventDefault();
                         e.stopPropagation();
                         const target = parseInt(obj.customPageTarget);
-                        console.log("Jumping to page index:", target);
-                        if (pageFlip && !isNaN(target)) {
-                            pageFlip.flip(target); 
-                        }
+                        if (pageFlip && !isNaN(target)) pageFlip.flip(target);
                     };
-                    overlay.appendChild(jumpBtn);
+                    overlay.appendChild(btn);
                 }
             });
+
             resolve();
         });
     });
 }
 
-function initFlip(n) {
-    const bookEl = document.getElementById('book');
-    const pageSound = document.getElementById('pageSound');
+// ─── ANIMATION ENGINE ─────────────────────────────────────────────────────────
+// Called when a page becomes visible — plays from each object's current position
+function playPageAnimations(pageIndex) {
+    const sc = pageCanvases[pageIndex];
+    if (!sc) return;
 
-    pageFlip = new St.PageFlip(bookEl, {
-        width: PAGE_W, height: PAGE_H,
-        size: 'fixed',
-        showCover: true, 
-        usePortrait: false, 
-        flippingTime: 800,
-        useMouseEvents: true,
-        clickEventForward: false
+    sc.getObjects().forEach(obj => {
+        if (!obj.animData) return;
+
+        const d      = obj.animData;
+        const dur    = d.duration || 800;
+        const render = sc.renderAll.bind(sc);
+
+        // Always read current position — never a stored snapshot
+        const origLeft    = obj.left;
+        const origTop     = obj.top;
+        const origOpacity = obj.opacity != null ? obj.opacity : 1;
+        const origScaleX  = obj.scaleX  != null ? obj.scaleX  : 1;
+        const origScaleY  = obj.scaleY  != null ? obj.scaleY  : 1;
+
+        switch (d.type) {
+            case 'fade':
+                obj.set('opacity', 0);
+                obj.animate('opacity', origOpacity, { duration: dur, onChange: render });
+                break;
+
+            case 'pop':
+                obj.set({ scaleX: 0.01, scaleY: 0.01 });
+                obj.animate({ scaleX: origScaleX, scaleY: origScaleY }, {
+                    duration: dur, easing: fabric.util.ease.easeOutBack, onChange: render
+                });
+                break;
+
+            case 'slideL':
+                obj.set('left', origLeft + 100);
+                obj.animate('left', origLeft, { duration: dur, easing: fabric.util.ease.easeOutCubic, onChange: render });
+                break;
+
+            case 'slideR':
+                obj.set('left', origLeft - 100);
+                obj.animate('left', origLeft, { duration: dur, easing: fabric.util.ease.easeOutCubic, onChange: render });
+                break;
+
+            case 'slideU':
+                obj.set('top', origTop + 100);
+                obj.animate('top', origTop, { duration: dur, easing: fabric.util.ease.easeOutCubic, onChange: render });
+                break;
+
+            case 'slideD':
+                obj.set('top', origTop - 100);
+                obj.animate('top', origTop, { duration: dur, easing: fabric.util.ease.easeOutCubic, onChange: render });
+                break;
+
+            case 'bounce':
+                obj.animate('top', origTop - 50, {
+                    duration: dur / 2, easing: fabric.util.ease.easeOutCubic, onChange: render,
+                    onComplete: () => obj.animate('top', origTop, {
+                        duration: dur / 2, easing: fabric.util.ease.easeOutBounce, onChange: render
+                    })
+                });
+                break;
+
+            case 'pulse':
+                obj.animate({ scaleX: origScaleX * 1.2, scaleY: origScaleY * 1.2 }, {
+                    duration: dur / 2, onChange: render,
+                    onComplete: () => obj.animate({ scaleX: origScaleX, scaleY: origScaleY }, {
+                        duration: dur / 2, onChange: render
+                    })
+                });
+                break;
+
+            case 'shake':
+                obj.animate('left', origLeft - 10, { duration: 80, onChange: render,
+                    onComplete: () => obj.animate('left', origLeft + 10, { duration: 80, onChange: render,
+                        onComplete: () => obj.animate('left', origLeft - 8, { duration: 80, onChange: render,
+                            onComplete: () => obj.animate('left', origLeft + 8, { duration: 80, onChange: render,
+                                onComplete: () => obj.animate('left', origLeft, { duration: 80, onChange: render })
+                            })
+                        })
+                    })
+                });
+                break;
+
+            case 'float':
+                obj.animate('top', origTop - 15, {
+                    duration: dur / 2, easing: fabric.util.ease.easeInOutSine, onChange: render,
+                    onComplete: () => obj.animate('top', origTop, {
+                        duration: dur / 2, easing: fabric.util.ease.easeInOutSine, onChange: render
+                    })
+                });
+                break;
+        }
     });
-
-    pageFlip.loadFromHTML(document.querySelectorAll('#book .my-page'));
-
-    const recenter = (idx) => {
-        if (idx === 0) bookEl.style.transform = 'translateX(-210px)';
-        else if (idx >= n - 1) bookEl.style.transform = 'translateX(210px)';
-        else bookEl.style.transform = 'translateX(0px)';
-    };
-
-    recenter(0);
-    setTimeout(() => document.getElementById('loadOverlay').classList.add('hidden'), 500);
-
-    pageFlip.on('flip', e => {
-        if (pageSound) { pageSound.currentTime = 0; pageSound.play().catch(() => {}); }
-        recenter(e.data);
-        updateUI(e.data);
-    });
-
-    buildDots(); 
-    updateUI(0);
 }
-function initFlip(n) {
-    const bookEl = document.getElementById('book');
+
+// ─── INIT FLIPBOOK ────────────────────────────────────────────────────────────
+function initFlip() {
+    const bookEl    = document.getElementById('book');
     const pageSound = document.getElementById('pageSound');
 
     pageFlip = new St.PageFlip(bookEl, {
@@ -427,7 +349,7 @@ function initFlip(n) {
         usePortrait: false,
         flippingTime: 800,
         drawShadow: true,
-        maxShadowOpacity: .5,
+        maxShadowOpacity: 0.5,
         showPageCorners: true,
         useMouseEvents: true,
         clickEventForward: false
@@ -437,60 +359,52 @@ function initFlip(n) {
 
     function recenter(idx) {
         const total = pageFlip.getPageCount();
-        if (idx === 0) bookEl.style.transform = 'translateX(-210px)';
-        else if (idx >= total - 1) bookEl.style.transform = 'translateX(210px)';
-        else bookEl.style.transform = 'translateX(0px)';
+        if (idx === 0)           bookEl.style.transform = 'translateX(-210px)';
+        else if (idx >= total-1) bookEl.style.transform = 'translateX(210px)';
+        else                     bookEl.style.transform = 'translateX(0px)';
     }
 
     recenter(0);
+    setTimeout(() => document.getElementById('loadOverlay').classList.add('hidden'), 500);
 
-    setTimeout(() => {
-        document.getElementById('loadOverlay').classList.add('hidden');
-    }, 500);
-
+    // On every flip → play animations for the newly visible spread
     pageFlip.on('flip', e => {
         if (pageSound) { pageSound.currentTime = 0; pageSound.play().catch(() => {}); }
         recenter(e.data);
         updateUI(e.data);
+        // e.data = left page index; right page = e.data + 1
+        playPageAnimations(e.data);
+        playPageAnimations(e.data + 1);
     });
 
-    buildDots(totalPages);
+    buildDots();
     updateUI(0);
+
+    // Play first-page animations after loader disappears
+    setTimeout(() => playPageAnimations(0), 600);
 }
 
+// ─── UI HELPERS ───────────────────────────────────────────────────────────────
 function updateUI(idx) {
     const ind = document.getElementById('pgInd');
-    if (ind) {
-        // We use Math.min so it never shows "Page 10/9" on the blank page
-        const displayIdx = Math.min(idx + 1, totalPages);
-        ind.textContent = `Page ${displayIdx} / ${totalPages}`;
-    }
+    if (ind) ind.textContent = `Page ${Math.min(idx + 1, totalPages)} / ${totalPages}`;
     document.querySelectorAll('.p-dot').forEach((d, i) => d.classList.toggle('a', i === idx));
 }
 
 function buildDots() {
     const wrap = document.getElementById('dotWrap');
     wrap.innerHTML = '';
-    // Number of dots = 1 (Cover) + (Spreads) + 1 (Back Cover)
-    const totalViews = (totalPages / 2) + 1; 
-
-    for (let i = 0; i < totalViews; i++) {
+    for (let i = 0; i < totalPages; i++) {
         const d = document.createElement('button');
         d.className = 'p-dot' + (i === 0 ? ' a' : '');
-        d.onclick = () => {
-            if (pageFlip) {
-                // Map the view dot back to the first page of that spread
-                const targetIdx = i === 0 ? 0 : (i * 2) - 1;
-                pageFlip.flip(targetIdx);
-            }
-        };
+        d.onclick = () => { if (pageFlip) pageFlip.flip(i); };
         wrap.appendChild(d);
     }
 }
 
-
-function goPrev() { if (pageFlip) pageFlip.flipPrev(); }
-function goNext() { if (pageFlip) pageFlip.flipNext(); }
+function setTxt(t) { document.getElementById('loadTxt').textContent = t; }
+function goPrev()  { if (pageFlip) pageFlip.flipPrev(); }
+function goNext()  { if (pageFlip) pageFlip.flipNext(); }
 </script>
 </body>
 </html>
