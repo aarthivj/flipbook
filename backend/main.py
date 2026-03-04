@@ -59,6 +59,9 @@ app.add_middleware(
 FRONTEND_DIR = os.path.join(os.path.dirname(__file__), "..", "frontend")
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 VIDEO_DIR = os.path.join(BASE_DIR, "videos")
+SOUNDS_DIR = os.path.join(BASE_DIR, "sounds")
+if not os.path.exists(SOUNDS_DIR):
+    os.makedirs(SOUNDS_DIR)
 
 # Ensure the folder exists
 if not os.path.exists(VIDEO_DIR):
@@ -101,6 +104,7 @@ def get_preview():
 # Static file mounting for frontend assets and uploaded media
 app.mount("/frontend", StaticFiles(directory=FRONTEND_DIR), name="frontend")
 app.mount("/uploads", StaticFiles(directory=VIDEO_DIR), name="uploads")
+app.mount("/sounds", StaticFiles(directory=SOUNDS_DIR), name="sounds")
 
 # --- VIDEO UPLOAD API ---
 @app.post("/upload_video")
