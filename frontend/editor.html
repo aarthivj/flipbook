@@ -303,6 +303,17 @@ margin-bottom: 10px;
 border-color:var(--pri);
 }
 
+/* This ensures the SVG icons match the color of your FontAwesome icons */
+.tool svg {
+  color: var(--muted);
+  transition: all 0.2s ease;
+}
+
+.tool:hover svg {
+  color: var(--pri); /* Changes to your primary brand purple on hover */
+  transform: scale(1.1);
+}
+
 t[type=file]{display:none}
 input[type=range]{accent-color:var(--pri)}
 ::-webkit-scrollbar{width:4px;height:4px}
@@ -442,25 +453,83 @@ input[type=range]{accent-color:var(--pri)}
     <button class="tool" onclick="addShape('triangle')" title="Triangle"><i class="fa-solid fa-play fa-rotate-270"></i></button>
   </div>
 
-  <div class="section">Polygons</div>
-  <div class="g3">
-    <button class="tool" onclick="addShape('pentagon')">5 Sides</button>
-    <button class="tool" onclick="addShape('hexagon')">6 Sides</button>
-    <button class="tool" onclick="addShape('heptagon')">7 Sides</button>
-    <button class="tool" onclick="addShape('octagon')">8 Sides</button>
-    <button class="tool" onclick="addShape('decagon')">10 Sides</button>
-    <button class="tool" onclick="addShape('rhombus')">Rhombus</button>
-  </div>
+<div class="section">Polygons</div>
+<div class="g3">
+  <button class="tool" onclick="addShape('pentagon')" title="Pentagon">
+    <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+      <path d="M12 2.5L21.8 9.6L18.1 21.1H5.9L2.2 9.6L12 2.5Z" />
+    </svg>
+  </button>
 
-  <div class="section">Stars & Bursts</div>
-  <div class="g3">
-    <button class="tool" onclick="addShape('star4')">4 Point<i class="fa-solid fa-star-of-four"></i></button>
-    <button class="tool" onclick="addShape('star')"><i class="fa-solid fa-star"></i></button>
-    <button class="tool" onclick="addShape('star6')">6 Point</button>
-    <button class="tool" onclick="addShape('star8')">8 Point</button>
-    <button class="tool" onclick="addShape('starburst')"><i class="fa-solid fa-sun"></i></button>
-    <button class="tool" onclick="addShape('pinwheel')"><i class="fa-solid fa-asterisk"></i></button>
-  </div>
+  <button class="tool" onclick="addShape('hexagon')" title="Hexagon">
+    <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+      <path d="M21 16.5V7.5L12 2.3L3 7.5V16.5L12 21.7L21 16.5Z" />
+    </svg>
+  </button>
+
+  <button class="tool" onclick="addShape('heptagon')" title="Heptagon">
+    <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+      <path d="M12 2L18.7 5.1L21.7 12L18.7 18.9L12 22L5.3 18.9L2.3 12L5.3 5.1L12 2Z" />
+    </svg>
+  </button>
+
+  <button class="tool" onclick="addShape('octagon')" title="Octagon">
+    <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+      <path d="M8.2 2.2H15.8L21.8 8.2V15.8L15.8 21.8H8.2L2.2 15.8V8.2L8.2 2.2Z" />
+    </svg>
+  </button>
+
+  <button class="tool" onclick="addShape('decagon')" title="Decagon">
+    <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+      <path d="M12 2L17.3 3.7L21 8.1L21.6 13.9L19.1 19.1L13.9 21.6L8.1 21L3.7 17.3L2 12L3.7 6.7L8.1 3L12 2Z" />
+    </svg>
+  </button>
+
+  <button class="tool" onclick="addShape('rhombus')" title="Rhombus">
+    <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+      <path d="M12 2L22 12L12 22L2 12L12 2Z" />
+    </svg>
+  </button>
+</div>
+
+ <div class="section">Stars & Bursts</div>
+<div class="g3">
+  <button class="tool" onclick="addShape('star4')" title="4 Point Star">
+    <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+      <path d="M12 2L14.5 9.5L22 12L14.5 14.5L12 22L9.5 14.5L2 12L9.5 9.5L12 2Z" />
+    </svg>
+  </button>
+
+  <button class="tool" onclick="addShape('star')" title="5 Point Star">
+    <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+      <path d="M12 17.27L18.18 21L16.54 13.97L22 9.24L14.81 8.63L12 2L9.19 8.63L2 9.24L7.46 13.97L5.82 21L12 17.27Z" />
+    </svg>
+  </button>
+
+  <button class="tool" onclick="addShape('star6')" title="6 Point Star">
+    <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+      <path d="M12 2L15 8L21 9.5L16.5 14L18 21L12 17L6 21L7.5 14L3 9.5L9 8L12 2Z" />
+    </svg>
+  </button>
+
+  <button class="tool" onclick="addShape('star8')" title="8 Point Star">
+    <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+      <path d="M12 2L14.1 7.9L20 10L14.1 12.1L12 18L9.9 12.1L4 10L9.9 7.9L12 2ZM12 6L11.1 8.5L8.5 9.4L11.1 10.3L12 12.8L12.9 10.3L15.5 9.4L12.9 8.5L12 6Z" />
+    </svg>
+  </button>
+
+  <button class="tool" onclick="addShape('starburst')" title="Starburst">
+    <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+      <path d="M12 2L13.9 6.4L18.5 4.5L17.6 9.3L22 10.1L18.4 13.2L20.8 17.5L16 16.9L14.7 21.6L11.1 18.5L7.4 21.6L6.1 16.9L1.3 17.5L3.7 13.2L0.1 10.1L4.5 9.3L3.6 4.5L8.2 6.4L10.1 2H12Z" />
+    </svg>
+  </button>
+
+  <button class="tool" onclick="addShape('pinwheel')" title="Pinwheel">
+    <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+      <path d="M19 12L22 15L15 22L12 19L9 22L2 15L5 12L2 9L9 2L12 5L15 2L22 9L19 12Z" />
+    </svg>
+  </button>
+</div>
 
   <div class="section">Decorative Symbols</div>
   <div class="g3">
@@ -2233,7 +2302,28 @@ function addBrandFont(){const f=document.getElementById('newFont').value;if(!bra
 renderBrand();
 
 // ─── BACKGROUND ───────────────────────────────────────────────────────────────
-const bgPresets=['#ffffff','#111827','#f9fafb','#fee2e2','#dbeafe','#d1fae5','#fef3c7','#ede9fe','#fce7f3','#0f172a'];
+const bgPresets = [
+  '#ffffff', // 1. White
+  '#000000', // 2. Black
+  '#64748b', // 3. Slate/Gray
+  '#ef4444', // 4. Red
+  '#f43f5e', // 5. Rose
+  '#ec4899', // 6. Pink
+  '#d946ef', // 7. Fuchsia
+  '#a855f7', // 8. Purple
+  '#8b5cf6', // 9. Violet
+  '#6366f1', // 10. Indigo
+  '#3b82f6', // 11. Blue
+  '#0ea5e9', // 12. Sky
+  '#06b6d4', // 13. Cyan
+  '#14b8a6', // 14. Teal
+  '#10b981', // 15. Emerald
+  '#22c55e', // 16. Green
+  '#84cc16', // 17. Lime
+  '#facc15', // 18. Yellow
+  '#f59e0b', // 19. Amber
+  '#f97316'  // 20. Orange
+];
 const bgGradsData=[
   {label:'Purple Dusk',stops:['#6366f1','#8b5cf6']},{label:'Ocean',stops:['#0ea5e9','#2563eb']},
   {label:'Sunrise',stops:['#f59e0b','#ef4444']},{label:'Emerald',stops:['#10b981','#0891b2']},
