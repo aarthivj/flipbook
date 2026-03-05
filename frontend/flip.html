@@ -266,7 +266,7 @@ overlay.appendChild(jumpBtn);
                     vid.crossOrigin = 'anonymous';
                     vid.src         = obj.customVideoSrc.startsWith('http')
                         ? obj.customVideoSrc
-                        : `http://127.0.0.1:8000${obj.customVideoSrc}`;
+                        : `${obj.customVideoSrc}`;
                     vid.autoplay    = true;
                     vid.muted       = true;
                     vid.loop        = true;

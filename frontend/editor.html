@@ -2154,7 +2154,7 @@ async function uploadMedia(e, type) {
 
             try {
                 // Upload to FastAPI backend
-                const res = await fetch("http://127.0.0.1:8000/upload_video", {
+                const res = await fetch("/upload_video", {
                     method: "POST",
                     body: formData
                 });
