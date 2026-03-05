@@ -45,6 +45,57 @@
         .p-dot:hover{background:rgba(255,255,255,.5)}
         .update-banner{display:none;position:fixed;top:14px;left:50%;transform:translateX(-50%);background:#6366f1;color:#fff;padding:9px 18px;border-radius:8px;font-size:.83rem;font-weight:600;cursor:pointer;z-index:200;box-shadow:0 4px 18px rgba(99,102,241,.4);white-space:nowrap}
         .update-banner.show{display:block}
+        /* --- Spine Shadow Effect --- */
+
+/* Base setup for the shadow pseudo-element */
+.my-page::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    height: 100%;
+    width: 40px; /* Adjust width of the shadow */
+    pointer-events: none;
+    z-index: 60; /* Above the canvas, below interactive layers */
+    opacity: 0.8;
+}
+
+/* Left Pages (Even indices): Shadow on the RIGHT edge */
+.my-page:nth-child(even)::after {
+    right: 0;
+    background: linear-gradient(to left, 
+        rgba(0,0,0,0.25) 0%, 
+        rgba(0,0,0,0.1) 20%, 
+        rgba(0,0,0,0.02) 50%, 
+        transparent 100%);
+}
+
+/* Right Pages (Odd indices): Shadow on the LEFT edge */
+.my-page:nth-child(odd)::after {
+    left: 0;
+    background: linear-gradient(to right, 
+        rgba(0,0,0,0.25) 0%, 
+        rgba(0,0,0,0.1) 20%, 
+        rgba(0,0,0,0.02) 50%, 
+        transparent 100%);
+}
+
+/* Hard Spine Center Line (Optional: adds a crisp dark line exactly in the middle) */
+.my-page:nth-child(even)::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 1px;
+    height: 100%;
+    background: rgba(0,0,0,0.2);
+    z-index: 61;
+}
+
+/* Remove spine shadow for the Cover (Page 1) since it has no opposite page */
+.my-page:nth-child(1)::after, 
+.my-page:nth-child(1)::before {
+    display: none;
+}
     </style>
 </head>
 <body>
@@ -201,12 +252,32 @@ async function renderPage(canvasId, jsonData, overlay, pageIndex) {
         const data = typeof jsonData === 'string' ? JSON.parse(jsonData) : jsonData;
 
         sc.loadFromJSON(data, () => {
-            sc.renderAll();
+    sc.renderAll();
 
-            // Build interactive overlays (video / external link / page jump)
-            sc.getObjects().forEach(obj => {
-                obj.setCoords();
-                const rect = obj.getBoundingRect();
+    // ✅ Lock ALL objects — preview mode, no moving/selecting allowed
+    sc.getObjects().forEach(obj => {
+        obj.selectable = false;
+        obj.lockMovementX = true;
+        obj.lockMovementY = true;
+        obj.lockScalingX = true;
+        obj.lockScalingY = true;
+        obj.lockRotation = true;
+        obj.hasControls = false;
+        obj.hasBorders = false;
+
+        if (obj.customPageTarget !== undefined && obj.customPageTarget !== null) {
+            obj.evented = true;
+        } else {
+            obj.evented = false;
+        }
+    });
+    sc.discardActiveObject();
+    sc.renderAll();
+
+    // Build interactive overlays (video / external link / page jump)
+    sc.getObjects().forEach(obj => {
+        obj.setCoords();
+        const rect = obj.getBoundingRect();
                 
                 // PAGE JUMP
 if (obj.customPageTarget !== undefined && obj.customPageTarget !== null) {
