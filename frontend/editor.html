@@ -35,8 +35,8 @@ body{display:flex;flex-direction:column;height:100vh;background:var(--bg);overfl
 .tab-btn i{font-size:1.15rem}
 .tab-btn:hover,.tab-btn.active{color:#fff;background:#1f2937}
 .sep{width:36px;height:1px;background:#374151;margin:4px 0}
-.panel-wrap{width:272px;background:#fff;border-right:1px solid var(--bdr);display:flex;flex-direction:column;flex-shrink:0;overflow:visible}
-.panel{display:none;padding:14px;height:100%;overflow-y:auto;flex-direction:column;gap:0}
+.panel-wrap{width:272px;background:#fff;border-right:1px solid var(--bdr);display:flex;flex-direction:column;flex-shrink:0;overflow:visible;z-index:50}
+.panel{display:none;padding:14px;height:100%;overflow-y:auto;flex-direction:column;gap:0;max-height:calc(100vh - 52px)}
 .panel.active{display:flex}
 .panel-title{font-size:.95rem;font-weight:700;margin-bottom:12px;color:var(--txt)}
 .search{width:100%;padding:7px 10px;border:1px solid var(--bdr);border-radius:7px;font-size:.82rem;outline:none;margin-bottom:12px;background:#f9fafb;font-family:inherit}
@@ -2542,14 +2542,21 @@ function fpOpen(){
   const t=document.getElementById('fpTrigger');
   let p=document.getElementById('fpPanel');
   if(!t||!p)return;
-  if(p.parentElement!==document.body) document.body.appendChild(p);
+  if(p.parentElement!==document.getElementById('fontPickerMount')) document.getElementById('fontPickerMount').appendChild(p);
+
   const r=t.getBoundingClientRect();
-  p.style.position='fixed';
-  p.style.top=(r.bottom+5)+'px';
-  p.style.left=r.left+'px';
-  p.style.width=r.width+'px';
-  const spaceBelow=window.innerHeight-r.bottom-10;
-  p.style.maxHeight=Math.min(420,spaceBelow)+'px';
+p.style.position='relative';
+p.style.top='auto';
+p.style.left='auto';
+p.style.width='100%';
+p.style.maxHeight='380px';
+p.style.zIndex='1';
+p.style.marginTop='6px';
+// Scroll the panel down so font list is visible
+setTimeout(() => {
+    const panel = document.getElementById('tabText');
+    if (panel) panel.scrollTop = panel.scrollHeight;
+}, 60);
   p.classList.add('open'); t.classList.add('open');
   _fpOpen=true;
   fpRenderList();
