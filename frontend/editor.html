@@ -816,9 +816,14 @@ const CURRENT_USER_ID = localStorage.getItem('droidal_user_id') || 1;
 document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("grad1").addEventListener("input",function(){
     document.getElementById("grad1Preview").style.background=this.value;
+    applyLiveGradient();
   });
   document.getElementById("grad2").addEventListener("input",function(){
     document.getElementById("grad2Preview").style.background=this.value;
+    applyLiveGradient();
+  });
+  document.getElementById("gradDir").addEventListener("change", function(){
+    applyLiveGradient();
   });
   document.getElementById("bgColor").addEventListener("input", function(){
     document.getElementById("solidPreview").style.background = this.value;
@@ -2210,6 +2215,18 @@ const bgGradsData=[
   const grads=document.getElementById('bgGrads');
   bgGradsData.forEach(g=>{const d=document.createElement('div');const grad=`linear-gradient(135deg,${g.stops[0]},${g.stops[1]})`;d.style.cssText=`height:32px;border-radius:6px;background:${grad};cursor:pointer;border:2px solid transparent;margin-bottom:5px;font-size:.72rem;font-weight:600;display:flex;align-items:center;justify-content:center;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.4)`;d.textContent=g.label;d.onmouseover=()=>d.style.border='2px solid var(--pri)';d.onmouseout=()=>d.style.border='2px solid transparent';d.onclick=()=>setBackground(g.stops[0],g.stops[1]);grads.appendChild(d);});
 })();
+
+function applyLiveGradient() {
+  const c1 = document.getElementById("grad1").value;
+  const c2 = document.getElementById("grad2").value;
+  const dir = document.getElementById("gradDir").value;
+  let coords;
+  if (dir === "to right") coords = { x1:0, y1:0, x2:CW, y2:0 };
+  else if (dir === "45deg") coords = { x1:0, y1:0, x2:CW, y2:CH };
+  else coords = { x1:0, y1:0, x2:0, y2:CH };
+  const grad = new fabric.Gradient({ type:'linear', coords, colorStops:[{offset:0,color:c1},{offset:1,color:c2}] });
+  canvas.setBackgroundColor(grad, canvas.renderAll.bind(canvas));
+}
 
 function applyCustomGradient(){
   const c1=document.getElementById("grad1").value;
