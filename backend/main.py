@@ -32,6 +32,7 @@ class Project(Base):
     project_type = Column(String)
     user_id = Column(Integer, ForeignKey("users.id"))
     data = Column(JSON) 
+    share_id = Column(String, unique=True, index=True, default=lambda: str(uuid4()))
 
 class CustomElement(Base):
     __tablename__ = "custom_elements"
@@ -97,9 +98,16 @@ def get_dashboard():
 def get_editor(): 
     return FileResponse(os.path.join(FRONTEND_DIR, "editor.html"))
 
-@app.get("/preview")
-def get_preview():
+@app.get("/preview/{share_id}")
+def get_preview(share_id: str):
     return FileResponse(os.path.join(FRONTEND_DIR, "flip.html"))
+
+@app.get("/api/preview/{share_id}")
+def get_preview_data(share_id: str, db: Session = Depends(get_db)):
+    project = db.query(Project).filter(Project.share_id == share_id).first()
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    return {"data": project.data, "title": project.title}
 
 # Static file mounting for frontend assets and uploaded media
 app.mount("/frontend", StaticFiles(directory=FRONTEND_DIR), name="frontend")
@@ -167,18 +175,19 @@ def save_project(proj: dict, db: Session = Depends(get_db)):
             db_p.data = data_content
             db_p.title = proj.get('title', db_p.title)
             db.commit()
-            return {"status": "updated", "id": db_p.id}
+            return {"status": "updated", "id": db_p.id, "share_id": db_p.share_id}
     
     new_p = Project(
-        title=proj.get('title', 'Untitled'), 
-        project_type=proj.get('type', 'flipbook'), 
-        user_id=proj.get('user_id'), 
-        data=data_content
+    title=proj.get('title', 'Untitled'), 
+    project_type=proj.get('type', 'flipbook'), 
+    user_id=proj.get('user_id'), 
+    data=data_content,
+    share_id=str(uuid4())  # ← ADD THIS
     )
     db.add(new_p)
     db.commit()
     db.refresh(new_p)
-    return {"id": new_p.id}
+    return {"id": new_p.id, "share_id": new_p.share_id}
 
 # --- CUSTOM ELEMENTS API ---
 @app.post("/api/custom-elements/save")
