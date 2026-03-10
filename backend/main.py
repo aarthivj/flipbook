@@ -6,7 +6,7 @@ from fastapi import FastAPI, Depends, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
-from sqlalchemy import Text, create_engine, Column, String, Integer, JSON, ForeignKey
+from sqlalchemy import Text, create_engine, Column, String, Integer, JSON, ForeignKey, inspect, text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
 from pydantic import BaseModel
@@ -22,6 +22,9 @@ Base = declarative_base()
 class User(Base):
     __tablename__ = "users"
     id = Column(Integer, primary_key=True, index=True)
+    first_name = Column(String, nullable=True)
+    last_name = Column(String, nullable=True)
+    email = Column(String, unique=True, index=True, nullable=True)
     username = Column(String, unique=True, index=True)
     password = Column(String)
 
@@ -43,6 +46,23 @@ class CustomElement(Base):
     thumbnail = Column(Text)
 
 Base.metadata.create_all(bind=engine)
+
+def run_migrations():
+    with engine.connect() as conn:
+        inspector = inspect(engine)
+        existing_columns = [col['name'] for col in inspector.get_columns('users')]
+        
+        if 'first_name' not in existing_columns:
+            conn.execute(text("ALTER TABLE users ADD COLUMN first_name VARCHAR"))
+        if 'last_name' not in existing_columns:
+            conn.execute(text("ALTER TABLE users ADD COLUMN last_name VARCHAR"))
+        if 'email' not in existing_columns:
+            conn.execute(text("ALTER TABLE users ADD COLUMN email VARCHAR"))
+        
+        conn.commit()
+
+run_migrations()
+
 
 # --- APP SETUP ---
 app = FastAPI()
@@ -70,6 +90,13 @@ if not os.path.exists(VIDEO_DIR):
 
 # --- SCHEMAS ---
 class LoginRequest(BaseModel):
+    username: str
+    password: str
+
+class SignupRequest(BaseModel):
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    email: Optional[str] = None
     username: str
     password: str
 
@@ -130,15 +157,27 @@ async def upload_video(video: UploadFile = File(...)):
     return {"url": f"/uploads/{unique_filename}"}
 
 
-
 # --- AUTH API ---
 @app.post("/api/signup")
-def signup(req: LoginRequest, db: Session = Depends(get_db)):
+def signup(req: SignupRequest, db: Session = Depends(get_db)):
+    # Check for duplicate username
     existing_user = db.query(User).filter(User.username == req.username).first()
     if existing_user:
         raise HTTPException(status_code=400, detail="Username already exists")
-    
-    new_user = User(username=req.username, password=req.password)
+
+    # Check for duplicate email (if provided)
+    if req.email:
+        existing_email = db.query(User).filter(User.email == req.email).first()
+        if existing_email:
+            raise HTTPException(status_code=400, detail="Email already registered")
+
+    new_user = User(
+        first_name=req.first_name,
+        last_name=req.last_name,
+        email=req.email,
+        username=req.username,
+        password=req.password
+    )
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
@@ -149,7 +188,8 @@ def login(req: LoginRequest, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.username == req.username, User.password == req.password).first()
     if not user:
         raise HTTPException(status_code=401, detail="Invalid username or password")
-    return {"user_id": user.id, "username": user.username}
+    return {"user_id": user.id, "username": user.username, "first_name": user.first_name, "last_name": user.last_name}
+
 
 # --- PROJECTS API ---
 @app.get("/api/projects/{user_id}")
@@ -178,11 +218,11 @@ def save_project(proj: dict, db: Session = Depends(get_db)):
             return {"status": "updated", "id": db_p.id, "share_id": db_p.share_id}
     
     new_p = Project(
-    title=proj.get('title', 'Untitled'), 
-    project_type=proj.get('type', 'flipbook'), 
-    user_id=proj.get('user_id'), 
-    data=data_content,
-    share_id=str(uuid4())  # ← ADD THIS
+        title=proj.get('title', 'Untitled'), 
+        project_type=proj.get('type', 'flipbook'), 
+        user_id=proj.get('user_id'), 
+        data=data_content,
+        share_id=str(uuid4())
     )
     db.add(new_p)
     db.commit()
