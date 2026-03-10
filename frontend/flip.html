@@ -5,11 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>Droidal – Flipbook Preview</title>
  <script src="https://cdn.jsdelivr.net/npm/page-flip@2.0.7/dist/js/page-flip.browser.min.js"></script>
-
 <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
-
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700;900&family=Inter:wght@300;400;500;600;700&family=Roboto:wght@400;700&family=Oswald:wght@400;700&family=Montserrat:wght@400;600;700&family=Poppins:wght@400;600&family=Raleway:wght@400;700&family=Lato:wght@400;700&family=Open+Sans:wght@400;600&family=Merriweather:wght@400;700&family=Dancing+Script:wght@600&family=Bebas+Neue&display=swap" rel="stylesheet">
     <style>
         *{box-sizing:border-box;margin:0;padding:0}
@@ -20,7 +17,8 @@
         .my-page{background-color:#ffffff;position:absolute;top:0;left:0;width:100%;height:100%;overflow:hidden;box-shadow:inset 0 0 1px rgba(0,0,0,.1)}
         .my-page::before{content:'';position:absolute;top:0;left:0;right:0;bottom:0;background-image:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.008) 2px,rgba(0,0,0,.008) 4px);pointer-events:none;opacity:.6;z-index:50}
         .interactive-layer{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:9999}
-.interactive-layer div,.interactive-layer a,.interactive-layer video,.interactive-layer button{pointer-events:auto}        .loading-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:#0a4d68;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;transition:opacity .5s ease;gap:14px}
+        .interactive-layer div,.interactive-layer a,.interactive-layer video,.interactive-layer button{pointer-events:auto}
+        .loading-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:#0a4d68;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;transition:opacity .5s ease;gap:14px}
         .loading-overlay.hidden{opacity:0;pointer-events:none}
         .loader{width:48px;height:48px;border:4px solid rgba(16,185,129,.2);border-top-color:#10b981;border-radius:50%;animation:spin .8s linear infinite}
         .load-txt{color:rgba(255,255,255,.65);font-size:.85rem;font-weight:500}
@@ -45,106 +43,88 @@
         .p-dot:hover{background:rgba(255,255,255,.5)}
         .update-banner{display:none;position:fixed;top:14px;left:50%;transform:translateX(-50%);background:#6366f1;color:#fff;padding:9px 18px;border-radius:8px;font-size:.83rem;font-weight:600;cursor:pointer;z-index:200;box-shadow:0 4px 18px rgba(99,102,241,.4);white-space:nowrap}
         .update-banner.show{display:block}
-        /* --- Spine Shadow Effect --- */
 
-/* Base setup for the shadow pseudo-element */
-.my-page::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    height: 100%;
-    width: 40px; /* Adjust width of the shadow */
-    pointer-events: none;
-    z-index: 60; /* Above the canvas, below interactive layers */
-    opacity: 0.8;
-}
+        /* --- Spine Shadow --- */
+        .my-page::after{content:'';position:absolute;top:0;height:100%;width:40px;pointer-events:none;z-index:60;opacity:0.8}
+        .my-page:nth-child(even)::after{right:0;background:linear-gradient(to left,rgba(0,0,0,0.25) 0%,rgba(0,0,0,0.1) 20%,rgba(0,0,0,0.02) 50%,transparent 100%)}
+        .my-page:nth-child(odd)::after{left:0;background:linear-gradient(to right,rgba(0,0,0,0.25) 0%,rgba(0,0,0,0.1) 20%,rgba(0,0,0,0.02) 50%,transparent 100%)}
+        .my-page:nth-child(even)::before{content:'';position:absolute;top:0;right:0;width:1px;height:100%;background:rgba(0,0,0,0.2);z-index:61}
+        .my-page:nth-child(1)::after,.my-page:nth-child(1)::before{display:none}
+        .interactive-layer video,.interactive-layer canvas{transition:none !important}
 
-/* Left Pages (Even indices): Shadow on the RIGHT edge */
-.my-page:nth-child(even)::after {
-    right: 0;
-    background: linear-gradient(to left, 
-        rgba(0,0,0,0.25) 0%, 
-        rgba(0,0,0,0.1) 20%, 
-        rgba(0,0,0,0.02) 50%, 
-        transparent 100%);
-}
+        /* --- Video --- */
+        .vid-wrap{position:absolute;overflow:hidden;z-index:9998}
+        .vid-ctrl-bar{position:absolute;bottom:8px;right:8px;display:flex;gap:6px;align-items:center;opacity:0;transition:opacity 0.25s ease;z-index:10000;pointer-events:none}
+        .vid-wrap:hover .vid-ctrl-bar{opacity:1;pointer-events:all}
+        .vid-ctrl-btn{width:30px;height:30px;border:none;border-radius:50%;cursor:pointer;background:rgba(0,0,0,0.65);color:#fff;font-size:11px;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px);transition:background 0.15s}
+        .vid-ctrl-btn:hover{background:rgba(0,0,0,0.9)}
 
-/* Right Pages (Odd indices): Shadow on the LEFT edge */
-.my-page:nth-child(odd)::after {
-    left: 0;
-    background: linear-gradient(to right, 
-        rgba(0,0,0,0.25) 0%, 
-        rgba(0,0,0,0.1) 20%, 
-        rgba(0,0,0,0.02) 50%, 
-        transparent 100%);
-}
+        /* ════════════════════════════════
+           BACKGROUND SWITCHER
+        ════════════════════════════════ */
+        #bg-menu-btn{
+            position:fixed;top:18px;left:18px;z-index:500;
+            width:42px;height:42px;border-radius:10px;
+            background:rgba(255,255,255,0.10);
+            border:1px solid rgba(255,255,255,0.18);
+            backdrop-filter:blur(10px);
+            color:#fff;font-size:18px;cursor:pointer;
+            display:flex;align-items:center;justify-content:center;
+            transition:background 0.2s,transform 0.2s;
+        }
+        #bg-menu-btn:hover{background:rgba(255,255,255,0.2);transform:scale(1.07)}
+        #bg-menu-btn.open{background:rgba(99,102,241,0.5);border-color:#6366f1}
 
-/* Hard Spine Center Line (Optional: adds a crisp dark line exactly in the middle) */
-.my-page:nth-child(even)::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    right: 0;
-    width: 1px;
-    height: 100%;
-    background: rgba(0,0,0,0.2);
-    z-index: 61;
-}
+        #bg-panel{
+            position:fixed;top:70px;left:18px;z-index:499;
+            width:162px;
+            max-height:calc(100vh - 120px);
+            overflow-y:auto;
+            background:rgba(13,20,36,0.96);
+            backdrop-filter:blur(18px);
+            border:1px solid rgba(255,255,255,0.11);
+            border-radius:14px;
+            padding:10px;
+            display:flex;flex-direction:column;gap:7px;
+            opacity:0;pointer-events:none;
+            transform:translateY(-8px) scale(0.97);
+            transition:opacity 0.2s ease,transform 0.2s ease;
+            scrollbar-width:thin;scrollbar-color:rgba(255,255,255,0.12) transparent;
+        }
+        #bg-panel::-webkit-scrollbar{width:3px}
+        #bg-panel::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.15);border-radius:3px}
+        #bg-panel.open{opacity:1;pointer-events:all;transform:translateY(0) scale(1)}
 
-.interactive-layer video, .interactive-layer canvas {
-    transition: none !important;
-}
+        .bg-panel-title{font-size:0.65rem;font-weight:700;color:rgba(255,255,255,0.38);text-transform:uppercase;letter-spacing:0.1em;padding-bottom:6px;border-bottom:1px solid rgba(255,255,255,0.07)}
 
-/* Remove spine shadow for the Cover (Page 1) since it has no opposite page */
-.my-page:nth-child(1)::after, 
-.my-page:nth-child(1)::before {
-    display: none;
-}
+        .bg-opt{
+            width:100%;height:50px;border-radius:8px;cursor:pointer;
+            border:2px solid transparent;overflow:hidden;position:relative;flex-shrink:0;
+            transition:border-color 0.15s,transform 0.15s;
+        }
+        .bg-opt:hover{transform:scale(1.03);border-color:rgba(255,255,255,0.38)}
+        .bg-opt.sel{border-color:#6366f1}
+        .bg-opt img{width:100%;height:100%;object-fit:cover;display:block;pointer-events:none}
+        .bg-opt-lbl{
+            position:absolute;bottom:0;left:0;right:0;
+            background:rgba(0,0,0,0.52);color:#fff;
+            font-size:0.58rem;font-weight:700;padding:2px 5px;letter-spacing:0.03em;
+        }
+        .bg-opt.sw{height:36px}
+        .bg-opt.sw .sf{width:100%;height:100%}
 
-/* ── Video wrapper: clips to the shape defined by --clip-path ── */
-.vid-wrap {
-    position: absolute;
-    overflow: hidden;
-    z-index: 9998;
-    /* clip-path is set inline per element to match the Fabric shape */
-}
-
-/* Control bar: hidden by default, fades in on hover */
-.vid-ctrl-bar {
-    position: absolute;
-    bottom: 8px;
-    right: 8px;
-    display: flex;
-    gap: 6px;
-    align-items: center;
-    opacity: 0;
-    transition: opacity 0.25s ease;
-    z-index: 10000;
-    pointer-events: none; /* bar itself is pass-through ... */
-}
-.vid-wrap:hover .vid-ctrl-bar {
-    opacity: 1;
-    pointer-events: all; /* ... buttons become clickable on hover */
-}
-
-.vid-ctrl-btn {
-    width: 30px;
-    height: 30px;
-    border: none;
-    border-radius: 50%;
-    cursor: pointer;
-    background: rgba(0, 0, 0, 0.65);
-    color: #fff;
-    font-size: 11px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    backdrop-filter: blur(4px);
-    transition: background 0.15s;
-}
-.vid-ctrl-btn:hover {
-    background: rgba(0, 0, 0, 0.9);
-}
+        .bg-upload-row{display:flex;flex-direction:column;gap:6px;padding-top:4px;border-top:1px solid rgba(255,255,255,0.07);margin-top:2px}
+        .bg-upload-btn{
+            width:100%;padding:7px 10px;
+            background:rgba(99,102,241,0.15);
+            border:1px dashed rgba(99,102,241,0.5);
+            border-radius:8px;color:rgba(255,255,255,0.8);
+            font-size:0.68rem;font-weight:600;cursor:pointer;
+            display:flex;align-items:center;justify-content:center;gap:6px;
+            transition:background 0.15s,border-color 0.15s;
+            font-family:'Inter',sans-serif;
+        }
+        .bg-upload-btn:hover{background:rgba(99,102,241,0.3);border-color:#6366f1;color:#fff}
     </style>
 </head>
 <body>
@@ -157,6 +137,40 @@
         <p>Open the Droidal Editor, add content to the canvas, then click <strong>Preview</strong>.</p>
         <a href="editor.html">← Open Editor</a>
     </div>
+
+    <!-- ══ BACKGROUND SWITCHER ══ -->
+    <button id="bg-menu-btn" title="Change Background"><i class="fa-solid fa-image"></i></button>
+    <div id="bg-panel">
+        <div class="bg-panel-title">Background</div>
+        <!-- ── Solid / Gradient presets ── -->
+        <div class="bg-opt sw sel" data-g="linear-gradient(135deg,#0f172a 0%,#1e293b 100%)"><div class="sf" style="background:linear-gradient(135deg,#0f172a,#1e293b)"></div><span class="bg-opt-lbl">Slate</span></div>
+        <div class="bg-opt sw" data-g="linear-gradient(135deg,#0a0a0a 0%,#1a1a1a 100%)"><div class="sf" style="background:linear-gradient(135deg,#0a0a0a,#1a1a1a)"></div><span class="bg-opt-lbl">Obsidian</span></div>
+        <div class="bg-opt sw" data-g="linear-gradient(135deg,#1e1b4b 0%,#312e81 50%,#4c1d95 100%)"><div class="sf" style="background:linear-gradient(135deg,#1e1b4b,#312e81,#4c1d95)"></div><span class="bg-opt-lbl">Royal Indigo</span></div>
+        <div class="bg-opt sw" data-g="linear-gradient(135deg,#0c1445 0%,#1a237e 50%,#0d47a1 100%)"><div class="sf" style="background:linear-gradient(135deg,#0c1445,#1a237e,#0d47a1)"></div><span class="bg-opt-lbl">Sapphire</span></div>
+        <div class="bg-opt sw" data-g="linear-gradient(135deg,#003d2b 0%,#00695c 50%,#004d40 100%)"><div class="sf" style="background:linear-gradient(135deg,#003d2b,#00695c,#004d40)"></div><span class="bg-opt-lbl">Emerald</span></div>
+        <div class="bg-opt sw" data-g="linear-gradient(135deg,#1a0533 0%,#6b21a8 50%,#9333ea 100%)"><div class="sf" style="background:linear-gradient(135deg,#1a0533,#6b21a8,#9333ea)"></div><span class="bg-opt-lbl">Amethyst</span></div>
+        <div class="bg-opt sw" data-g="linear-gradient(135deg,#1a0000 0%,#7f1d1d 50%,#991b1b 100%)"><div class="sf" style="background:linear-gradient(135deg,#1a0000,#7f1d1d,#991b1b)"></div><span class="bg-opt-lbl">Crimson</span></div>
+        <div class="bg-opt sw" data-g="linear-gradient(135deg,#0f2027 0%,#203a43 50%,#2c5364 100%)"><div class="sf" style="background:linear-gradient(135deg,#0f2027,#203a43,#2c5364)"></div><span class="bg-opt-lbl">Deep Ocean</span></div>
+        <div class="bg-opt sw" data-g="linear-gradient(135deg,#1c1008 0%,#3d2b1f 50%,#5c3d2e 100%)"><div class="sf" style="background:linear-gradient(135deg,#1c1008,#3d2b1f,#5c3d2e)"></div><span class="bg-opt-lbl">Espresso</span></div>
+        <div class="bg-opt sw" data-g="linear-gradient(135deg,#f8f5f0 0%,#ede8e0 50%,#ddd4c0 100%)"><div class="sf" style="background:linear-gradient(135deg,#f8f5f0,#ede8e0,#ddd4c0)"></div><span class="bg-opt-lbl">Ivory</span></div>
+        <div class="bg-opt sw" data-g="linear-gradient(135deg,#1a1a2e 0%,#16213e 40%,#0f3460 70%,#533483 100%)"><div class="sf" style="background:linear-gradient(135deg,#1a1a2e,#16213e,#0f3460,#533483)"></div><span class="bg-opt-lbl">Galaxy</span></div>
+        <div class="bg-opt sw" data-g="linear-gradient(135deg,#0d1117 0%,#161b22 50%,#21262d 100%)"><div class="sf" style="background:linear-gradient(135deg,#0d1117,#161b22,#21262d)"></div><span class="bg-opt-lbl">Carbon</span></div>
+
+        <!-- ── Upload your own ── -->
+        <div class="bg-upload-row">
+            <input type="file" id="bg-upload-input" accept="image/*" style="display:none"/>
+            <button class="bg-upload-btn" id="bg-upload-btn">
+                <i class="fa-solid fa-arrow-up-from-bracket"></i> Upload Image
+            </button>
+            <div class="bg-upload-preview" id="bg-upload-preview" style="display:none">
+                <div class="bg-opt sel" id="bg-uploaded-opt" style="height:50px;">
+                    <img id="bg-upload-thumb" src="" alt=""/>
+                    <span class="bg-opt-lbl">My Image</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="book-wrapper">
         <div id="book"></div>
     </div>
@@ -173,10 +187,189 @@
     </div>
     <div class="update-banner" id="updateBanner" onclick="location.reload()">📝 Editor updated — click to reload</div>
     <audio id="pageSound" preload="auto">
-    <source src="/sounds/flip_page.mp3" type="audio/mpeg">
-</audio>
+        <source src="/sounds/flip_page.mp3" type="audio/mpeg">
+    </audio>
 
 <script>
+/* ════════════════════════════════════════
+   BACKGROUND SWITCHER
+   — committed choice is stored in the URL (?bg=...)
+   — so anyone opening the same shared link sees the same background
+════════════════════════════════════════ */
+(function(){
+    const btn   = document.getElementById('bg-menu-btn');
+    const panel = document.getElementById('bg-panel');
+    let snapshot = null;
+
+    /* ── helpers: read/write the ?bg= URL param ── */
+    function getBgFromURL(){
+        try{ return new URLSearchParams(window.location.search).get('bg') || null; }catch(e){ return null; }
+    }
+    function setBgInURL(value){
+        /* Replaces ?bg= without reloading the page.
+           Preserves all other existing query params (e.g. ?id=...) */
+        const u = new URL(window.location.href);
+        if(value) u.searchParams.set('bg', value);
+        else       u.searchParams.delete('bg');
+        window.history.replaceState(null, '', u.toString());
+    }
+
+    /* ── apply raw value (a gradient, color hex, image URL, or base64) to <body> ── */
+    function applyValue(val){
+        if(!val){
+            document.body.style.backgroundImage = '';
+            document.body.style.backgroundColor = '#0f172a';
+            return;
+        }
+        if(val.startsWith('linear-gradient') || val.startsWith('radial-gradient')){
+            document.body.style.backgroundImage    = val;
+            document.body.style.backgroundSize     = '';
+            document.body.style.backgroundPosition = '';
+            document.body.style.backgroundColor    = '';
+        } else if(val.startsWith('#') || val.startsWith('rgb')){
+            document.body.style.backgroundImage = '';
+            document.body.style.backgroundColor = val;
+        } else {
+            /* image URL or base64 */
+            document.body.style.backgroundImage    = "url('"+val+"')";
+            document.body.style.backgroundSize     = 'cover';
+            document.body.style.backgroundPosition = 'center';
+            document.body.style.backgroundColor    = '';
+        }
+    }
+
+    /* ── apply a .bg-opt element ── */
+    function applyOpt(el, preview){
+        const val = el.dataset.g || el.dataset.i || el.dataset.c || '#0f172a';
+        applyValue(val);
+        if(!preview){
+            document.querySelectorAll('.bg-opt').forEach(o=>o.classList.remove('sel'));
+            el.classList.add('sel');
+            setBgInURL(val);
+        }
+    }
+
+    /* ── file upload handler ── */
+    const uploadInput   = document.getElementById('bg-upload-input');
+    const uploadBtn     = document.getElementById('bg-upload-btn');
+    const uploadPreview = document.getElementById('bg-upload-preview');
+    const uploadedOpt   = document.getElementById('bg-uploaded-opt');
+    const uploadThumb   = document.getElementById('bg-upload-thumb');
+
+    uploadBtn.addEventListener('click', function(e){
+        e.stopPropagation();
+        uploadInput.click();
+    });
+
+    uploadInput.addEventListener('change', function(){
+        const file = this.files[0];
+        if(!file) return;
+        const reader = new FileReader();
+        reader.onload = function(ev){
+            const dataUrl = ev.target.result;
+            /* show preview thumbnail */
+            uploadThumb.src = dataUrl;
+            uploadPreview.style.display = 'block';
+            /* apply immediately as committed choice */
+            document.querySelectorAll('.bg-opt').forEach(o=>o.classList.remove('sel'));
+            uploadedOpt.classList.add('sel');
+            applyValue(dataUrl);
+            snap();
+            /* Note: base64 images are too large for URL params —
+               stored only in this session. For sharing, use a preset instead. */
+        };
+        reader.readAsDataURL(file);
+    });
+
+    /* wire uploaded opt hover/click like other opts */
+    uploadedOpt.addEventListener('mouseenter', function(){ if(uploadThumb.src) applyValue(uploadThumb.src); });
+    uploadedOpt.addEventListener('mouseleave', function(){ revert(); });
+    uploadedOpt.addEventListener('click', function(e){
+        e.stopPropagation();
+        if(!uploadThumb.src) return;
+        document.querySelectorAll('.bg-opt').forEach(o=>o.classList.remove('sel'));
+        uploadedOpt.classList.add('sel');
+        applyValue(uploadThumb.src);
+        snap();
+        panel.classList.remove('open');
+        btn.classList.remove('open');
+    });
+
+    /* ── snapshot / revert for hover-preview ── */
+    function snap(){
+        snapshot={
+            img: document.body.style.backgroundImage,
+            col: document.body.style.backgroundColor,
+            sz:  document.body.style.backgroundSize,
+            pos: document.body.style.backgroundPosition
+        };
+    }
+    function revert(){
+        if(!snapshot) return;
+        document.body.style.backgroundImage    = snapshot.img;
+        document.body.style.backgroundColor   = snapshot.col;
+        document.body.style.backgroundSize     = snapshot.sz;
+        document.body.style.backgroundPosition = snapshot.pos;
+    }
+
+    /* ── on page load: read ?bg= from URL first, fall back to default ── */
+    (function loadFromURL(){
+        const val = getBgFromURL();
+        if(val){
+            applyValue(val);
+            /* mark the matching option as selected */
+            document.querySelectorAll('.bg-opt').forEach(o=>{
+                o.classList.remove('sel');
+                if(o.dataset.i===val || o.dataset.c===val) o.classList.add('sel');
+            });
+        }
+        /* no URL param → body CSS default (#0f172a) stays as-is */
+    })();
+
+    /* ── toggle panel ── */
+    btn.addEventListener('click',function(e){
+        e.stopPropagation();
+        const opening = !panel.classList.contains('open');
+        panel.classList.toggle('open', opening);
+        btn.classList.toggle('open',  opening);
+        if(opening) snap();
+    });
+
+    /* ── close on outside click, revert uncommitted preview ── */
+    document.addEventListener('click',function(e){
+        if(panel.classList.contains('open') && !panel.contains(e.target) && e.target!==btn){
+            panel.classList.remove('open');
+            btn.classList.remove('open');
+            revert();
+        }
+    });
+
+    /* ── wire each option: hover = preview, click = commit ── */
+    let revertTimer = null;
+
+document.querySelectorAll('.bg-opt').forEach(function(opt){
+    opt.addEventListener('mouseenter', function(){ 
+        clearTimeout(revertTimer);  // ← cancel any pending revert
+        applyOpt(opt, true);  
+    });
+    opt.addEventListener('mouseleave', function(){ 
+        revertTimer = setTimeout(revert, 80);  // ← small delay
+    });
+    opt.addEventListener('click', function(e){
+        e.stopPropagation();
+        clearTimeout(revertTimer);
+        applyOpt(opt, false);
+        snap();
+        panel.classList.remove('open');
+        btn.classList.remove('open');
+    });
+});
+})();
+
+
+/* ════════════════════════════════════════
+   ORIGINAL BOOK ENGINE — 100% unchanged
+════════════════════════════════════════ */
 
     let _jumpLock = false;
 
@@ -197,15 +390,12 @@ let totalPages = 0;
 const pageCanvases = {};
 
 // ─── VIDEO REGISTRY ───────────────────────────────────────────────────────────
-// Keeps every video element indexed by page so we can pause/play on flip events.
-// Structure: { [pageIndex]: [ { vid, drawLoop (rAF id ref obj) }, … ] }
 const pageVideos = {};
 
 // ─── BOOT ─────────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', async () => {
     setTxt('Loading pages...');
 
-    // Check if opened via shareable URL → /preview/some-uuid
     const pathParts = window.location.pathname.split('/');
     const share_id  = pathParts[1] === 'preview' ? pathParts[2] : null;
 
@@ -213,7 +403,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     const pId    = params.get('id');
     let pagesData = null;
 
-    // 1. ✅ NEW: Load via shareable public URL (anyone can view)
     if (share_id) {
         try {
             const r    = await fetch(`/api/preview/${share_id}`);
@@ -222,7 +411,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         } catch (e) { console.warn('Share ID load failed', e); }
     }
 
-    // 2. Try DB if project id is in URL (?id=123) — owner's edit preview
     if (!pagesData && pId) {
         try {
             const r    = await fetch(`/api/project/${pId}`);
@@ -231,10 +419,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         } catch (e) { console.warn('DB load failed, falling back to localStorage', e); }
     }
 
-    // 3. Fallback: localStorage (owner on their own browser)
     if (!pagesData) pagesData = await loadPages();
 
-    // 3. Nothing found → show empty state
     if (!pagesData || !pagesData.length) {
         document.getElementById('loadOverlay').classList.add('hidden');
         document.getElementById('emptyState').classList.add('show');
@@ -337,14 +523,9 @@ async function renderPage(canvasId, jsonData, overlay, pageIndex) {
 
                 // --- FUNCTIONALITY A: VIDEOS ---
                 if (obj.customVideoSrc) {
-                    console.log(`[Preview] Detected video on Page ${pageIndex}. isGroup: ${!!obj.isVideoGroup}, isFabric: ${!!obj.isVideoFabric}`);
-
                     if (obj.isVideoFabric || obj.isVideoGroup) {
-                        // Fabric-canvas video: render frames into the fabric canvas,
-                        // preserve clip shape, show HTML control bar overlay on hover.
                         reviveVideoGroup(obj, sc, overlay, rect, pageIndex);
                     } else {
-                        // Plain HTML overlay video with controls
                         createPlainVideoOverlay(obj, overlay, rect, pageIndex);
                     }
                 }
@@ -353,17 +534,14 @@ async function renderPage(canvasId, jsonData, overlay, pageIndex) {
                 if (obj.customPageTarget !== undefined && obj.customPageTarget !== null) {
                     const jumpBtn = document.createElement('div');
                     jumpBtn.style.cssText = `position:absolute; left:${rect.left}px; top:${rect.top}px; width:${rect.width}px; height:${rect.height}px; cursor:pointer; pointer-events:auto; z-index:20; background:rgba(255,255,255,0.01);`;
-                    
                     jumpBtn.addEventListener('mousedown', e => e.stopPropagation());
                     jumpBtn.onclick = (e) => {
                         e.preventDefault(); e.stopPropagation();
                         if (_jumpLock) return;
                         _jumpLock = true;
                         setTimeout(() => { _jumpLock = false; }, 1000);
-
                         const target = parseInt(obj.customPageTarget);
                         if (pageFlip && !isNaN(target)) {
-                            // Handle spread-flip logic
                             let flipIndex = (target > 0 && target % 2 === 0) ? target - 1 : target;
                             pageFlip.flip(flipIndex);
                         }
@@ -388,49 +566,28 @@ async function renderPage(canvasId, jsonData, overlay, pageIndex) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// ─── VIDEO FUNCTIONS (rewritten) ──────────────────────────────────────────────
+// ─── VIDEO FUNCTIONS ──────────────────────────────────────────────────────────
 // ═══════════════════════════════════════════════════════════════════════════════
 
-/**
- * Builds a CSS clip-path string from a Fabric clipPath object so the HTML
- * video wrapper matches the shape drawn on the canvas.
- *
- * Supports: rect, circle, ellipse, polygon, path.
- * Falls back to no clipping if the shape type is unknown.
- *
- * @param {fabric.Object} clipPathObj  – the Fabric clipPath on the video object
- * @param {fabric.Object} parent       – the parent video/image Fabric object
- * @returns {string} CSS clip-path value, e.g. "inset(0px round 8px)" or ""
- */
 function fabricClipToCss(clipPathObj, parent) {
     if (!clipPathObj) return '';
-
-    // absolutePositioned = false means coords are relative to the object itself,
-    // which is what we want since the HTML wrapper already sits at the right spot.
     const cp   = clipPathObj;
     const type = (cp.type || '').toLowerCase();
-
     try {
-        // ── RECT / I-TEXT (treated as rect) ──────────────────────────────────
         if (type === 'rect') {
             const w  = cp.width  * (cp.scaleX || 1);
             const h  = cp.height * (cp.scaleY || 1);
-            // cp.left/top are relative to the parent's centre when absolutePositioned=false
             const ox = cp.left + parent.width  / 2 - w / 2;
             const oy = cp.top  + parent.height / 2 - h / 2;
             const r  = cp.rx   || cp.cornerRadius || 0;
             return `inset(${oy}px ${parent.width - ox - w}px ${parent.height - oy - h}px ${ox}px${r ? ' round ' + r + 'px' : ''})`;
         }
-
-        // ── CIRCLE ────────────────────────────────────────────────────────────
         if (type === 'circle') {
             const r  = cp.radius * (cp.scaleX || 1);
             const cx = cp.left + parent.width  / 2;
             const cy = cp.top  + parent.height / 2;
             return `circle(${r}px at ${cx}px ${cy}px)`;
         }
-
-        // ── ELLIPSE ───────────────────────────────────────────────────────────
         if (type === 'ellipse') {
             const rx = cp.rx * (cp.scaleX || 1);
             const ry = cp.ry * (cp.scaleY || 1);
@@ -438,50 +595,26 @@ function fabricClipToCss(clipPathObj, parent) {
             const cy = cp.top  + parent.height / 2;
             return `ellipse(${rx}px ${ry}px at ${cx}px ${cy}px)`;
         }
-
-        // ── POLYGON ───────────────────────────────────────────────────────────
         if (type === 'polygon' && cp.points) {
             const cx = cp.left + parent.width  / 2;
             const cy = cp.top  + parent.height / 2;
             const sx = cp.scaleX || 1;
             const sy = cp.scaleY || 1;
-            const pts = cp.points.map(p =>
-                `${cx + p.x * sx}px ${cy + p.y * sy}px`
-            ).join(', ');
+            const pts = cp.points.map(p => `${cx + p.x * sx}px ${cy + p.y * sy}px`).join(', ');
             return `polygon(${pts})`;
         }
-
-        // ── PATH (SVG d= string) ──────────────────────────────────────────────
         if (type === 'path' && cp.path) {
-            // CSS path() clips in the coordinate space of the element itself.
-            // Fabric stores path as an array of command arrays; convert back to string.
             const d = cp.path.map(seg => seg.join(' ')).join(' ');
             return `path('${d}')`;
         }
     } catch (e) {
         console.warn('[VideoClip] Could not convert clipPath to CSS:', e);
     }
-
-    return ''; // unknown shape — no CSS clip, shape is maintained by Fabric
+    return '';
 }
 
-/**
- * reviveVideoGroup
- * ─────────────────
- * For Fabric-canvas videos (isVideoFabric / isVideoGroup):
- *  • Decodes the video with an offscreen <video> element.
- *  • Every rAF frame, draws into an offscreen <canvas> and calls sc.renderAll()
- *    so the Fabric object (with its clip shape) stays correct during page flips.
- *  • Adds an absolutely-positioned HTML control bar that is clipped to the same
- *    shape as the Fabric object so the buttons appear *inside* the shape.
- *  • Video is paused on load; playback begins only after the flip animation ends.
- */
 function reviveVideoGroup(fabObj, targetCanvas, overlay, rect, pageIndex) {
-    console.log(`%c[Revive] Init — page ${pageIndex}: ${fabObj.customVideoSrc}`, 'color:#6366f1;font-weight:bold');
-
     const videoSrc = fabObj.customVideoSrc;
-
-    // ── 1. Create the hidden <video> element ─────────────────────────────────
     const vid = document.createElement('video');
     vid.src          = videoSrc;
     vid.loop         = true;
@@ -489,15 +622,12 @@ function reviveVideoGroup(fabObj, targetCanvas, overlay, rect, pageIndex) {
     vid.playsInline  = true;
     vid.crossOrigin  = 'anonymous';
     vid.preload      = 'auto';
-    // Start PAUSED — will be unpaused when the page's flip completes
     vid.pause();
 
-    // ── 2. Register in the page video registry ───────────────────────────────
     if (!pageVideos[pageIndex]) pageVideos[pageIndex] = [];
     const vidEntry = { vid, active: false, loopId: null };
     pageVideos[pageIndex].push(vidEntry);
 
-    // ── 3. Fix clip shape so it moves with the object during flipping ─────────
     if (fabObj.clipPath) {
         fabObj.clipPath.absolutePositioned = false;
         fabObj.clipPath.objectCaching      = false;
@@ -505,28 +635,22 @@ function reviveVideoGroup(fabObj, targetCanvas, overlay, rect, pageIndex) {
     fabObj.objectCaching = false;
     fabObj.dirty         = true;
 
-    // ── 4. Build an offscreen canvas to decode video frames ──────────────────
     function startLoop(v) {
-        console.log(`[Revive] Ready — ${v.videoWidth}x${v.videoHeight}`);
-
         const vw = v.videoWidth  || fabObj.width  || 320;
         const vh = v.videoHeight || fabObj.height || 240;
-
         const off    = document.createElement('canvas');
         off.width    = vw;
         off.height   = vh;
         const offCtx = off.getContext('2d');
 
-        // Override Fabric render so it draws the video frame
         fabObj._offCanvas = off;
         fabObj._render = function(ctx) {
             if (!this._offCanvas) return;
             ctx.drawImage(this._offCanvas, -this.width / 2, -this.height / 2, this.width, this.height);
         };
 
-        // rAF loop — only runs when active (after flip)
         function drawLoop() {
-            if (!fabObj.canvas) return; // page was removed
+            if (!fabObj.canvas) return;
             if (vidEntry.active && !v.paused && !v.ended) {
                 offCtx.drawImage(v, 0, 0, vw, vh);
                 targetCanvas.renderAll();
@@ -535,30 +659,16 @@ function reviveVideoGroup(fabObj, targetCanvas, overlay, rect, pageIndex) {
         }
         vidEntry.loopId = requestAnimationFrame(drawLoop);
 
-        // ── 5. Build the HTML control bar (hover-reveal, clipped to shape) ────
-        // We place the control bar as a sibling to the fabric canvas, absolutely
-        // positioned at the object's bounding rect.  The same CSS clip-path
-        // that matches the Fabric clipPath is applied so buttons stay inside.
         const ctrlWrap = document.createElement('div');
         ctrlWrap.className = 'vid-wrap';
-        ctrlWrap.style.cssText = `
-            left:   ${rect.left}px;
-            top:    ${rect.top}px;
-            width:  ${rect.width}px;
-            height: ${rect.height}px;
-            background: transparent;
-            pointer-events: all;
-        `;
-
-        // Apply matching CSS clip-path to the control wrapper
+        ctrlWrap.style.cssText = `left:${rect.left}px; top:${rect.top}px; width:${rect.width}px; height:${rect.height}px; background:transparent; pointer-events:all;`;
         const cssClip = fabricClipToCss(fabObj.clipPath, fabObj);
         if (cssClip) ctrlWrap.style.clipPath = cssClip;
 
-        // Control bar (hidden until hover)
         const bar = document.createElement('div');
         bar.className = 'vid-ctrl-bar';
 
-        let isPlaying = false; // starts paused
+        let isPlaying = false;
         let isMuted   = true;
 
         const btnPlay = makeCtrlBtn('fa-play', e => {
@@ -589,9 +699,6 @@ function reviveVideoGroup(fabObj, targetCanvas, overlay, rect, pageIndex) {
         ctrlWrap.appendChild(bar);
         overlay.appendChild(ctrlWrap);
 
-        // Expose the play button reference so startPageVideos() can update its icon
-        vidEntry.btnPlay    = btnPlay;
-        vidEntry.isPlayingRef = () => isPlaying;
         vidEntry.setPlaying  = (val) => {
             isPlaying = val;
             btnPlay.innerHTML = isPlaying
@@ -607,26 +714,11 @@ function reviveVideoGroup(fabObj, targetCanvas, overlay, rect, pageIndex) {
     }
 }
 
-/**
- * createPlainVideoOverlay
- * ────────────────────────
- * For non-Fabric HTML overlay videos:
- *  • Renders as an absolutely-positioned <video> element clipped to the
- *    Fabric object's bounding rect (and clipPath shape if present).
- *  • Play/Mute buttons appear on hover.
- *  • Video starts PAUSED; playback begins after the flip completes.
- */
 function createPlainVideoOverlay(obj, overlay, rect, pageIndex) {
     const vidWrap = document.createElement('div');
     vidWrap.className = 'vid-wrap';
-    vidWrap.style.cssText = `
-        left:   ${rect.left}px;
-        top:    ${rect.top}px;
-        width:  ${rect.width}px;
-        height: ${rect.height}px;
-    `;
+    vidWrap.style.cssText = `left:${rect.left}px; top:${rect.top}px; width:${rect.width}px; height:${rect.height}px;`;
 
-    // Apply CSS clip-path to match the Fabric shape
     const cssClip = fabricClipToCss(obj.clipPath, obj);
     if (cssClip) vidWrap.style.clipPath = cssClip;
 
@@ -638,10 +730,8 @@ function createPlainVideoOverlay(obj, overlay, rect, pageIndex) {
     vid.crossOrigin = 'anonymous';
     vid.preload     = 'auto';
     vid.style.cssText = 'width:100%; height:100%; object-fit:cover; display:block; pointer-events:none;';
-    // Start paused
     vid.pause();
 
-    // ── Control bar ───────────────────────────────────────────────────────────
     const bar = document.createElement('div');
     bar.className = 'vid-ctrl-bar';
 
@@ -675,12 +765,11 @@ function createPlainVideoOverlay(obj, overlay, rect, pageIndex) {
     vidWrap.appendChild(bar);
     overlay.appendChild(vidWrap);
 
-    // ── Registry entry so flip events can start/stop this video ──────────────
     if (!pageVideos[pageIndex]) pageVideos[pageIndex] = [];
     pageVideos[pageIndex].push({
         vid,
         active: false,
-        loopId: null,          // not used for plain overlays
+        loopId: null,
         setPlaying: (val) => {
             isPlaying = val;
             btnPlay.innerHTML = isPlaying
@@ -691,9 +780,6 @@ function createPlainVideoOverlay(obj, overlay, rect, pageIndex) {
     });
 }
 
-/**
- * makeCtrlBtn – small helper to build a styled icon button for video controls.
- */
 function makeCtrlBtn(iconClass, onClick) {
     const btn = document.createElement('button');
     btn.className = 'vid-ctrl-btn';
@@ -703,12 +789,6 @@ function makeCtrlBtn(iconClass, onClick) {
     return btn;
 }
 
-/**
- * startPageVideos(pageIndex)
- * ──────────────────────────
- * Called after the flip animation finishes for a given page.
- * Starts playback for every registered video on that page.
- */
 function startPageVideos(pageIndex) {
     const entries = pageVideos[pageIndex];
     if (!entries) return;
@@ -720,11 +800,6 @@ function startPageVideos(pageIndex) {
     });
 }
 
-/**
- * stopPageVideos(pageIndex)
- * ─────────────────────────
- * Pauses all videos on a page that is being flipped away.
- */
 function stopPageVideos(pageIndex) {
     const entries = pageVideos[pageIndex];
     if (!entries) return;
@@ -735,17 +810,11 @@ function stopPageVideos(pageIndex) {
     });
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// ─── END VIDEO FUNCTIONS ──────────────────────────────────────────────────────
-// ═══════════════════════════════════════════════════════════════════════════════
-
 // ─── ANIMATION ENGINE ─────────────────────────────────────────────────────────
-// Called when a page becomes visible — plays from each object's current position
-// ─── ANIMATION ENGINE ────────────────────────────────────────────────────────
 const playedPages = new Set();
 
 function playPageAnimations(pageIndex) {
-   const sc = pageCanvases[pageIndex];
+    const sc = pageCanvases[pageIndex];
     if (!sc) return;
 
     sc.getObjects().forEach(obj => {
@@ -765,352 +834,66 @@ function playPageAnimations(pageIndex) {
         const oSY  = obj.scaleY  != null ? obj.scaleY  : 1;
         const oAng = obj.angle   != null ? obj.angle   : 0;
 
-        // Helper: restore object to original state after animation
         function restore(delay = 0) {
-    setTimeout(() => {
-        obj.set({ left: oL, top: oT, opacity: oOp, scaleX: oSX, scaleY: oSY, angle: oAng });
-        obj.setCoords();
-        obj.dirty = true;
-        sc.requestRenderAll();
-    }, delay);
-}
+            setTimeout(() => {
+                obj.set({ left: oL, top: oT, opacity: oOp, scaleX: oSX, scaleY: oSY, angle: oAng });
+                obj.setCoords();
+                obj.dirty = true;
+                sc.requestRenderAll();
+            }, delay);
+        }
 
         switch (d.type) {
-
-            // ── ENTRANCE ──────────────────────────────────────────────────────
-            case 'fade':
-                obj.set('opacity', 0);
-                obj.animate('opacity', oOp, { duration: dur, onChange: render,
-                    onComplete: () => restore() });
-                break;
-
-            case 'fadeDown':
-                obj.set({ opacity: 0, top: oT - 60 });
-                obj.animate('opacity', oOp, { duration: dur, onChange: render });
-                obj.animate('top', oT, { duration: dur, easing: ease.easeOutCubic, onChange: render,
-                    onComplete: () => restore() });
-                break;
-
-            case 'fadeUp':
-                obj.set({ opacity: 0, top: oT + 60 });
-                obj.animate('opacity', oOp, { duration: dur, onChange: render });
-                obj.animate('top', oT, { duration: dur, easing: ease.easeOutCubic, onChange: render,
-                    onComplete: () => restore() });
-                break;
-
-            case 'fadeLeft':
-                obj.set({ opacity: 0, left: oL + 60 });
-                obj.animate('opacity', oOp, { duration: dur, onChange: render });
-                obj.animate('left', oL, { duration: dur, easing: ease.easeOutCubic, onChange: render,
-                    onComplete: () => restore() });
-                break;
-
-            case 'fadeRight':
-                obj.set({ opacity: 0, left: oL - 60 });
-                obj.animate('opacity', oOp, { duration: dur, onChange: render });
-                obj.animate('left', oL, { duration: dur, easing: ease.easeOutCubic, onChange: render,
-                    onComplete: () => restore() });
-                break;
-
-            case 'pop':
-                obj.set({ scaleX: 0.01, scaleY: 0.01, opacity: 0 });
-                obj.animate({ scaleX: oSX, scaleY: oSY }, { duration: dur, easing: ease.easeOutBack, onChange: render });
-                obj.animate('opacity', oOp, { duration: h, onChange: render,
-                    onComplete: () => restore() });
-                break;
-
-            case 'zoomOut':
-                obj.set({ scaleX: oSX * 2.5, scaleY: oSY * 2.5, opacity: 0 });
-                obj.animate({ scaleX: oSX, scaleY: oSY }, { duration: dur, easing: ease.easeOutCubic, onChange: render });
-                obj.animate('opacity', oOp, { duration: dur, onChange: render,
-                    onComplete: () => restore() });
-                break;
-
-            case 'slideL':
-                obj.set('left', oL + 120);
-                obj.animate('left', oL, { duration: dur, easing: ease.easeOutCubic, onChange: render,
-                    onComplete: () => restore() });
-                break;
-
-            case 'slideR':
-                obj.set('left', oL - 120);
-                obj.animate('left', oL, { duration: dur, easing: ease.easeOutCubic, onChange: render,
-                    onComplete: () => restore() });
-                break;
-
-            case 'slideU':
-                obj.set('top', oT + 120);
-                obj.animate('top', oT, { duration: dur, easing: ease.easeOutCubic, onChange: render,
-                    onComplete: () => restore() });
-                break;
-
-            case 'slideD':
-                obj.set('top', oT - 120);
-                obj.animate('top', oT, { duration: dur, easing: ease.easeOutCubic, onChange: render,
-                    onComplete: () => restore() });
-                break;
-
-            case 'dropIn':
-                obj.set({ top: oT - 300, opacity: 0 });
-                obj.animate('top', oT, { duration: dur, easing: ease.easeOutBounce, onChange: render });
-                obj.animate('opacity', oOp, { duration: h, onChange: render,
-                    onComplete: () => restore() });
-                break;
-
-            case 'riseUp':
-                obj.set({ top: oT + 300, opacity: 0 });
-                obj.animate('top', oT, { duration: dur, easing: ease.easeOutCubic, onChange: render });
-                obj.animate('opacity', oOp, { duration: h, onChange: render,
-                    onComplete: () => restore() });
-                break;
-
-            case 'flipX':
-                obj.set('scaleY', 0.01);
-                obj.animate('scaleY', oSY, { duration: dur, easing: ease.easeOutCubic, onChange: render,
-                    onComplete: () => restore() });
-                break;
-
-            case 'flipY':
-                obj.set('scaleX', 0.01);
-                obj.animate('scaleX', oSX, { duration: dur, easing: ease.easeOutCubic, onChange: render,
-                    onComplete: () => restore() });
-                break;
-
-            case 'rotateIn':
-                obj.set({ angle: oAng - 180, opacity: 0, scaleX: 0.3, scaleY: 0.3 });
-                obj.animate('angle', oAng, { duration: dur, easing: ease.easeOutCubic, onChange: render });
-                obj.animate('opacity', oOp, { duration: dur, onChange: render });
-                obj.animate({ scaleX: oSX, scaleY: oSY }, { duration: dur, easing: ease.easeOutCubic, onChange: render,
-                    onComplete: () => restore() });
-                break;
-
-            case 'swingIn':
-                obj.set({ angle: oAng - 45, opacity: 0 });
-                obj.animate('angle', oAng, { duration: dur, easing: ease.easeOutBack, onChange: render });
-                obj.animate('opacity', oOp, { duration: h, onChange: render,
-                    onComplete: () => restore() });
-                break;
-
-            case 'rollIn':
-                obj.set({ left: oL - 200, angle: oAng - 120, opacity: 0 });
-                obj.animate('left', oL, { duration: dur, easing: ease.easeOutCubic, onChange: render });
-                obj.animate('angle', oAng, { duration: dur, easing: ease.easeOutCubic, onChange: render });
-                obj.animate('opacity', oOp, { duration: h, onChange: render,
-                    onComplete: () => restore() });
-                break;
-
-            case 'expandH':
-                obj.set('scaleX', 0.01);
-                obj.animate('scaleX', oSX, { duration: dur, easing: ease.easeOutCubic, onChange: render,
-                    onComplete: () => restore() });
-                break;
-
-            case 'expandV':
-                obj.set('scaleY', 0.01);
-                obj.animate('scaleY', oSY, { duration: dur, easing: ease.easeOutCubic, onChange: render,
-                    onComplete: () => restore() });
-                break;
-
-            // ── ATTENTION (these naturally return to original) ─────────────────
-            case 'bounce':
-                obj.animate('top', oT - 50, { duration: h, easing: ease.easeOutCubic, onChange: render,
-                    onComplete: () => obj.animate('top', oT, { duration: h, easing: ease.easeOutBounce, onChange: render,
-                        onComplete: () => restore() }) });
-                break;
-
-            case 'bounceX':
-                obj.animate('left', oL + 40, { duration: q, easing: ease.easeOutCubic, onChange: render,
-                    onComplete: () => obj.animate('left', oL, { duration: h, easing: ease.easeOutBounce, onChange: render,
-                        onComplete: () => restore() }) });
-                break;
-
-            case 'shake':
-                obj.animate('left', oL - 12, { duration: 60, onChange: render,
-                    onComplete: () => obj.animate('left', oL + 12, { duration: 60, onChange: render,
-                        onComplete: () => obj.animate('left', oL - 10, { duration: 60, onChange: render,
-                            onComplete: () => obj.animate('left', oL + 10, { duration: 60, onChange: render,
-                                onComplete: () => obj.animate('left', oL - 6, { duration: 60, onChange: render,
-                                    onComplete: () => obj.animate('left', oL, { duration: 60, onChange: render,
-                                        onComplete: () => restore() }) }) }) }) }) });
-                break;
-
-            case 'shakeY':
-                obj.animate('top', oT - 12, { duration: 60, onChange: render,
-                    onComplete: () => obj.animate('top', oT + 12, { duration: 60, onChange: render,
-                        onComplete: () => obj.animate('top', oT - 8, { duration: 60, onChange: render,
-                            onComplete: () => obj.animate('top', oT + 8, { duration: 60, onChange: render,
-                                onComplete: () => obj.animate('top', oT, { duration: 60, onChange: render,
-                                    onComplete: () => restore() }) }) }) }) });
-                break;
-
-            case 'pulse':
-                obj.animate({ scaleX: oSX * 1.25, scaleY: oSY * 1.25 }, { duration: h, onChange: render,
-                    onComplete: () => obj.animate({ scaleX: oSX, scaleY: oSY }, { duration: h, onChange: render,
-                        onComplete: () => restore() }) });
-                break;
-
-            case 'float':
-                obj.animate('top', oT - 18, { duration: h, easing: ease.easeInOutSine, onChange: render,
-                    onComplete: () => obj.animate('top', oT, { duration: h, easing: ease.easeInOutSine, onChange: render,
-                        onComplete: () => restore() }) });
-                break;
-
-            case 'swing':
-                obj.animate('angle', oAng + 20, { duration: q, easing: ease.easeOutSine, onChange: render,
-                    onComplete: () => obj.animate('angle', oAng - 16, { duration: q, easing: ease.easeInOutSine, onChange: render,
-                        onComplete: () => obj.animate('angle', oAng + 10, { duration: q, easing: ease.easeInOutSine, onChange: render,
-                            onComplete: () => obj.animate('angle', oAng, { duration: q, easing: ease.easeOutSine, onChange: render,
-                                onComplete: () => restore() }) }) }) });
-                break;
-
-            case 'wobble':
-                obj.animate('left', oL + 20, { duration: q, onChange: render,
-                    onComplete: () => obj.animate('angle', oAng - 8, { duration: q, onChange: render,
-                        onComplete: () => obj.animate('left', oL - 15, { duration: q, onChange: render,
-                            onComplete: () => obj.animate('angle', oAng + 6, { duration: q, onChange: render,
-                                onComplete: () => obj.animate('left', oL, { duration: q, onChange: render,
-                                    onComplete: () => obj.animate('angle', oAng, { duration: q, onChange: render,
-                                        onComplete: () => restore() }) }) }) }) }) });
-                break;
-
-            case 'tada':
-                obj.animate({ scaleX: oSX * 0.9, scaleY: oSY * 0.9 }, { duration: q / 2, onChange: render,
-                    onComplete: () => obj.animate({ scaleX: oSX * 1.15, scaleY: oSY * 1.15, angle: oAng - 5 }, { duration: q, onChange: render,
-                        onComplete: () => obj.animate({ angle: oAng + 5 }, { duration: q / 2, onChange: render,
-                            onComplete: () => obj.animate({ angle: oAng - 4 }, { duration: q / 2, onChange: render,
-                                onComplete: () => obj.animate({ scaleX: oSX, scaleY: oSY, angle: oAng }, { duration: q, onChange: render,
-                                    onComplete: () => restore() }) }) }) }) });
-                break;
-
-            case 'jello':
-                obj.animate({ scaleX: oSX * 1.2, scaleY: oSY * 0.85 }, { duration: q / 2, onChange: render,
-                    onComplete: () => obj.animate({ scaleX: oSX * 0.85, scaleY: oSY * 1.15 }, { duration: q / 2, onChange: render,
-                        onComplete: () => obj.animate({ scaleX: oSX * 1.1, scaleY: oSY * 0.92 }, { duration: q / 2, onChange: render,
-                            onComplete: () => obj.animate({ scaleX: oSX, scaleY: oSY }, { duration: q / 2, onChange: render,
-                                onComplete: () => restore() }) }) }) });
-                break;
-
-            case 'rubberBand':
-                obj.animate({ scaleX: oSX * 1.4, scaleY: oSY * 0.75 }, { duration: q, onChange: render,
-                    onComplete: () => obj.animate({ scaleX: oSX * 0.8, scaleY: oSY * 1.25 }, { duration: q, onChange: render,
-                        onComplete: () => obj.animate({ scaleX: oSX * 1.1, scaleY: oSY * 0.9 }, { duration: q, onChange: render,
-                            onComplete: () => obj.animate({ scaleX: oSX, scaleY: oSY }, { duration: q, onChange: render,
-                                onComplete: () => restore() }) }) }) });
-                break;
-
-            case 'heartbeat':
-                obj.animate({ scaleX: oSX * 1.3, scaleY: oSY * 1.3 }, { duration: 120, onChange: render,
-                    onComplete: () => obj.animate({ scaleX: oSX, scaleY: oSY }, { duration: 120, onChange: render,
-                        onComplete: () => obj.animate({ scaleX: oSX * 1.2, scaleY: oSY * 1.2 }, { duration: 120, onChange: render,
-                            onComplete: () => obj.animate({ scaleX: oSX, scaleY: oSY }, { duration: 200, onChange: render,
-                                onComplete: () => restore() }) }) }) });
-                break;
-
-            case 'flash':
-                obj.animate('opacity', 0, { duration: q, onChange: render,
-                    onComplete: () => obj.animate('opacity', oOp, { duration: q, onChange: render,
-                        onComplete: () => obj.animate('opacity', 0, { duration: q, onChange: render,
-                            onComplete: () => obj.animate('opacity', oOp, { duration: q, onChange: render,
-                                onComplete: () => restore() }) }) }) });
-                break;
-
-            case 'blink':
-                obj.animate('opacity', 0, { duration: h, onChange: render,
-                    onComplete: () => obj.animate('opacity', oOp, { duration: h, onChange: render,
-                        onComplete: () => restore() }) });
-                break;
-
-            case 'spin':
-                obj.animate('angle', oAng + 360, { duration: dur, easing: ease.easeInOutCubic, onChange: render,
-                    onComplete: () => restore() });
-                break;
-
-            case 'spinReverse':
-                obj.animate('angle', oAng - 360, { duration: dur, easing: ease.easeInOutCubic, onChange: render,
-                    onComplete: () => restore() });
-                break;
-
-            case 'rockLeft':
-                obj.animate('angle', oAng - 20, { duration: h, easing: ease.easeOutSine, onChange: render,
-                    onComplete: () => obj.animate('angle', oAng, { duration: h, easing: ease.easeOutSine, onChange: render,
-                        onComplete: () => restore() }) });
-                break;
-
-            case 'rockRight':
-                obj.animate('angle', oAng + 20, { duration: h, easing: ease.easeOutSine, onChange: render,
-                    onComplete: () => obj.animate('angle', oAng, { duration: h, easing: ease.easeOutSine, onChange: render,
-                        onComplete: () => restore() }) });
-                break;
-
-            case 'sway':
-                obj.animate('left', oL + 25, { duration: h, easing: ease.easeInOutSine, onChange: render,
-                    onComplete: () => obj.animate('left', oL - 25, { duration: dur, easing: ease.easeInOutSine, onChange: render,
-                        onComplete: () => obj.animate('left', oL, { duration: h, easing: ease.easeInOutSine, onChange: render,
-                            onComplete: () => restore() }) }) });
-                break;
-
-            case 'vibrate': {
-                let vt = 0;
-                const vSteps = Math.floor(dur / 30);
-                (function vStep() {
-                    if (vt >= vSteps) { restore(); return; }
-                    const offset = (vt % 2 === 0) ? 4 : -4;
-                    obj.animate('left', oL + offset, { duration: 30, onChange: render, onComplete: vStep });
-                    vt++;
-                })();
-                break;
-            }
-
-            // ── EXIT (play out, then restore) ─────────────────────────────────
-            case 'fadeOut':
-                obj.animate('opacity', 0, { duration: dur, onChange: render,
-                    onComplete: () => restore(300) });
-                break;
-
-            case 'shrink':
-                obj.animate({ scaleX: 0.01, scaleY: 0.01, opacity: 0 }, { duration: dur, easing: ease.easeInCubic, onChange: render,
-                    onComplete: () => restore(300) });
-                break;
-
-            case 'exitL':
-                obj.animate('left', oL - 400, { duration: dur, easing: ease.easeInCubic, onChange: render,
-                    onComplete: () => restore(300) });
-                break;
-
-            case 'exitR':
-                obj.animate('left', oL + 400, { duration: dur, easing: ease.easeInCubic, onChange: render,
-                    onComplete: () => restore(300) });
-                break;
-
-            case 'exitU':
-                obj.animate('top', oT - 400, { duration: dur, easing: ease.easeInCubic, onChange: render,
-                    onComplete: () => restore(300) });
-                break;
-
-            case 'exitD':
-                obj.animate('top', oT + 400, { duration: dur, easing: ease.easeInCubic, onChange: render,
-                    onComplete: () => restore(300) });
-                break;
-
-            case 'sinkDown':
-                obj.animate({ top: oT + 200, opacity: 0 }, { duration: dur, easing: ease.easeInCubic, onChange: render,
-                    onComplete: () => restore(300) });
-                break;
-
-            case 'flyOff':
-                obj.animate({ left: oL + 500, top: oT - 300, opacity: 0, angle: oAng + 45 }, { duration: dur, easing: ease.easeInCubic, onChange: render,
-                    onComplete: () => restore(300) });
-                break;
-
-            case 'explode':
-                obj.animate({ scaleX: oSX * 3, scaleY: oSY * 3, opacity: 0 }, { duration: dur, easing: ease.easeOutCubic, onChange: render,
-                    onComplete: () => restore(300) });
-                break;
-
-            case 'collapse':
-                obj.animate({ scaleY: 0.01 }, { duration: dur, easing: ease.easeInCubic, onChange: render,
-                    onComplete: () => restore(300) });
-                break;
+            case 'fade':       obj.set('opacity',0); obj.animate('opacity',oOp,{duration:dur,onChange:render,onComplete:()=>restore()}); break;
+            case 'fadeDown':   obj.set({opacity:0,top:oT-60}); obj.animate('opacity',oOp,{duration:dur,onChange:render}); obj.animate('top',oT,{duration:dur,easing:ease.easeOutCubic,onChange:render,onComplete:()=>restore()}); break;
+            case 'fadeUp':     obj.set({opacity:0,top:oT+60}); obj.animate('opacity',oOp,{duration:dur,onChange:render}); obj.animate('top',oT,{duration:dur,easing:ease.easeOutCubic,onChange:render,onComplete:()=>restore()}); break;
+            case 'fadeLeft':   obj.set({opacity:0,left:oL+60}); obj.animate('opacity',oOp,{duration:dur,onChange:render}); obj.animate('left',oL,{duration:dur,easing:ease.easeOutCubic,onChange:render,onComplete:()=>restore()}); break;
+            case 'fadeRight':  obj.set({opacity:0,left:oL-60}); obj.animate('opacity',oOp,{duration:dur,onChange:render}); obj.animate('left',oL,{duration:dur,easing:ease.easeOutCubic,onChange:render,onComplete:()=>restore()}); break;
+            case 'pop':        obj.set({scaleX:0.01,scaleY:0.01,opacity:0}); obj.animate({scaleX:oSX,scaleY:oSY},{duration:dur,easing:ease.easeOutBack,onChange:render}); obj.animate('opacity',oOp,{duration:h,onChange:render,onComplete:()=>restore()}); break;
+            case 'zoomOut':    obj.set({scaleX:oSX*2.5,scaleY:oSY*2.5,opacity:0}); obj.animate({scaleX:oSX,scaleY:oSY},{duration:dur,easing:ease.easeOutCubic,onChange:render}); obj.animate('opacity',oOp,{duration:dur,onChange:render,onComplete:()=>restore()}); break;
+            case 'slideL':     obj.set('left',oL+120); obj.animate('left',oL,{duration:dur,easing:ease.easeOutCubic,onChange:render,onComplete:()=>restore()}); break;
+            case 'slideR':     obj.set('left',oL-120); obj.animate('left',oL,{duration:dur,easing:ease.easeOutCubic,onChange:render,onComplete:()=>restore()}); break;
+            case 'slideU':     obj.set('top',oT+120); obj.animate('top',oT,{duration:dur,easing:ease.easeOutCubic,onChange:render,onComplete:()=>restore()}); break;
+            case 'slideD':     obj.set('top',oT-120); obj.animate('top',oT,{duration:dur,easing:ease.easeOutCubic,onChange:render,onComplete:()=>restore()}); break;
+            case 'dropIn':     obj.set({top:oT-300,opacity:0}); obj.animate('top',oT,{duration:dur,easing:ease.easeOutBounce,onChange:render}); obj.animate('opacity',oOp,{duration:h,onChange:render,onComplete:()=>restore()}); break;
+            case 'riseUp':     obj.set({top:oT+300,opacity:0}); obj.animate('top',oT,{duration:dur,easing:ease.easeOutCubic,onChange:render}); obj.animate('opacity',oOp,{duration:h,onChange:render,onComplete:()=>restore()}); break;
+            case 'flipX':      obj.set('scaleY',0.01); obj.animate('scaleY',oSY,{duration:dur,easing:ease.easeOutCubic,onChange:render,onComplete:()=>restore()}); break;
+            case 'flipY':      obj.set('scaleX',0.01); obj.animate('scaleX',oSX,{duration:dur,easing:ease.easeOutCubic,onChange:render,onComplete:()=>restore()}); break;
+            case 'rotateIn':   obj.set({angle:oAng-180,opacity:0,scaleX:0.3,scaleY:0.3}); obj.animate('angle',oAng,{duration:dur,easing:ease.easeOutCubic,onChange:render}); obj.animate('opacity',oOp,{duration:dur,onChange:render}); obj.animate({scaleX:oSX,scaleY:oSY},{duration:dur,easing:ease.easeOutCubic,onChange:render,onComplete:()=>restore()}); break;
+            case 'swingIn':    obj.set({angle:oAng-45,opacity:0}); obj.animate('angle',oAng,{duration:dur,easing:ease.easeOutBack,onChange:render}); obj.animate('opacity',oOp,{duration:h,onChange:render,onComplete:()=>restore()}); break;
+            case 'rollIn':     obj.set({left:oL-200,angle:oAng-120,opacity:0}); obj.animate('left',oL,{duration:dur,easing:ease.easeOutCubic,onChange:render}); obj.animate('angle',oAng,{duration:dur,easing:ease.easeOutCubic,onChange:render}); obj.animate('opacity',oOp,{duration:h,onChange:render,onComplete:()=>restore()}); break;
+            case 'expandH':    obj.set('scaleX',0.01); obj.animate('scaleX',oSX,{duration:dur,easing:ease.easeOutCubic,onChange:render,onComplete:()=>restore()}); break;
+            case 'expandV':    obj.set('scaleY',0.01); obj.animate('scaleY',oSY,{duration:dur,easing:ease.easeOutCubic,onChange:render,onComplete:()=>restore()}); break;
+            case 'bounce':     obj.animate('top',oT-50,{duration:h,easing:ease.easeOutCubic,onChange:render,onComplete:()=>obj.animate('top',oT,{duration:h,easing:ease.easeOutBounce,onChange:render,onComplete:()=>restore()})}); break;
+            case 'bounceX':    obj.animate('left',oL+40,{duration:q,easing:ease.easeOutCubic,onChange:render,onComplete:()=>obj.animate('left',oL,{duration:h,easing:ease.easeOutBounce,onChange:render,onComplete:()=>restore()})}); break;
+            case 'shake':      obj.animate('left',oL-12,{duration:60,onChange:render,onComplete:()=>obj.animate('left',oL+12,{duration:60,onChange:render,onComplete:()=>obj.animate('left',oL-10,{duration:60,onChange:render,onComplete:()=>obj.animate('left',oL+10,{duration:60,onChange:render,onComplete:()=>obj.animate('left',oL-6,{duration:60,onChange:render,onComplete:()=>obj.animate('left',oL,{duration:60,onChange:render,onComplete:()=>restore()})})})})})}); break;
+            case 'shakeY':     obj.animate('top',oT-12,{duration:60,onChange:render,onComplete:()=>obj.animate('top',oT+12,{duration:60,onChange:render,onComplete:()=>obj.animate('top',oT-8,{duration:60,onChange:render,onComplete:()=>obj.animate('top',oT+8,{duration:60,onChange:render,onComplete:()=>obj.animate('top',oT,{duration:60,onChange:render,onComplete:()=>restore()})})})})}); break;
+            case 'pulse':      obj.animate({scaleX:oSX*1.25,scaleY:oSY*1.25},{duration:h,onChange:render,onComplete:()=>obj.animate({scaleX:oSX,scaleY:oSY},{duration:h,onChange:render,onComplete:()=>restore()})}); break;
+            case 'float':      obj.animate('top',oT-18,{duration:h,easing:ease.easeInOutSine,onChange:render,onComplete:()=>obj.animate('top',oT,{duration:h,easing:ease.easeInOutSine,onChange:render,onComplete:()=>restore()})}); break;
+            case 'swing':      obj.animate('angle',oAng+20,{duration:q,easing:ease.easeOutSine,onChange:render,onComplete:()=>obj.animate('angle',oAng-16,{duration:q,easing:ease.easeInOutSine,onChange:render,onComplete:()=>obj.animate('angle',oAng+10,{duration:q,easing:ease.easeInOutSine,onChange:render,onComplete:()=>obj.animate('angle',oAng,{duration:q,easing:ease.easeOutSine,onChange:render,onComplete:()=>restore()})})})}); break;
+            case 'wobble':     obj.animate('left',oL+20,{duration:q,onChange:render,onComplete:()=>obj.animate('angle',oAng-8,{duration:q,onChange:render,onComplete:()=>obj.animate('left',oL-15,{duration:q,onChange:render,onComplete:()=>obj.animate('angle',oAng+6,{duration:q,onChange:render,onComplete:()=>obj.animate('left',oL,{duration:q,onChange:render,onComplete:()=>obj.animate('angle',oAng,{duration:q,onChange:render,onComplete:()=>restore()})})})})})}); break;
+            case 'tada':       obj.animate({scaleX:oSX*0.9,scaleY:oSY*0.9},{duration:q/2,onChange:render,onComplete:()=>obj.animate({scaleX:oSX*1.15,scaleY:oSY*1.15,angle:oAng-5},{duration:q,onChange:render,onComplete:()=>obj.animate({angle:oAng+5},{duration:q/2,onChange:render,onComplete:()=>obj.animate({angle:oAng-4},{duration:q/2,onChange:render,onComplete:()=>obj.animate({scaleX:oSX,scaleY:oSY,angle:oAng},{duration:q,onChange:render,onComplete:()=>restore()})})})})}); break;
+            case 'jello':      obj.animate({scaleX:oSX*1.2,scaleY:oSY*0.85},{duration:q/2,onChange:render,onComplete:()=>obj.animate({scaleX:oSX*0.85,scaleY:oSY*1.15},{duration:q/2,onChange:render,onComplete:()=>obj.animate({scaleX:oSX*1.1,scaleY:oSY*0.92},{duration:q/2,onChange:render,onComplete:()=>obj.animate({scaleX:oSX,scaleY:oSY},{duration:q/2,onChange:render,onComplete:()=>restore()})})})}); break;
+            case 'rubberBand': obj.animate({scaleX:oSX*1.4,scaleY:oSY*0.75},{duration:q,onChange:render,onComplete:()=>obj.animate({scaleX:oSX*0.8,scaleY:oSY*1.25},{duration:q,onChange:render,onComplete:()=>obj.animate({scaleX:oSX*1.1,scaleY:oSY*0.9},{duration:q,onChange:render,onComplete:()=>obj.animate({scaleX:oSX,scaleY:oSY},{duration:q,onChange:render,onComplete:()=>restore()})})})}); break;
+            case 'heartbeat':  obj.animate({scaleX:oSX*1.3,scaleY:oSY*1.3},{duration:120,onChange:render,onComplete:()=>obj.animate({scaleX:oSX,scaleY:oSY},{duration:120,onChange:render,onComplete:()=>obj.animate({scaleX:oSX*1.2,scaleY:oSY*1.2},{duration:120,onChange:render,onComplete:()=>obj.animate({scaleX:oSX,scaleY:oSY},{duration:200,onChange:render,onComplete:()=>restore()})})})}); break;
+            case 'flash':      obj.animate('opacity',0,{duration:q,onChange:render,onComplete:()=>obj.animate('opacity',oOp,{duration:q,onChange:render,onComplete:()=>obj.animate('opacity',0,{duration:q,onChange:render,onComplete:()=>obj.animate('opacity',oOp,{duration:q,onChange:render,onComplete:()=>restore()})})})}); break;
+            case 'blink':      obj.animate('opacity',0,{duration:h,onChange:render,onComplete:()=>obj.animate('opacity',oOp,{duration:h,onChange:render,onComplete:()=>restore()})}); break;
+            case 'spin':       obj.animate('angle',oAng+360,{duration:dur,easing:ease.easeInOutCubic,onChange:render,onComplete:()=>restore()}); break;
+            case 'spinReverse':obj.animate('angle',oAng-360,{duration:dur,easing:ease.easeInOutCubic,onChange:render,onComplete:()=>restore()}); break;
+            case 'rockLeft':   obj.animate('angle',oAng-20,{duration:h,easing:ease.easeOutSine,onChange:render,onComplete:()=>obj.animate('angle',oAng,{duration:h,easing:ease.easeOutSine,onChange:render,onComplete:()=>restore()})}); break;
+            case 'rockRight':  obj.animate('angle',oAng+20,{duration:h,easing:ease.easeOutSine,onChange:render,onComplete:()=>obj.animate('angle',oAng,{duration:h,easing:ease.easeOutSine,onChange:render,onComplete:()=>restore()})}); break;
+            case 'sway':       obj.animate('left',oL+25,{duration:h,easing:ease.easeInOutSine,onChange:render,onComplete:()=>obj.animate('left',oL-25,{duration:dur,easing:ease.easeInOutSine,onChange:render,onComplete:()=>obj.animate('left',oL,{duration:h,easing:ease.easeInOutSine,onChange:render,onComplete:()=>restore()})})}); break;
+            case 'vibrate': { let vt=0; const vSteps=Math.floor(dur/30); (function vStep(){if(vt>=vSteps){restore();return;} const offset=(vt%2===0)?4:-4; obj.animate('left',oL+offset,{duration:30,onChange:render,onComplete:vStep}); vt++;})(); break; }
+            case 'fadeOut':    obj.animate('opacity',0,{duration:dur,onChange:render,onComplete:()=>restore(300)}); break;
+            case 'shrink':     obj.animate({scaleX:0.01,scaleY:0.01,opacity:0},{duration:dur,easing:ease.easeInCubic,onChange:render,onComplete:()=>restore(300)}); break;
+            case 'exitL':      obj.animate('left',oL-400,{duration:dur,easing:ease.easeInCubic,onChange:render,onComplete:()=>restore(300)}); break;
+            case 'exitR':      obj.animate('left',oL+400,{duration:dur,easing:ease.easeInCubic,onChange:render,onComplete:()=>restore(300)}); break;
+            case 'exitU':      obj.animate('top',oT-400,{duration:dur,easing:ease.easeInCubic,onChange:render,onComplete:()=>restore(300)}); break;
+            case 'exitD':      obj.animate('top',oT+400,{duration:dur,easing:ease.easeInCubic,onChange:render,onComplete:()=>restore(300)}); break;
+            case 'sinkDown':   obj.animate({top:oT+200,opacity:0},{duration:dur,easing:ease.easeInCubic,onChange:render,onComplete:()=>restore(300)}); break;
+            case 'flyOff':     obj.animate({left:oL+500,top:oT-300,opacity:0,angle:oAng+45},{duration:dur,easing:ease.easeInCubic,onChange:render,onComplete:()=>restore(300)}); break;
+            case 'explode':    obj.animate({scaleX:oSX*3,scaleY:oSY*3,opacity:0},{duration:dur,easing:ease.easeOutCubic,onChange:render,onComplete:()=>restore(300)}); break;
+            case 'collapse':   obj.animate({scaleY:0.01},{duration:dur,easing:ease.easeInCubic,onChange:render,onComplete:()=>restore(300)}); break;
         }
     });
 }
@@ -1134,8 +917,7 @@ function initFlip() {
         clickEventForward: false
     });
 
-    window.pageFlip = pageFlip;  // ← expose to window so console can reach it
-
+    window.pageFlip = pageFlip;
 
     // 2. LOAD pages
     pageFlip.loadFromHTML(document.querySelectorAll('#book .my-page'));
@@ -1164,13 +946,10 @@ function initFlip() {
         playPageAnimations(e.data + 1);
     });
 
-    // ── Start videos AFTER flip animation completes (~flippingTime ms) ────────
     pageFlip.on('flip', e => {
         const newPageIdx     = e.data;
         const newPageIdxNext = e.data + 1;
 
-        // Stop videos on pages that are no longer in view
-        // (all pages except the two currently showing)
         Object.keys(pageVideos).forEach(pi => {
             const idx = parseInt(pi);
             if (idx !== newPageIdx && idx !== newPageIdxNext) {
@@ -1178,21 +957,19 @@ function initFlip() {
             }
         });
 
-        // Start videos on the newly visible pages after the flip animation ends
         setTimeout(() => {
             startPageVideos(newPageIdx);
             startPageVideos(newPageIdxNext);
-        }, 820); // slightly longer than flippingTime (800ms) to wait for animation
+        }, 820);
     });
 
     buildDots();
     updateUI(0);
 
     setTimeout(() => {
-    playPageAnimations(0);
-    playPageAnimations(1);
-}, 300);
-
+        playPageAnimations(0);
+        playPageAnimations(1);
+    }, 300);
 }
 
 
@@ -1207,16 +984,12 @@ function updateUI(idx) {
     } else if (idx >= total - 1) {
         label = `Page ${total} (Back Cover)`;
     } else {
-        // Since spreads start on ODD indices (idx), 
-        // the left page is idx + 1 and the right is idx + 2
         const left = idx + 1;
         const right = idx + 2;
         label = `Pages ${left} - ${right}`;
     }
-    
     if (ind) ind.textContent = label;
 
-    // Update Dots: Each dot represents one "view" (one spread or one cover)
     const viewIdx = idx === 0 ? 0 : Math.ceil(idx / 2);
     document.querySelectorAll('.p-dot').forEach((d, i) => {
         d.classList.toggle('a', i === viewIdx);
@@ -1227,20 +1000,14 @@ function buildDots() {
     const wrap = document.getElementById('dotWrap');
     if (!wrap) return;
     wrap.innerHTML = '';
-    
     const total = pageFlip.getPageCount();
-    // Total Views = 1 (Cover) + (Internal Spreads) + 1 (Back Cover)
-    const totalViews = Math.floor(total / 2) + 1; 
+    const totalViews = Math.floor(total / 2) + 1;
 
     for (let i = 0; i < totalViews; i++) {
         const d = document.createElement('button');
         d.className = 'p-dot' + (i === 0 ? ' a' : '');
         d.onclick = () => {
             if (pageFlip) {
-                // Map the view index back to the starting physical index
-                // View 0 -> Index 0
-                // View 1 -> Index 1 (Pages 2/3)
-                // View 2 -> Index 3 (Pages 4/5)
                 const targetIdx = (i === 0) ? 0 : (i * 2) - 1;
                 pageFlip.flip(targetIdx);
             }

@@ -1,85 +1,628 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Droidal - Join the Adventure</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;700;800&display=swap" rel="stylesheet">
-    <style>
-        :root { --pri: #6366f1; --accent: #a855f7; --bg-dark: #030712; }
-        body, html { height: 100%; margin: 0; font-family: 'Plus Jakarta Sans', sans-serif; background-color: var(--bg-dark); color: white; overflow: hidden; }
-        .main-container { height: 100vh; display: flex; }
-        .visual-side { flex: 1.3; background: radial-gradient(circle at center, #1e1b4b 0%, #020617 100%); position: relative; display: flex; flex-direction: column; justify-content: space-between; padding: 60px; overflow: hidden; }
-        .planet-main { position: absolute; width: 450px; height: 450px; background: linear-gradient(135deg, #22d3ee 0%, #6366f1 100%); border-radius: 50%; top: -80px; left: -80px; box-shadow: inset -30px -30px 60px rgba(0,0,0,0.5), 0 0 80px rgba(34, 211, 238, 0.2); opacity: 0.9; }
-        .planet-secondary { position: absolute; width: 180px; height: 180px; background: linear-gradient(135deg, #a855f7 0%, #4338ca 100%); border-radius: 50%; top: 40%; right: 15%; box-shadow: inset -15px -15px 30px rgba(0,0,0,0.4), 0 0 40px rgba(168, 85, 247, 0.2); }
-        .brand-logo { font-size: 1.8rem; font-weight: 800; letter-spacing: -1px; color: white; display: flex; align-items: center; gap: 10px; position: relative; z-index: 10; }
-        .adventure-title { font-size: 3.8rem; font-weight: 900; line-height: 1; margin-top: auto; margin-bottom: 20px; text-transform: uppercase; max-width: 450px; position: relative; z-index: 10; }
-        .form-side { flex: 1; background-color: #030712; display: flex; align-items: center; justify-content: center; padding: 40px; border-left: 1px solid rgba(255,255,255,0.05); }
-        .login-card { width: 100%; max-width: 420px; background: rgba(255, 255, 255, 0.02); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 24px; padding: 40px; }
-        .form-header h2 { font-size: 2.2rem; font-weight: 800; margin-bottom: 8px; }
-        .form-header p { color: #94a3b8; font-size: 0.9rem; margin-bottom: 30px; }
-        .input-group-custom { position: relative; margin-bottom: 20px; }
-        .input-group-custom i { position: absolute; left: 16px; top: 15px; color: #64748b; z-index: 5; }
-        .form-control-custom { background: rgba(30, 41, 59, 0.5) !important; border: 1px solid #334155 !important; border-radius: 12px !important; padding: 12px 16px 12px 48px !important; color: white !important; transition: 0.3s; width: 100%; outline: none; }
-        .form-control-custom:focus { border-color: var(--pri) !important; box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.2) !important; }
-        .btn-signup { width: 100%; padding: 14px; background: linear-gradient(90deg, #6366f1 0%, #a855f7 100%); border: none; border-radius: 12px; color: white; font-weight: 700; margin-top: 10px; transition: 0.3s; }
-        .btn-signup:hover { filter: brightness(1.2); transform: translateY(-2px); }
-        .footer-text { margin-top: 30px; font-size: 0.75rem; color: #64748b; text-align: center; }
-        .footer-text a { color: var(--accent); text-decoration: none; font-weight: 600; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Droidal - Sign Up</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root {
+  --pri: #6366f1;
+  --accent: #a855f7;
+  --bg: #05071a;
+  --card-bg: rgba(255,255,255,0.03);
+}
+
+
+.field input:-webkit-autofill,
+.field input:-webkit-autofill:hover,
+.field input:-webkit-autofill:focus,
+.field input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 1000px rgba(15, 20, 50, 0.7) inset !important;
+  -webkit-text-fill-color: #fff !important;
+  caret-color: #fff;
+  transition: background-color 9999s ease-in-out 0s;
+}
+*,*::before,*::after { box-sizing:border-box; margin:0; padding:0; }
+body,html {
+  height:100%; overflow:hidden;
+  font-family:'Plus Jakarta Sans',sans-serif;
+  background:var(--bg); color:#fff;
+}
+
+/* ── ANIMATED MESH BACKGROUND ── */
+.bg-canvas {
+  position:fixed; inset:0; z-index:0;
+  background: #05071a;
+}
+.orb {
+  position:absolute; border-radius:50%;
+  filter:blur(80px); opacity:0.55;
+  animation: orbFloat linear infinite;
+}
+.orb1 {
+  width:600px; height:600px;
+  background:radial-gradient(circle, #2563eb 0%, #1e40af 50%, transparent 70%);
+  top:-150px; left:-100px;
+  animation-duration:18s; animation-delay:0s;
+}
+.orb2 {
+  width:380px; height:380px;
+  background:radial-gradient(circle, #7c3aed 0%, #6d28d9 50%, transparent 70%);
+  top:38%; left:36%;
+  animation-duration:14s; animation-delay:-4s;
+}
+.orb3 {
+  width:280px; height:280px;
+  background:radial-gradient(circle, #0ea5e9 0%, transparent 70%);
+  bottom:-60px; left:20%;
+  animation-duration:20s; animation-delay:-9s;
+}
+@keyframes orbFloat {
+  0%,100% { transform: translate(0,0) scale(1); }
+  25%      { transform: translate(30px,-20px) scale(1.04); }
+  50%      { transform: translate(-20px,30px) scale(0.97); }
+  75%      { transform: translate(20px,20px) scale(1.02); }
+}
+
+/* ── LAYOUT ── */
+.page {
+  position:relative; z-index:1;
+  height:100vh; display:flex;
+}
+.left-side {
+  flex:1.2;
+  display:flex; flex-direction:column;
+  justify-content:space-between;
+  padding:52px 60px;
+  position:relative;
+}
+.brand {
+  font-size:1.6rem; font-weight:800; letter-spacing:-0.5px;
+  display:flex; align-items:center; gap:10px;
+}
+.brand-icon { color:var(--pri); }
+.hero-text {
+  font-size:4.2rem; font-weight:900; line-height:1;
+  text-transform:uppercase; letter-spacing:-2px;
+  padding-bottom: 60px;
+}
+.hero-text span { 
+  background: linear-gradient(90deg,#fff 0%,#a5b4fc 100%);
+  -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+}
+
+/* ── RIGHT SIDE — scrollable ── */
+.right-side {
+  width:520px; flex-shrink:0;
+  display:flex; align-items:flex-start; justify-content:center;
+  padding:30px 50px 30px 20px;
+  position:relative;
+  overflow-y:auto;
+  scrollbar-width:none;
+}
+.right-side::-webkit-scrollbar { display:none; }
+
+/* Card glow ring */
+.card-wrap {
+  position:relative;
+  width:100%;
+  margin:auto 0;
+}
+.card-glow {
+  position:absolute; inset:-2px;
+  border-radius:28px;
+  background:linear-gradient(135deg, rgba(99,102,241,0.45), rgba(168,85,247,0.3), rgba(34,211,238,0.2));
+  filter:blur(8px);
+  z-index:0;
+  animation: glowPulse 4s ease-in-out infinite;
+}
+@keyframes glowPulse {
+  0%,100% { opacity:0.6; }
+  50%      { opacity:1; }
+}
+.login-card {
+  position:relative; z-index:1;
+  background: rgba(8,12,35,0.88);
+  backdrop-filter:blur(24px);
+  border:1px solid rgba(99,102,241,0.25);
+  border-radius:26px;
+  padding:15px 40px 5px;
+  width:100%;
+}
+
+.form-header h2 {
+  font-size:2.4rem; font-weight:900; margin-bottom:8px; letter-spacing:-1px;
+}
+.form-header p { color:#94a3b8; font-size:0.88rem; margin-bottom:26px; line-height:1.5; }
+
+/* ── Name row: two fields side by side ── */
+.field-row {
+  display:flex; gap:12px; margin-bottom:5px;
+}
+.field-row .field { margin-bottom:0; flex:1; }
+
+.field { position:relative; margin-bottom:18px; }
+.field-icon {
+  position:absolute; left:17px; top:50%; transform:translateY(-50%);
+  color:#475569; font-size:0.85rem; z-index:2;
+}
+.field input {
+  width:100%; padding:14px 46px 14px 46px;
+  background:rgba(15,20,50,0.7);
+  border:1.5px solid rgba(99,102,241,0.2);
+  border-radius:14px; color:#fff;
+  font-family:inherit; font-size:0.95rem;
+  outline:none; transition:border-color 0.25s, box-shadow 0.25s;
+}
+.field input::placeholder { color:#475569; }
+.field input:focus {
+  border-color:var(--pri);
+  box-shadow:0 0 0 4px rgba(99,102,241,0.15);
+}
+.field input.err {
+  border-color:#ef4444;
+  box-shadow:0 0 0 4px rgba(239,68,68,0.12);
+  animation:shake 0.4s ease;
+}
+@keyframes shake {
+  0%,100%{transform:translateX(0)}
+  20%{transform:translateX(-8px)}
+  40%{transform:translateX(8px)}
+  60%{transform:translateX(-5px)}
+  80%{transform:translateX(5px)}
+}
+.eye-btn {
+  position:absolute; right:15px; top:50%; transform:translateY(-50%);
+  background:none; border:none; color:#475569; cursor:pointer;
+  font-size:0.85rem; padding:4px; transition:color 0.2s;
+}
+.eye-btn:hover { color:var(--pri); }
+
+/* ── Section divider labels ── */
+.section-label {
+  font-size:0.7rem; font-weight:700; letter-spacing:0.08em;
+  color:#475569; text-transform:uppercase;
+  margin: 0px 0 0px 0px;
+  display:flex; align-items:center; gap:8px;
+}
+.section-label::after {
+  content:''; flex:1; height:1px;
+  background:rgba(99,102,241,0.15);
+}
+
+.err-msg {
+  font-size:0.76rem; font-weight:600; color:#f87171;
+  margin:-8px 0 14px 4px; display:none;
+}
+.err-msg.show { display:block; animation:fadeUp 0.3s ease; }
+@keyframes fadeUp {
+  from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:translateY(0)}
+}
+
+.btn-submit {
+  width:100%; padding:15px;
+  background:linear-gradient(90deg, #6366f1, #a855f7);
+  border:none; border-radius:14px;
+  color:#fff; font-weight:800; font-size:1rem;
+  cursor:pointer; font-family:inherit;
+  transition:transform 0.2s, filter 0.2s, box-shadow 0.2s;
+  box-shadow:0 4px 20px rgba(99,102,241,0.35);
+}
+.btn-submit:hover {
+  filter:brightness(1.15);
+  transform:translateY(-2px);
+  box-shadow:0 8px 30px rgba(99,102,241,0.5);
+}
+.signin-link {
+  text-align:center; margin-top:20px;
+  font-size:0.78rem; color:#64748b;
+}
+.signin-link a { color:var(--accent); text-decoration:none; font-weight:700; }
+
+/* ═══════════════════════════════════════════════════
+   CHARACTER
+═══════════════════════════════════════════════════ */
+#character {
+  position:fixed;
+  pointer-events:none;
+  z-index:100;
+  width:200px;
+  transition:
+    left   0.75s cubic-bezier(0.34,1.4,0.64,1),
+    top    0.75s cubic-bezier(0.34,1.4,0.64,1),
+    bottom 0.75s cubic-bezier(0.34,1.4,0.64,1),
+    right  0.75s cubic-bezier(0.34,1.4,0.64,1),
+    transform 0.75s cubic-bezier(0.34,1.4,0.64,1),
+    opacity 0.55s ease;
+  opacity:0;
+  transform:translateY(30px) scale(0.85);
+}
+#character img {
+  width:100%;
+  filter:drop-shadow(0 10px 30px rgba(0,0,0,0.6));
+  display:block;
+}
+
+/* Speech bubble */
+#bubble {
+  position:fixed;
+  z-index:101;
+  background:rgba(8,10,30,0.92);
+  border:1px solid rgba(99,102,241,0.55);
+  border-radius:18px 18px 18px 5px;
+  padding:10px 16px;
+  font-size:0.78rem; font-weight:700;
+  color:#c7d2fe; white-space:nowrap;
+  pointer-events:none;
+  backdrop-filter:blur(12px);
+  transition:
+    left   0.75s cubic-bezier(0.34,1.4,0.64,1),
+    top    0.75s cubic-bezier(0.34,1.4,0.64,1),
+    opacity 0.4s ease,
+    transform 0.4s cubic-bezier(0.34,1.56,0.64,1);
+  opacity:0;
+  transform:scale(0.85) translateY(6px);
+}
+#bubble.show {
+  opacity:1;
+  transform:scale(1) translateY(0);
+}
+
+/* Confetti */
+.cw { position:fixed; inset:0; pointer-events:none; z-index:200; overflow:hidden; display:none; }
+.cw.on { display:block; }
+.cp {
+  position:absolute; top:-20px;
+  animation:cfall linear forwards;
+  border-radius:2px;
+}
+@keyframes cfall {
+  to { transform:translateY(110vh) rotate(900deg); opacity:0; }
+}
+</style>
 </head>
 <body>
-    <div class="main-container">
-        <div class="visual-side">
-            <div class="planet-main"></div>
-            <div class="planet-secondary"></div>
-            <div class="brand-logo"><i class="fa-solid fa-wand-magic-sparkles" style="color: var(--pri);"></i> DROIDAL</div>
-            <h1 class="adventure-title">Create your account!</h1>
-        </div>
-        <div class="form-side">
-            <div class="login-card">
-                <div class="form-header">
-                    <h2>SIGN UP</h2>
-                    <p>Enter a username and password to start your design adventure.</p>
-                </div>
-                <div class="input-group-custom">
-                    <i class="fa-solid fa-user"></i>
-                    <input type="text" id="user" class="form-control-custom" placeholder="Choose Username" autocomplete="off">
-                </div>
-                <div class="input-group-custom">
-                    <i class="fa-solid fa-lock"></i>
-                    <input type="password" id="pass" class="form-control-custom" placeholder="Create Password">
-                </div>
-                <button class="btn-signup" onclick="doSignup()">Create Account</button>
-                <p class="footer-text">Already have an account? <a href="/">Sign In</a></p>
-            </div>
-        </div>
+
+<!-- Animated bg -->
+<div class="bg-canvas">
+  <div class="orb orb1"></div>
+  <div class="orb orb2"></div>
+  <div class="orb orb3"></div>
+</div>
+
+<!-- Character + bubble -->
+<div id="character">
+  <img id="char-img" src="" alt="">
+</div>
+<div id="bubble"></div>
+<div class="cw" id="cw"></div>
+
+<!-- Page layout -->
+<div class="page">
+  <div class="left-side">
+    <div class="brand">
+      <i class="fa-solid fa-wand-magic-sparkles brand-icon"></i>
+      DROIDAL
     </div>
-    <script>
-        async function doSignup() {
-            const user = document.getElementById('user').value;
-            const pass = document.getElementById('pass').value;
-            if(!user || !pass) return alert("Please fill in both fields");
-            
-            try {
-                const res = await fetch('/api/signup', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username: user, password: pass })
-                });
-                if(res.ok) {
-                    alert("Account created! Please sign in.");
-                    window.location.href = "/";
-                } else {
-                    const err = await res.json();
-                    alert(err.detail || "Signup failed");
-                }
-            } catch (err) {
-                alert("Could not connect to server.");
-            }
-        }
-    </script>
+    <div class="hero-text">
+      <span>Create<br>Your<br>Account!</span>
+    </div>
+  </div>
+
+  <div class="right-side">
+    <div class="card-wrap">
+      <div class="card-glow"></div>
+      <div class="login-card" id="loginCard">
+        <div class="form-header">
+          <h2>SIGN UP</h2>
+          <p>Fill in your details to start your design adventure.</p>
+        </div>
+
+        <!-- Personal Info -->
+        <div class="section-label">Personal Info</div>
+        <div class="field-row">
+          <div class="field">
+            <i class="fa-solid fa-id-card field-icon"></i>
+            <input type="text" id="fname" placeholder="First Name" autocomplete="off">
+          </div>
+          <div class="field">
+            <i class="fa-solid fa-id-card field-icon"></i>
+            <input type="text" id="lname" placeholder="Last Name" autocomplete="off">
+          </div>
+        </div>
+
+        <div class="field">
+          <i class="fa-solid fa-envelope field-icon"></i>
+          <input type="email" id="email" placeholder="Email Address" autocomplete="off">
+        </div>
+
+        <!-- Account Info -->
+        <div class="section-label">Account Info</div>
+        <div class="field">
+          <i class="fa-solid fa-user field-icon"></i>
+          <input type="text" id="user" placeholder="Choose Username" autocomplete="off">
+        </div>
+
+        <div class="field">
+          <i class="fa-solid fa-lock field-icon"></i>
+          <input type="password" id="pass" placeholder="Create Password">
+          <button class="eye-btn" onclick="togglePass()" tabindex="-1">
+            <i class="fa-solid fa-eye" id="eyeIcon"></i>
+          </button>
+        </div>
+
+        <div class="err-msg" id="errMsg">⚠ Please fill in all fields.</div>
+
+        <button class="btn-submit" onclick="doSignup()">Create Account</button>
+        <p class="signin-link">Already have an account? <a href="/">Sign In</a></p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Image sources ──────────────────────────────────────────────────
+const IMGS = {
+  holding: '/frontend/images/whiteboardman.png',
+  peeking: '/frontend/images/peekingman.png',
+  wrong:   '/frontend/images/angryman.png',
+  excited: '/frontend/images/celebrateman.png'
+};
+
+// ── State config ───────────────────────────────────────────────────
+const STATES = {
+  holding: {
+    img: 'holding',
+    anchor: 'top-center',
+    offsetX: 50,
+    offsetY: -160,
+    scale: 2,
+    flipX: false,
+    bubbleAnchor: 'above',
+    bubble: '👋 Welcome! Fill in your details'
+  },
+  peeking: {
+    img: 'peeking',
+    anchor: 'ml',
+    offsetX: -185,
+    offsetY: 0,
+    scale: 2,
+    flipX: false,
+    bubbleAnchor: 'above',
+    bubble: '👀 I see you typing...'
+  },
+  wrong: {
+    img: 'wrong',
+    anchor: 'br',
+    offsetX: 20,
+    offsetY: -40,
+    scale: 1,
+    flipX: false,
+    bubbleAnchor: 'above',
+    bubble: '❌ Something\'s not right!'
+  },
+  success: {
+    img: 'excited',
+    anchor: 'br',
+    offsetX: 20,
+    offsetY: -40,
+    scale: 1,
+    flipX: false,
+    bubbleAnchor: 'above',
+    bubble: '🎉 You\'re all set!'
+  }
+};
+
+const charEl  = document.getElementById('character');
+const charImg = document.getElementById('char-img');
+const bubbleEl= document.getElementById('bubble');
+
+let currentState = null;
+let revertTimer  = null;
+
+function getCardRect() {
+  return document.getElementById('loginCard').getBoundingClientRect();
+}
+
+function placeCharacter(stateName) {
+  const cfg  = STATES[stateName];
+  const card = getCardRect();
+  const size = 200 * cfg.scale;
+
+  let left, top;
+
+  switch(cfg.anchor) {
+    case 'top-center':
+      left = card.left + card.width / 2 - size / 2 + cfg.offsetX;
+      top  = card.top + cfg.offsetY;
+      break;
+    case 'ml':
+      left = card.left + cfg.offsetX;
+      top  = card.top + (card.height / 2) - size / 2 + cfg.offsetY;
+      break;
+    case 'br':
+      left = card.right + cfg.offsetX - size;
+      top  = card.bottom - size + cfg.offsetY;
+      break;
+    case 'center':
+      left = card.left + card.width / 2 - size / 2 + cfg.offsetX;
+      top  = card.top + card.height / 2 - size / 2 + cfg.offsetY;
+      break;
+  }
+
+  charEl.style.width = size + 'px';
+  charEl.style.left  = left + 'px';
+  charEl.style.top   = top  + 'px';
+  charEl.style.transform = cfg.flipX ? 'scaleX(-1)' : 'scaleX(1)';
+
+  if (cfg.bubbleAnchor === 'above') {
+    bubbleEl.style.left = (left + 20) + 'px';
+    bubbleEl.style.top  = (top - 45) + 'px';
+  } else {
+    bubbleEl.style.left = (left + 20) + 'px';
+    bubbleEl.style.top  = (top + size + 10) + 'px';
+  }
+}
+
+function go(stateName, autoRevertMs) {
+  if (currentState === stateName) return;
+  currentState = stateName;
+  clearTimeout(revertTimer);
+
+  const cfg = STATES[stateName];
+  charImg.src = IMGS[cfg.img];
+
+  charEl.style.opacity = '0';
+  bubbleEl.classList.remove('show');
+
+  charEl.style.transition = 'opacity 0.5s ease, transform 0.7s cubic-bezier(0.34,1.4,0.64,1), left 0.75s cubic-bezier(0.34,1.4,0.64,1), top 0.75s cubic-bezier(0.34,1.4,0.64,1), width 0.5s ease';
+  placeCharacter(stateName);
+
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      charEl.style.opacity = '1';
+      setTimeout(() => {
+        bubbleEl.textContent = cfg.bubble;
+        bubbleEl.classList.add('show');
+      }, 350);
+    });
+  });
+
+  if (autoRevertMs) {
+    revertTimer = setTimeout(() => go('holding'), autoRevertMs);
+  }
+}
+
+// ── Eye toggle ─────────────────────────────────────────────────────
+function togglePass() {
+  const inp = document.getElementById('pass');
+  const ico = document.getElementById('eyeIcon');
+  inp.type = inp.type === 'password' ? 'text' : 'password';
+  ico.className = inp.type === 'text' ? 'fa-solid fa-eye-slash' : 'fa-solid fa-eye';
+}
+
+// ── Input events ───────────────────────────────────────────────────
+let blurTimer;
+['fname','lname','email','user','pass'].forEach(id => {
+  document.getElementById(id).addEventListener('focus', () => {
+    clearTimeout(blurTimer);
+    go('peeking');
+  });
+  document.getElementById(id).addEventListener('blur', () => {
+    blurTimer = setTimeout(() => {
+      if (currentState === 'peeking') go('holding');
+    }, 900);
+  });
+});
+
+// ── Confetti ───────────────────────────────────────────────────────
+function launchConfetti() {
+  const cw = document.getElementById('cw');
+  const cols = ['#6366f1','#a855f7','#22d3ee','#f59e0b','#10b981','#f43f5e','#fff','#818cf8'];
+  cw.innerHTML = ''; cw.classList.add('on');
+  for (let i = 0; i < 110; i++) {
+    const p = document.createElement('div');
+    p.className = 'cp';
+    p.style.left = Math.random() * 100 + 'vw';
+    p.style.background = cols[Math.floor(Math.random() * cols.length)];
+    const sz = 5 + Math.random() * 9;
+    p.style.width  = sz + 'px';
+    p.style.height = (sz * (1 + Math.random())) + 'px';
+    p.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+    p.style.animationDuration = (1.8 + Math.random() * 2.8) + 's';
+    p.style.animationDelay    = (Math.random() * 1.6) + 's';
+    cw.appendChild(p);
+  }
+  setTimeout(() => { cw.classList.remove('on'); cw.innerHTML = ''; }, 6000);
+}
+
+// ── Email validation ───────────────────────────────────────────────
+function isValidEmail(email) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
+// ── Signup ─────────────────────────────────────────────────────────
+async function doSignup() {
+  const fname = document.getElementById('fname').value.trim();
+  const lname = document.getElementById('lname').value.trim();
+  const email = document.getElementById('email').value.trim();
+  const user  = document.getElementById('user').value.trim();
+  const pass  = document.getElementById('pass').value.trim();
+  const errEl = document.getElementById('errMsg');
+
+  // Clear previous errors
+  ['fname','lname','email','user','pass'].forEach(id => {
+    document.getElementById(id).classList.remove('err');
+  });
+  errEl.classList.remove('show');
+
+  // Validation
+  let hasError = false;
+  let errText = '⚠ Please fill in all fields.';
+
+  if (!fname) { document.getElementById('fname').classList.add('err'); hasError = true; }
+  if (!lname) { document.getElementById('lname').classList.add('err'); hasError = true; }
+  if (!email) { document.getElementById('email').classList.add('err'); hasError = true; }
+  if (!user)  { document.getElementById('user').classList.add('err');  hasError = true; }
+  if (!pass)  { document.getElementById('pass').classList.add('err');  hasError = true; }
+
+  if (!hasError && !isValidEmail(email)) {
+    document.getElementById('email').classList.add('err');
+    errText = '⚠ Please enter a valid email address.';
+    hasError = true;
+  }
+
+  if (hasError) {
+    errEl.textContent = errText;
+    errEl.classList.add('show');
+    go('wrong', 2800);
+    setTimeout(() => {
+      errEl.classList.remove('show');
+      ['fname','lname','email','user','pass'].forEach(id => {
+        document.getElementById(id).classList.remove('err');
+      });
+    }, 2800);
+    return;
+  }
+
+  try {
+    const res = await fetch('/api/signup', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        first_name: fname,
+        last_name: lname,
+        email: email,
+        username: user,
+        password: pass
+      })
+    });
+    if (res.ok) {
+      go('success');
+      launchConfetti();
+      setTimeout(() => { alert('Account created! Please sign in.'); window.location.href = '/'; }, 2400);
+    } else {
+      const err = await res.json();
+      go('wrong', 2800);
+      setTimeout(() => alert(err.detail || 'Signup failed'), 400);
+    }
+  } catch(e) {
+    go('wrong', 2800);
+    setTimeout(() => alert('Could not connect to server.'), 400);
+  }
+}
+
+// ── Boot ───────────────────────────────────────────────────────────
+window.addEventListener('load', () => {
+  Object.values(IMGS).forEach(src => { const i = new Image(); i.src = src; });
+  setTimeout(() => go('holding'), 200);
+});
+
+window.addEventListener('resize', () => {
+  if (currentState) placeCharacter(currentState);
+});
+</script>
 </body>
 </html>

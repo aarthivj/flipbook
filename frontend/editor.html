@@ -6,6 +6,8 @@
 <title>Droidal Editor</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/page-flip@2.0.7/dist/js/page-flip.browser.min.js"></script>
+
 <link href="https://fonts.googleapis.com/css2?family=Roboto&family=Open+Sans&family=Lato&family=Montserrat&family=Poppins&family=Inter&family=Raleway&family=Oswald&family=Nunito&family=Rubik&family=Work+Sans&family=DM+Sans&family=Quicksand&family=Libre+Baskerville&family=Playfair+Display&family=Merriweather&family=Bebas+Neue&family=Dancing+Script&family=Pacifico&family=Caveat&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Roboto:wght@400;700&family=Oswald:wght@400;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@400;600;700&family=Poppins:wght@400;600&family=Raleway:wght@400;700&family=Lato:wght@400;700&family=Open+Sans:wght@400;600&family=Merriweather:wght@400;700&family=Dancing+Script:wght@600&family=Bebas+Neue&display=swap" rel="stylesheet">
@@ -2288,12 +2290,359 @@ function zoomIn()  { applyZoom(zoom+10); }
 function zoomOut() { applyZoom(zoom-10); }
 
 // ─── EXPORT ───────────────────────────────────────────────────────────────────
-function exportAs(fmt){canvas.discardActiveObject();canvas.renderAll();const q=+document.getElementById('expQ').value||2;const link=document.createElement('a');link.download=`Droidal_Page${cur+1}.${fmt==='jpeg'?'jpg':fmt}`;link.href=canvas.toDataURL({format:fmt==='jpeg'?'jpeg':'png',quality:.92,multiplier:q});link.click();}
-function exportSVG(){const svg=canvas.toSVG();const blob=new Blob([svg],{type:'image/svg+xml'});const link=document.createElement('a');link.download=`Droidal_Page${cur+1}.svg`;link.href=URL.createObjectURL(blob);link.click();}
-function exportAll(){pages[cur]=getJSON();pages.forEach((pd,i)=>{if(!pd)return;setTimeout(()=>{canvas.loadFromJSON(pd,()=>{canvas.renderAll();setTimeout(()=>{const link=document.createElement('a');link.download=`Droidal_Page${i+1}.png`;link.href=canvas.toDataURL({format:'png',multiplier:2});link.click();},200);});},i*600);});}
-function resizeCanvas(){const w=+document.getElementById('cvW').value||420;const h=+document.getElementById('cvH').value||594;CW=w;CH=h;canvas.setDimensions({width:w*(zoom/100),height:h*(zoom/100)});canvas.setZoom(zoom/100);document.getElementById('pageHdr').style.width=(w*(zoom/100))+'px';document.querySelector('.add-page-btn').style.width=(w*(zoom/100))+'px';canvas.renderAll();closeModal('modalExport');refreshUI();}
-function exportAsVideo() { syncToLS(); window.open('flip.html?mode=record', '_blank'); }
+function exportAs(fmt) {
+  canvas.discardActiveObject();
+  canvas.renderAll();
+  const q = +document.getElementById('expQ').value || 2;
+  const link = document.createElement('a');
+  
+  if (fmt === 'jpeg') {
+    // JPEG needs a white background composite
+    const tempCanvas = document.createElement('canvas');
+    const zoom = canvas.getZoom();
+    tempCanvas.width  = CW * q;
+    tempCanvas.height = CH * q;
+    const ctx = tempCanvas.getContext('2d');
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+    const dataURL = canvas.toDataURL({ format: 'png', multiplier: q });
+    const img = new Image();
+    img.onload = () => {
+      ctx.drawImage(img, 0, 0);
+      link.download = `Droidal_Page${cur + 1}.jpg`;
+      link.href = tempCanvas.toDataURL('image/jpeg', 0.92);
+      link.click();
+    };
+    img.src = dataURL;
+  } else {
+    // PNG
+    link.download = `Droidal_Page${cur + 1}.png`;
+    link.href = canvas.toDataURL({ format: 'png', multiplier: q });
+    link.click();
+  }
+}
 
+function exportSVG() {
+  canvas.discardActiveObject();
+  canvas.renderAll();
+  const svg = canvas.toSVG();
+  const blob = new Blob([svg], { type: 'image/svg+xml;charset=utf-8' });
+  const link = document.createElement('a');
+  link.download = `Droidal_Page${cur + 1}.svg`;
+  link.href = URL.createObjectURL(blob);
+  link.click();
+  setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+}
+
+function exportAll() {
+  pages[cur] = getJSON();
+  const q = +document.getElementById('expQ').value || 2;
+  const fmt = 'png';
+  let i = 0;
+
+  function exportNext() {
+    if (i >= pages.length) {
+      // Restore current page
+      canvas.loadFromJSON(pages[cur], () => { canvas.renderAll(); restoreVideos(); });
+      return;
+    }
+    const pd = pages[i];
+    const pageIdx = i;
+    i++;
+    if (!pd) { exportNext(); return; }
+    canvas.loadFromJSON(pd, () => {
+      canvas.renderAll();
+      setTimeout(() => {
+        const link = document.createElement('a');
+        link.download = `Droidal_Page${pageIdx + 1}.png`;
+        link.href = canvas.toDataURL({ format: 'png', multiplier: q });
+        link.click();
+        setTimeout(exportNext, 400);
+      }, 200);
+    });
+  }
+  exportNext();
+}
+
+
+function resizeCanvas(){const w=+document.getElementById('cvW').value||420;const h=+document.getElementById('cvH').value||594;CW=w;CH=h;canvas.setDimensions({width:w*(zoom/100),height:h*(zoom/100)});canvas.setZoom(zoom/100);document.getElementById('pageHdr').style.width=(w*(zoom/100))+'px';document.querySelector('.add-page-btn').style.width=(w*(zoom/100))+'px';canvas.renderAll();closeModal('modalExport');refreshUI();}
+// ─── VIDEO EXPORT ─────────────────────────────────────────────────────────────
+
+
+
+// ─── VIDEO EXPORT — Real Flipbook Recorder ────────────────────────────────────
+async function exportAsVideo() {
+  pages[cur] = getJSON();
+  const totalPages = pages.length;
+  if (totalPages === 0) { alert('No pages to export!'); return; }
+
+  // ── Progress overlay ──
+  const overlay = document.createElement('div');
+  overlay.style.cssText = `
+    position:fixed;inset:0;background:rgba(0,0,0,.82);z-index:99999;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;
+    font-family:'Inter',sans-serif;color:#fff;
+  `;
+  overlay.innerHTML = `
+    <div style="font-size:1.3rem;font-weight:800;letter-spacing:-.3px">🎬 Recording Flipbook Video</div>
+    <div style="width:380px;background:rgba(255,255,255,.12);border-radius:20px;overflow:hidden;height:10px">
+      <div id="vepBar" style="height:100%;width:0%;background:linear-gradient(90deg,#6366f1,#10b981);transition:width .25s;border-radius:20px"></div>
+    </div>
+    <div id="vepTxt" style="font-size:.85rem;opacity:.75;text-align:center;max-width:340px;line-height:1.5">Preparing pages…</div>
+    <button id="vepCancel" style="padding:8px 24px;border:1px solid rgba(255,255,255,.25);border-radius:8px;background:transparent;color:#fff;cursor:pointer;font-family:inherit;font-size:.82rem;margin-top:4px">✕ Cancel</button>
+  `;
+  document.body.appendChild(overlay);
+
+  let cancelled = false;
+  document.getElementById('vepCancel').onclick = () => { cancelled = true; };
+  const setP = (pct, txt) => {
+    const b = document.getElementById('vepBar'), t = document.getElementById('vepTxt');
+    if (b) b.style.width = pct + '%';
+    if (t) t.textContent = txt;
+  };
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+  try {
+    // ── Step 1: Render all pages to hi-res images ──
+    const pageImages = [];
+    for (let i = 0; i < totalPages; i++) {
+      if (cancelled) { overlay.remove(); return; }
+      setP(Math.round((i / totalPages) * 35), `Rendering page ${i + 1} of ${totalPages}…`);
+      const pd = pages[i];
+      if (!pd) { pageImages.push(null); continue; }
+      await new Promise(resolve => {
+        canvas.loadFromJSON(pd, () => {
+          canvas.renderAll();
+          setTimeout(() => {
+            const url = canvas.toDataURL({ format: 'png', multiplier: 2 });
+            const img = new Image();
+            img.onload = () => { pageImages.push(img); resolve(); };
+            img.src = url;
+          }, 150);
+        });
+      });
+    }
+
+    // Restore editor page
+    canvas.loadFromJSON(pages[cur], () => { canvas.renderAll(); restoreVideos(); });
+
+    if (cancelled) { overlay.remove(); return; }
+    setP(36, 'Setting up flipbook renderer…');
+    await sleep(100);
+
+    // ── Step 2: Build a hidden flipbook scene ──
+    const PAGE_W = 420, PAGE_H = 594;
+    const SCENE_W = PAGE_W * 2, SCENE_H = PAGE_H;
+
+    // Hidden container
+    const host = document.createElement('div');
+    host.style.cssText = `position:fixed;left:-9999px;top:0;width:${SCENE_W}px;height:${SCENE_H}px;overflow:visible;z-index:-1;`;
+    document.body.appendChild(host);
+
+    // Background canvas (for scene bg color)
+    const bgCanvas = document.createElement('canvas');
+    bgCanvas.width  = SCENE_W;
+    bgCanvas.height = SCENE_H;
+
+    // Flipbook container
+    const bookEl = document.createElement('div');
+    bookEl.style.cssText = `width:${SCENE_W}px;height:${SCENE_H}px;position:relative;`;
+    host.appendChild(bookEl);
+
+    // Build page divs with images
+    // page-flip needs even number
+    const renderList = [...pageImages];
+    if (renderList.length % 2 !== 0) renderList.push(null);
+
+    renderList.forEach((img, i) => {
+      const div = document.createElement('div');
+      div.style.cssText = `width:${PAGE_W}px;height:${PAGE_H}px;background:#fff;overflow:hidden;position:relative;`;
+      if (img) {
+        const imgEl = document.createElement('img');
+        imgEl.src = img.src;
+        imgEl.style.cssText = `width:100%;height:100%;object-fit:cover;display:block;`;
+        div.appendChild(imgEl);
+      }
+      bookEl.appendChild(div);
+    });
+
+    // Init page-flip
+    const PageFlipLib = (typeof St !== 'undefined' && St.PageFlip) 
+  ? St.PageFlip 
+  : (typeof PageFlip !== 'undefined' ? PageFlip : null);
+
+if (!PageFlipLib) {
+  throw new Error('Page-flip library not loaded. Add the script tag to editor.html head.');
+}
+
+const pf = new PageFlipLib(bookEl, {
+      width: PAGE_W, height: PAGE_H,
+      size: 'fixed', showCover: true,
+      usePortrait: false, flippingTime: 1000,
+      drawShadow: true, maxShadowOpacity: 0.6,
+      showPageCorners: false, useMouseEvents: false,
+    });
+    const pageDivs = Array.from(bookEl.children);
+    pf.loadFromHTML(pageDivs);
+    await sleep(300);
+
+    if (cancelled) { host.remove(); overlay.remove(); return; }
+
+    // ── Step 3: Composite canvas for recording ──
+    const recCanvas = document.createElement('canvas');
+    recCanvas.width  = SCENE_W;
+    recCanvas.height = SCENE_H;
+    const rctx = recCanvas.getContext('2d');
+
+    // Get background from preview bg panel selection (localStorage or default)
+    const savedBg = (() => {
+      try {
+        const u = new URL(window.location.href);
+        return u.searchParams.get('bg') || null;
+      } catch { return null; }
+    })();
+
+    // ── Step 4: Start MediaRecorder on composite canvas ──
+    const FPS      = 60;
+    const HOLD_SEC = 2.0;   // seconds each page is held
+    const FLIP_SEC = 1.2;   // page-flip animation duration
+    const HOLD_FRAMES = Math.round(FPS * HOLD_SEC);
+    const FLIP_FRAMES = Math.round(FPS * FLIP_SEC);
+    const FRAME_MS    = 1000 / FPS;
+
+    const mimeType = ['video/webm;codecs=vp9','video/webm;codecs=vp8','video/webm']
+      .find(m => MediaRecorder.isTypeSupported(m)) || 'video/webm';
+
+    const stream   = recCanvas.captureStream(FPS);
+    const recorder = new MediaRecorder(stream, { mimeType, videoBitsPerSecond: 12_000_000 });
+    const chunks   = [];
+    recorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
+    recorder.start(100);
+
+    let totalFrames = totalPages * HOLD_FRAMES + (totalPages - 1) * FLIP_FRAMES;
+    let framesDone  = 0;
+
+    // ── Draw current flipbook state to recCanvas ──
+    function drawFrame(bgColor) {
+      // Background
+      if (bgColor && (bgColor.includes('gradient') || bgColor.startsWith('#') || bgColor.startsWith('rgb'))) {
+        if (bgColor.includes('gradient')) {
+          // Parse simple linear-gradient for canvas
+          rctx.fillStyle = '#1e293b';
+        } else {
+          rctx.fillStyle = bgColor;
+        }
+      } else {
+        rctx.fillStyle = '#0f172a';
+      }
+      rctx.fillRect(0, 0, SCENE_W, SCENE_H);
+
+      // Subtle radial glows like the real preview
+      const g1 = rctx.createRadialGradient(SCENE_W * 0.2, SCENE_H * 0.3, 0, SCENE_W * 0.2, SCENE_H * 0.3, SCENE_W * 0.5);
+      g1.addColorStop(0, 'rgba(16,185,129,0.15)');
+      g1.addColorStop(1, 'rgba(16,185,129,0)');
+      rctx.fillStyle = g1; rctx.fillRect(0, 0, SCENE_W, SCENE_H);
+
+      const g2 = rctx.createRadialGradient(SCENE_W * 0.8, SCENE_H * 0.7, 0, SCENE_W * 0.8, SCENE_H * 0.7, SCENE_W * 0.5);
+      g2.addColorStop(0, 'rgba(59,130,246,0.15)');
+      g2.addColorStop(1, 'rgba(59,130,246,0)');
+      rctx.fillStyle = g2; rctx.fillRect(0, 0, SCENE_W, SCENE_H);
+
+      // Draw the page-flip canvas
+      const pfCanvas = bookEl.querySelector('canvas');
+      if (pfCanvas) {
+        const bx = (SCENE_W - pfCanvas.width) / 2;
+        const by = (SCENE_H - pfCanvas.height) / 2;
+        // Drop shadow under book
+        rctx.save();
+        rctx.shadowColor = 'rgba(0,0,0,0.5)';
+        rctx.shadowBlur  = 40;
+        rctx.shadowOffsetY = 12;
+        rctx.drawImage(pfCanvas, bx, by);
+        rctx.restore();
+      }
+    }
+
+    // ── Animate through all pages ──
+    let currentView = 0; // spread index
+    const totalSpreads = Math.ceil(renderList.length / 2);
+
+    for (let spread = 0; spread < totalSpreads; spread++) {
+      if (cancelled) break;
+
+      const spreadIdx = spread === 0 ? 0 : spread * 2 - 1;
+      const progress  = spread / totalSpreads;
+
+      setP(36 + Math.round(progress * 60),
+        `Recording spread ${spread + 1} of ${totalSpreads}…`);
+
+      // Hold current spread
+      for (let f = 0; f < HOLD_FRAMES; f++) {
+        if (cancelled) break;
+        drawFrame(savedBg);
+        framesDone++;
+        await sleep(FRAME_MS);
+      }
+
+      // Flip to next spread
+      if (spread < totalSpreads - 1) {
+        // Trigger the flip
+        const nextIdx = spreadIdx + 1;
+        pf.flip(nextIdx);
+
+        // Record frames during flip animation
+        for (let f = 0; f < FLIP_FRAMES; f++) {
+          if (cancelled) break;
+          drawFrame(savedBg);
+          framesDone++;
+          await sleep(FRAME_MS);
+        }
+      }
+    }
+
+    // Hold last page 1 extra second
+    const extraFrames = Math.round(FPS * 1);
+    for (let f = 0; f < extraFrames; f++) {
+      drawFrame(savedBg);
+      await sleep(FRAME_MS);
+    }
+
+    if (cancelled) {
+      recorder.stop(); host.remove(); overlay.remove(); return;
+    }
+
+    setP(97, 'Finalising…');
+    await sleep(400);
+
+    await new Promise(resolve => { recorder.onstop = resolve; recorder.stop(); });
+
+    host.remove();
+
+    const blob = new Blob(chunks, { type: mimeType });
+    const dlUrl = URL.createObjectURL(blob);
+    const link  = document.createElement('a');
+    link.download = 'Droidal_Flipbook.webm';
+    link.href = dlUrl;
+    link.click();
+    setTimeout(() => URL.revokeObjectURL(dlUrl), 3000);
+
+    setP(100, '✅ Video ready! Downloading…');
+    setTimeout(() => overlay.remove(), 2000);
+
+  } catch (err) {
+    console.error('Video export error:', err);
+    overlay.remove();
+    alert('Export failed: ' + err.message + '\n\nUse Chrome or Edge for best results.');
+  }
+}
+
+
+
+
+// Ease in-out for flip animation
+function easeInOut(t) {
+  return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+}
 // ─── HISTORY ──────────────────────────────────────────────────────────────────
 let histStack=[],histPos=0,histLock=false;
 function histReset(){histStack=[JSON.stringify(getJSON())];histPos=1;}
