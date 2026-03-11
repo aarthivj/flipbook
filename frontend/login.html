@@ -329,7 +329,12 @@
 
         // SUCCESS: Save user and go to dashboard
         localStorage.setItem("droidal_user", JSON.stringify(data));
-        localStorage.setItem('user_id', data.user_id);
+         localStorage.setItem('user_id', data.user_id);
+      localStorage.setItem('droidal_user_id', data.user_id);
+      localStorage.setItem('username', data.username);
+      localStorage.setItem('droidal_first_name', data.first_name || '');
+      localStorage.setItem('droidal_last_name',  data.last_name  || '');
+
         window.location.href = "/dashboard";
 
     } catch (err) {
