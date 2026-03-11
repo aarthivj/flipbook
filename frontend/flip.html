@@ -54,8 +54,7 @@
 
         /* --- Video --- */
         .vid-wrap{position:absolute;overflow:hidden;z-index:9998}
-        .vid-ctrl-bar{position:absolute;bottom:8px;right:8px;display:flex;gap:6px;align-items:center;opacity:0;transition:opacity 0.25s ease;z-index:10000;pointer-events:none}
-        .vid-wrap:hover .vid-ctrl-bar{opacity:1;pointer-events:all}
+        .vid-ctrl-bar{position:absolute;bottom:50%;right:50%;transform:translate(50%,50%);display:flex;gap:6px;align-items:center;opacity:0;transition:opacity 0.25s ease;z-index:10000;pointer-events:none}        .vid-wrap:hover .vid-ctrl-bar{opacity:1;pointer-events:all}
         .vid-ctrl-btn{width:30px;height:30px;border:none;border-radius:50%;cursor:pointer;background:rgba(0,0,0,0.65);color:#fff;font-size:11px;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px);transition:background 0.15s}
         .vid-ctrl-btn:hover{background:rgba(0,0,0,0.9)}
 
@@ -456,14 +455,18 @@ async function buildDOM(pagesData) {
     const bookEl = document.getElementById('book');
     bookEl.innerHTML = '';
 
+    totalPages = pagesData.length;
     const renderList = [...pagesData];
 
-    // page-flip needs an even number of pages for the spread layout
+    // Odd page count: duplicate the last page so it appears as the right side of
+    // the final content spread AND again as the single back cover.
+    // Even page count: no change needed — last page lands on its own naturally.
+    //   9 pages → 1(cover) | 2-3 | 4-5 | 6-7 | 8-9 | 9(back cover)
+    //  10 pages → 1(cover) | 2-3 | 4-5 | 6-7 | 8-9 | 10(back cover)
     if (renderList.length % 2 !== 0) {
-        renderList.push({ page_number: 999, canvas_json: null });
+        const lastPage = renderList[renderList.length - 1];
+        renderList.push({ ...lastPage, isDuplicate: true });
     }
-
-    totalPages = pagesData.length; // real count (no blank padding)
 
     for (let i = 0; i < renderList.length; i++) {
         const pageDiv = document.createElement('div');
@@ -482,6 +485,7 @@ async function buildDOM(pagesData) {
         await renderPage(cvEl.id, renderList[i].canvas_json, overlay, i);
     }
 }
+
 
 // ─── RENDER ONE PAGE ──────────────────────────────────────────────────────────
 async function renderPage(canvasId, jsonData, overlay, pageIndex) {
@@ -521,15 +525,28 @@ async function renderPage(canvasId, jsonData, overlay, pageIndex) {
                 obj.setCoords();
                 const rect = obj.getBoundingRect();
 
+             
                 // --- FUNCTIONALITY A: VIDEOS ---
-                if (obj.customVideoSrc) {
-                    if (obj.isVideoFabric || obj.isVideoGroup) {
-                        reviveVideoGroup(obj, sc, overlay, rect, pageIndex);
-                    } else {
-                        createPlainVideoOverlay(obj, overlay, rect, pageIndex);
-                    }
-                }
-
+// --- FUNCTIONALITY A: VIDEOS ---
+if (obj.customVideoSrc) {
+    if (obj.isVideoGroup && obj.type === 'group') {
+        // Video fitted inside a frame shape — extract the image child
+        const children = obj._objects || [];
+        const videoChild = children.find(c => c.type === 'image');
+        if (videoChild) {
+            videoChild.customVideoSrc = obj.customVideoSrc;
+            videoChild.isVideoFabric  = true;
+            // Pass the group's clipPath to the child so CSS clipping works
+            videoChild._parentGroup   = obj;
+        }
+        // Still call with the group obj so rect/canvas reference stays correct
+        reviveVideoGroup(obj, sc, overlay, rect, pageIndex);
+    } else if (obj.isVideoFabric) {
+        reviveVideoGroup(obj, sc, overlay, rect, pageIndex);
+    } else {
+        createPlainVideoOverlay(obj, overlay, rect, pageIndex);
+    }
+}
                 // --- FUNCTIONALITY B: PAGE JUMPS ---
                 if (obj.customPageTarget !== undefined && obj.customPageTarget !== null) {
                     const jumpBtn = document.createElement('div');
@@ -614,55 +631,84 @@ function fabricClipToCss(clipPathObj, parent) {
 }
 
 function reviveVideoGroup(fabObj, targetCanvas, overlay, rect, pageIndex) {
+    // For video-in-frame groups, fabObj is the GROUP. Get the image child for rendering.
+    let renderTarget = fabObj;
+    let clipSource    = fabObj;
+
+    if (fabObj.isVideoGroup && fabObj.type === 'group') {
+        const children  = fabObj._objects || [];
+        const imgChild  = children.find(c => c.type === 'image');
+        if (imgChild) {
+            imgChild.customVideoSrc = fabObj.customVideoSrc;
+            imgChild.isVideoFabric  = true;
+            renderTarget = imgChild;
+        }
+        clipSource = fabObj; // clipPath lives on the group
+    }
+
     const videoSrc = fabObj.customVideoSrc;
+    if (!videoSrc) return;
+
     const vid = document.createElement('video');
-    vid.src          = videoSrc;
-    vid.loop         = true;
-    vid.muted        = true;
-    vid.playsInline  = true;
-    vid.crossOrigin  = 'anonymous';
-    vid.preload      = 'auto';
+    vid.src         = videoSrc;
+    vid.loop        = true;
+    vid.muted       = true;
+    vid.playsInline = true;
+    vid.crossOrigin = 'anonymous';
+    vid.preload     = 'auto';
     vid.pause();
 
     if (!pageVideos[pageIndex]) pageVideos[pageIndex] = [];
     const vidEntry = { vid, active: false, loopId: null };
     pageVideos[pageIndex].push(vidEntry);
 
-    if (fabObj.clipPath) {
-        fabObj.clipPath.absolutePositioned = false;
-        fabObj.clipPath.objectCaching      = false;
+    if (clipSource.clipPath) {
+        clipSource.clipPath.absolutePositioned = false;
+        clipSource.clipPath.objectCaching      = false;
     }
-    fabObj.objectCaching = false;
-    fabObj.dirty         = true;
+    fabObj.objectCaching      = false;
+    fabObj.dirty              = true;
+    renderTarget.objectCaching = false;
 
     function startLoop(v) {
-        const vw = v.videoWidth  || fabObj.width  || 320;
-        const vh = v.videoHeight || fabObj.height || 240;
+        const vw     = renderTarget.width  || v.videoWidth  || 320;
+        const vh     = renderTarget.height || v.videoHeight || 240;
         const off    = document.createElement('canvas');
         off.width    = vw;
         off.height   = vh;
         const offCtx = off.getContext('2d');
 
-        fabObj._offCanvas = off;
-        fabObj._render = function(ctx) {
+        renderTarget._offCanvas = off;
+        renderTarget._render = function(ctx) {
             if (!this._offCanvas) return;
             ctx.drawImage(this._offCanvas, -this.width / 2, -this.height / 2, this.width, this.height);
         };
 
+        // Mark group dirty so Fabric re-renders children each frame
+        if (fabObj.type === 'group') {
+            fabObj.objectCaching = false;
+        }
+
         function drawLoop() {
-            if (!fabObj.canvas) return;
+            // Use targetCanvas (the page canvas) — NOT fabObj.canvas which is null for group children
+            if (!targetCanvas) return;
             if (vidEntry.active && !v.paused && !v.ended) {
                 offCtx.drawImage(v, 0, 0, vw, vh);
+                if (fabObj.type === 'group') fabObj.dirty = true;
+                else renderTarget.dirty = true;
                 targetCanvas.renderAll();
             }
             vidEntry.loopId = requestAnimationFrame(drawLoop);
         }
         vidEntry.loopId = requestAnimationFrame(drawLoop);
 
+        // Build the play/mute control overlay
         const ctrlWrap = document.createElement('div');
         ctrlWrap.className = 'vid-wrap';
         ctrlWrap.style.cssText = `left:${rect.left}px; top:${rect.top}px; width:${rect.width}px; height:${rect.height}px; background:transparent; pointer-events:all;`;
-        const cssClip = fabricClipToCss(fabObj.clipPath, fabObj);
+
+        // CSS clip from the group's clipPath
+        const cssClip = fabricClipToCss(clipSource.clipPath, fabObj);
         if (cssClip) ctrlWrap.style.clipPath = cssClip;
 
         const bar = document.createElement('div');
@@ -687,8 +733,8 @@ function reviveVideoGroup(fabObj, targetCanvas, overlay, rect, pageIndex) {
 
         const btnMute = makeCtrlBtn('fa-volume-xmark', e => {
             e.stopPropagation();
-            isMuted    = !isMuted;
-            vid.muted  = isMuted;
+            isMuted   = !isMuted;
+            vid.muted = isMuted;
             btnMute.innerHTML = isMuted
                 ? '<i class="fa-solid fa-volume-xmark"></i>'
                 : '<i class="fa-solid fa-volume-high"></i>';
@@ -699,7 +745,7 @@ function reviveVideoGroup(fabObj, targetCanvas, overlay, rect, pageIndex) {
         ctrlWrap.appendChild(bar);
         overlay.appendChild(ctrlWrap);
 
-        vidEntry.setPlaying  = (val) => {
+        vidEntry.setPlaying = (val) => {
             isPlaying = val;
             btnPlay.innerHTML = isPlaying
                 ? '<i class="fa-solid fa-pause"></i>'
@@ -713,6 +759,9 @@ function reviveVideoGroup(fabObj, targetCanvas, overlay, rect, pageIndex) {
         vid.addEventListener('loadeddata', () => startLoop(vid), { once: true });
     }
 }
+
+
+
 
 function createPlainVideoOverlay(obj, overlay, rect, pageIndex) {
     const vidWrap = document.createElement('div');
@@ -793,10 +842,17 @@ function startPageVideos(pageIndex) {
     const entries = pageVideos[pageIndex];
     if (!entries) return;
     entries.forEach(entry => {
+        entry.vid.loop = false;
+        entry.vid.currentTime = 0;
         entry.active = true;
         entry.vid.play().then(() => {
             if (entry.setPlaying) entry.setPlaying(true);
         }).catch(console.warn);
+        // Auto-stop UI when video naturally ends
+        entry.vid.onended = () => {
+            entry.active = false;
+            if (entry.setPlaying) entry.setPlaying(false);
+        };
     });
 }
 
@@ -806,6 +862,7 @@ function stopPageVideos(pageIndex) {
     entries.forEach(entry => {
         entry.active = false;
         entry.vid.pause();
+        entry.vid.currentTime = 0;
         if (entry.setPlaying) entry.setPlaying(false);
     });
 }
@@ -899,10 +956,80 @@ function playPageAnimations(pageIndex) {
 }
 
 
+
+// ─── PAGE-FLIP FUNCTIONS ──────────────────────────────────────────────────────
+// recenter, updateUI, buildDots, initFlip, goPrev, goNext are all at top-level
+// so they are defined before initFlip calls them.
+//
+// Layout rules:
+//   Odd  pages (e.g. 9): DOM gets 10 divs — page 9 duplicated at end
+//     → 1(cover) | 2-3 | 4-5 | 6-7 | 8-9 | 9(back cover)
+//   Even pages (e.g.10): DOM gets 10 divs — no duplication
+//     → 1(cover) | 2-3 | 4-5 | 6-7 | 8-9 | 10(back cover)
+
+let currentIdx = 0; // tracks current PageFlip index via flip event
+
+function recenter(idx) {
+    const bookEl = document.getElementById('book');
+    if (!bookEl || !pageFlip) return;
+    const total = pageFlip.getPageCount();
+    if (idx === 0) {
+        bookEl.style.transform = 'translateX(-210px)'; // front cover: shift left
+    } else if (idx >= total - 1) {
+        bookEl.style.transform = 'translateX(210px)';  // back cover: shift right
+    } else {
+        bookEl.style.transform = 'translateX(0px)';    // spreads: centred
+    }
+}
+
+function updateUI(idx) {
+    const ind = document.getElementById('pgInd');
+    if (!ind || !pageFlip) return;
+    const total = pageFlip.getPageCount();
+    let label = '';
+    if (idx === 0) {
+        label = 'Page 1 (Front Cover)';
+    } else if (idx >= total - 1) {
+        label = `Page ${totalPages} (Back Cover)`;
+    } else {
+        const left  = idx + 1;
+        const right = idx + 2;
+        const rightIsReal = right <= totalPages;
+        label = rightIsReal ? `Pages ${left} – ${right}` : `Page ${left}`;
+    }
+    ind.textContent = label;
+
+    const allDots = document.querySelectorAll('.p-dot');
+    let activeDot = 0;
+    if (idx === 0) {
+        activeDot = 0;
+    } else if (idx >= total - 1) {
+        activeDot = allDots.length - 1;
+    } else {
+        activeDot = Math.ceil(idx / 2);
+    }
+    allDots.forEach((d, i) => d.classList.toggle('a', i === activeDot));
+}
+
+function buildDots() {
+    const wrap = document.getElementById('dotWrap');
+    if (!wrap) return;
+    wrap.innerHTML = '';
+    const total = pageFlip.getPageCount();
+    const dots = [0];
+    for (let i = 1; i < total - 1; i += 2) dots.push(i);
+    dots.push(total - 1);
+    dots.forEach((targetIdx, vi) => {
+        const d = document.createElement('button');
+        d.className = 'p-dot' + (vi === 0 ? ' a' : '');
+        d.onclick = () => { if (pageFlip) pageFlip.flip(targetIdx); };
+        wrap.appendChild(d);
+    });
+}
+
 function initFlip() {
     const bookEl = document.getElementById('book');
 
-    // 1. CREATE pageFlip FIRST
     pageFlip = new St.PageFlip(bookEl, {
         width: PAGE_W,
         height: PAGE_H,
@@ -918,22 +1045,13 @@ function initFlip() {
     });
 
     window.pageFlip = pageFlip;
-
-    // 2. LOAD pages
     pageFlip.loadFromHTML(document.querySelectorAll('#book .my-page'));
-
-    function recenter(idx) {
-        const total = pageFlip.getPageCount();
-        if (idx === 0)           bookEl.style.transform = 'translateX(-210px)';
-        else if (idx >= total-1) bookEl.style.transform = 'translateX(210px)';
-        else                     bookEl.style.transform = 'translateX(0px)';
-    }
 
     recenter(0);
     setTimeout(() => document.getElementById('loadOverlay').classList.add('hidden'), 500);
 
-    // 5. FLIP EVENT
     pageFlip.on('flip', e => {
+        currentIdx = e.data;
         const pageSound = document.getElementById("pageSound");
         if (pageSound) {
             pageSound.pause();
@@ -949,14 +1067,10 @@ function initFlip() {
     pageFlip.on('flip', e => {
         const newPageIdx     = e.data;
         const newPageIdxNext = e.data + 1;
-
         Object.keys(pageVideos).forEach(pi => {
             const idx = parseInt(pi);
-            if (idx !== newPageIdx && idx !== newPageIdxNext) {
-                stopPageVideos(idx);
-            }
+            if (idx !== newPageIdx && idx !== newPageIdxNext) stopPageVideos(idx);
         });
-
         setTimeout(() => {
             startPageVideos(newPageIdx);
             startPageVideos(newPageIdxNext);
@@ -972,52 +1086,29 @@ function initFlip() {
     }, 300);
 }
 
-
-// ─── UI HELPERS ───────────────────────────────────────────────────────────────
-function updateUI(idx) {
-    const ind = document.getElementById('pgInd');
+function goPrev() {
+    if (!pageFlip) return;
     const total = pageFlip.getPageCount();
-    let label = "";
-
-    if (idx === 0) {
-        label = "Page 1 (Cover)";
-    } else if (idx >= total - 1) {
-        label = `Page ${total} (Back Cover)`;
+    if (currentIdx <= 0) return;
+    if (currentIdx >= total - 1) {
+        pageFlip.flip(total - 2); // back cover → last spread
     } else {
-        const left = idx + 1;
-        const right = idx + 2;
-        label = `Pages ${left} - ${right}`;
+        pageFlip.flipPrev();
     }
-    if (ind) ind.textContent = label;
-
-    const viewIdx = idx === 0 ? 0 : Math.ceil(idx / 2);
-    document.querySelectorAll('.p-dot').forEach((d, i) => {
-        d.classList.toggle('a', i === viewIdx);
-    });
 }
 
-function buildDots() {
-    const wrap = document.getElementById('dotWrap');
-    if (!wrap) return;
-    wrap.innerHTML = '';
+function goNext() {
+    if (!pageFlip) return;
     const total = pageFlip.getPageCount();
-    const totalViews = Math.floor(total / 2) + 1;
-
-    for (let i = 0; i < totalViews; i++) {
-        const d = document.createElement('button');
-        d.className = 'p-dot' + (i === 0 ? ' a' : '');
-        d.onclick = () => {
-            if (pageFlip) {
-                const targetIdx = (i === 0) ? 0 : (i * 2) - 1;
-                pageFlip.flip(targetIdx);
-            }
-        };
-        wrap.appendChild(d);
+    if (currentIdx >= total - 1) return;
+    if (currentIdx >= total - 2) {
+        pageFlip.flip(total - 1); // last spread → back cover
+    } else {
+        pageFlip.flipNext();
     }
 }
+
 function setTxt(t) { document.getElementById('loadTxt').textContent = t; }
-function goPrev()  { if (pageFlip) pageFlip.flipPrev(); }
-function goNext()  { if (pageFlip) pageFlip.flipNext(); }
 </script>
 </body>
 </html>

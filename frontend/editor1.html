@@ -3096,33 +3096,18 @@ async function loadCustomElements() {
 }
 
 async function previewBook() {
-    syncToLS();
-
-    try {
-        const result = await actualSaveLogic();
-        console.log("Save result:", result);
-
-        const previewId = result.share_id || result.id;
-
-        if (!previewId) {
-            alert("❌ Could not get preview ID. Please save the project first.");
-            return;
-        }
-
-        const shareUrl = `/preview/${previewId}`;
-        const fullUrl  = window.location.origin + shareUrl;
-
-        // Clipboard only works on HTTPS — skip silently on HTTP
-        if (navigator.clipboard && window.isSecureContext) {
-            try { await navigator.clipboard.writeText(fullUrl); } catch(e) {}
-        }
-
-        window.open(shareUrl, "_blank");
-
-    } catch (e) {
-        console.error("Preview failed:", e);
-        alert("❌ Preview failed: " + e.message);
+  syncToLS();
+  try {
+    const result = await actualSaveLogic();
+    if (result.share_id) {
+      const shareUrl = `${window.location.origin}/preview/${result.share_id}`;
+      navigator.clipboard.writeText(shareUrl).catch(()=>{});
+      alert(`✅ Shareable link copied!\n\n${shareUrl}`);
+      window.open(shareUrl, '_blank');
+    } else {
+      window.open(`/preview/${result.id||currentProjectId}`, '_blank');
     }
+  } catch (e) { console.error("Preview failed:", e); window.open('/preview', '_blank'); }
 }
 
 // ─── KEYBOARD SHORTCUTS ───────────────────────────────────────────────────────

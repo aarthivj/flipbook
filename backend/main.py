@@ -214,13 +214,16 @@ def save_project(proj: dict, db: Session = Depends(get_db)):
         if db_p:
             db_p.data = data_content
             db_p.title = proj.get('title', db_p.title)
+            # Fix: assign share_id if it's missing (old projects)
+            if not db_p.share_id:
+                db_p.share_id = str(uuid4())
             db.commit()
             return {"status": "updated", "id": db_p.id, "share_id": db_p.share_id}
     
     new_p = Project(
-        title=proj.get('title', 'Untitled'), 
-        project_type=proj.get('type', 'flipbook'), 
-        user_id=proj.get('user_id'), 
+        title=proj.get('title', 'Untitled'),
+        project_type=proj.get('type', 'flipbook'),
+        user_id=proj.get('user_id'),
         data=data_content,
         share_id=str(uuid4())
     )
@@ -228,6 +231,8 @@ def save_project(proj: dict, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(new_p)
     return {"id": new_p.id, "share_id": new_p.share_id}
+
+    
 
 # --- CUSTOM ELEMENTS API ---
 @app.post("/api/custom-elements/save")
