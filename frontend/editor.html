@@ -698,9 +698,11 @@ input[type=range]{accent-color:var(--pri)}
         <div class="page-hdr" id="pageHdr" style="width:420px">
           <span id="pageLbl">Page 1 – Cover</span>
           <div class="page-hdr-btns">
-            <button onclick="dupPage()" title="Duplicate"><i class="fa-regular fa-copy"></i></button>
-            <button onclick="delPage()" title="Delete" style="color:var(--red)"><i class="fa-solid fa-trash"></i></button>
-          </div>
+            <button onclick="movePage(cur, cur - 1)">← Move Left</button>
+<button onclick="movePage(cur, cur + 1)">→ Move Right</button>
+    <button onclick="dupPage()" title="Duplicate"><i class="fa-regular fa-copy"></i></button>
+    <button onclick="delPage()" title="Delete" style="color:var(--red)"><i class="fa-solid fa-trash"></i></button>
+</div>
         </div>
         <div class="cv-wrap">
           <div class="grid-ov" id="gridOv"></div>
@@ -940,7 +942,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // ─── PAGE SWITCH (unchanged except log removal) ───────────────────────────────
 function saveAndSwitch(idx) {
-  pages[cur] = getJSON();
+  if (idx === cur) return;
+  const activeObj = canvas.getActiveObject();
+  if (activeObj && activeObj.isEditing) {
+    try { activeObj.exitEditing(); } catch(e) {}
+  }
+  canvas.discardActiveObject();
+  canvas.renderAll();
+  pages[cur] = getJSON();  // save current page before switching
   cur = idx;
   loadCurrentPage();
   scheduleSync();
@@ -1223,8 +1232,23 @@ function delPage() {
   scheduleSync();
 }
 
-function movePage(d){ const ni=cur+d; if(ni<0||ni>=pages.length)return; pages[cur]=getJSON(); [pages[cur],pages[ni]]=[pages[ni],pages[cur]]; saveAndSwitch(ni); }
-
+function movePage(fromIdx, toIdx) {
+  if (fromIdx === toIdx) return;
+  if (toIdx < 0 || toIdx >= pages.length) return;
+  
+  // Save current state first
+  pages[cur] = getJSON();
+  
+  // Remove page from old position and insert at new position
+  const [moved] = pages.splice(fromIdx, 1);
+  pages.splice(toIdx, 0, moved);
+  
+  // Follow the moved page
+  cur = toIdx;
+  loadCurrentPage();
+  renderDots();
+  scheduleSync();
+}
 // ─── TABS ─────────────────────────────────────────────────────────────────────
 function openTab(btn) {
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -3023,8 +3047,21 @@ async function initEditor() {
 }
 
 async function actualSaveLogic() {
-  const projectData = { id:currentProjectId, user_id:CURRENT_USER_ID, title:"Untitled", type:"flipbook", data:pages };
-  const response = await fetch("/api/projects/save", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(projectData) });
+  // Read current bg value from the preview URL param if set, or store locally
+  const bgVal = localStorage.getItem(`droidal_bg_${BOOK_ID}`) || '';
+  const projectData = {
+    id: currentProjectId,
+    user_id: CURRENT_USER_ID,
+    title: "Untitled",
+    type: "flipbook",
+    data: pages,
+    preview_bg: bgVal
+  };
+  const response = await fetch("/api/projects/save", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify(projectData)
+  });
   if (!response.ok) { const text = await response.text(); throw new Error(text); }
   const result = await response.json();
   if (result.id)       currentProjectId = result.id;
@@ -3096,34 +3133,42 @@ async function loadCustomElements() {
 }
 
 async function previewBook() {
-    syncToLS();
+  // Capture latest canvas state before saving
+  const activeObj = canvas.getActiveObject();
+  if (activeObj && activeObj.isEditing) {
+    try { activeObj.exitEditing(); } catch(e) {}
+  }
+  canvas.discardActiveObject();
+  canvas.renderAll();
+  pages[cur] = getJSON();
+  syncToLS();
 
-    try {
-        const result = await actualSaveLogic();
-        console.log("Save result:", result);
+  try {
+    const result = await actualSaveLogic();
+    console.log("Save result:", result);
 
-        const previewId = result.share_id || result.id;
+    const previewId = result.share_id || result.id;
 
-        if (!previewId) {
-            alert("❌ Could not get preview ID. Please save the project first.");
-            return;
-        }
-
-        const shareUrl = `/preview/${previewId}`;
-        const fullUrl  = window.location.origin + shareUrl;
-
-        // Clipboard only works on HTTPS — skip silently on HTTP
-        if (navigator.clipboard && window.isSecureContext) {
-            try { await navigator.clipboard.writeText(fullUrl); } catch(e) {}
-        }
-
-        window.open(shareUrl, "_blank");
-
-    } catch (e) {
-        console.error("Preview failed:", e);
-        alert("❌ Preview failed: " + e.message);
+    if (!previewId) {
+      alert("❌ Could not get preview ID. Please save the project first.");
+      return;
     }
+
+    const shareUrl = `/preview/${previewId}`;
+    const fullUrl  = window.location.origin + shareUrl;
+
+    if (navigator.clipboard && window.isSecureContext) {
+      try { await navigator.clipboard.writeText(fullUrl); } catch(e) {}
+    }
+
+    window.open(shareUrl, "_blank");
+
+  } catch (e) {
+    console.error("Preview failed:", e);
+    alert("❌ Preview failed: " + e.message);
+  }
 }
+
 
 // ─── KEYBOARD SHORTCUTS ───────────────────────────────────────────────────────
 window.addEventListener('keydown',e=>{

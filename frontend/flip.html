@@ -13,9 +13,9 @@
         body{background:#0f172a;min-height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:40px 20px 60px;font-family:'Inter',sans-serif;overflow:hidden}
         body::before{content:'';position:fixed;top:0;left:0;right:0;bottom:0;background:radial-gradient(circle at 20% 30%,rgba(16,185,129,.15) 0%,transparent 50%),radial-gradient(circle at 80% 70%,rgba(59,130,246,.15) 0%,transparent 50%);pointer-events:none;z-index:0}
         .book-wrapper{text-align:center;position:relative;z-index:1}
-        #book{width:840px;height:600px;position:relative;margin:0 auto 20px;transition:transform .6s cubic-bezier(.4,0,.2,1)}
+        #book{width:840px;height:594px;position:relative;margin:0 auto 20px;transition:transform .6s cubic-bezier(.4,0,.2,1)}
         .my-page{background-color:#ffffff;position:absolute;top:0;left:0;width:100%;height:100%;overflow:hidden;box-shadow:inset 0 0 1px rgba(0,0,0,.1)}
-        .my-page::before{content:'';position:absolute;top:0;left:0;right:0;bottom:0;background-image:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.008) 2px,rgba(0,0,0,.008) 4px);pointer-events:none;opacity:.6;z-index:50}
+        /* .my-page::before{content:'';position:absolute;top:0;left:0;right:0;bottom:0;background-image:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.008) 2px,rgba(0,0,0,.008) 4px);pointer-events:none;opacity:.6;z-index:50} */
         .interactive-layer{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:9999}
         .interactive-layer div,.interactive-layer a,.interactive-layer video,.interactive-layer button{pointer-events:auto}
         .loading-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:#0a4d68;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;transition:opacity .5s ease;gap:14px}
@@ -45,7 +45,7 @@
         .update-banner.show{display:block}
 
         /* --- Spine Shadow --- */
-        .my-page::after{content:'';position:absolute;top:0;height:100%;width:40px;pointer-events:none;z-index:60;opacity:0.8}
+        /* .my-page::after{content:'';position:absolute;top:0;height:100%;width:40px;pointer-events:none;z-index:60;opacity:0.8} */
         .my-page:nth-child(even)::after{right:0;background:linear-gradient(to left,rgba(0,0,0,0.25) 0%,rgba(0,0,0,0.1) 20%,rgba(0,0,0,0.02) 50%,transparent 100%)}
         .my-page:nth-child(odd)::after{left:0;background:linear-gradient(to right,rgba(0,0,0,0.25) 0%,rgba(0,0,0,0.1) 20%,rgba(0,0,0,0.02) 50%,transparent 100%)}
         .my-page:nth-child(even)::before{content:'';position:absolute;top:0;right:0;width:1px;height:100%;background:rgba(0,0,0,0.2);z-index:61}
@@ -124,6 +124,123 @@
             font-family:'Inter',sans-serif;
         }
         .bg-upload-btn:hover{background:rgba(99,102,241,0.3);border-color:#6366f1;color:#fff}
+        /* ─── GLOSS COAT (static sheen on flat pages) ─── */
+        .my-page .page-gloss {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            pointer-events: none;
+            z-index: 55;
+            background:
+            linear-gradient(
+            135deg,
+            rgba(255,255,255,0.22) 0%,
+            rgba(255,255,255,0.10) 18%,
+            rgba(255,255,255,0.0)  35%,
+            rgba(255,255,255,0.0)  60%,
+            rgba(255,255,255,0.06) 80%,
+            rgba(255,255,255,0.13) 100%
+            );
+        }
+
+        /* ─── SPECULAR HOTSPOT (hover shine strip) ─── */
+        .my-page .page-specular {
+            position: absolute;
+            top: -20%; left: -60%;
+            width: 60%; height: 140%;
+            pointer-events: none;
+            z-index: 56;
+            background: linear-gradient(
+                105deg,
+                rgba(255,255,255,0)   0%,
+                rgba(255,255,255,0.0)  38%,
+                rgba(255,255,255,0.28) 48%,
+                rgba(255,255,255,0.38) 50%,
+                rgba(255,255,255,0.28) 52%,
+                rgba(255,255,255,0.0)  62%,
+                rgba(255,255,255,0)   100%
+            );
+            transform: skewX(-8deg);
+            opacity: 0;
+            transition: opacity 0.15s ease;
+        }
+        .my-page:hover .page-specular {
+            opacity: 1;
+        }
+
+        /* ─── SPINE EDGE HIGHLIGHT ─── */
+        .my-page .page-edge {
+            position: absolute;
+            top: 0; bottom: 0;
+            width: 3px;
+            pointer-events: none;
+            z-index: 57;
+        }
+
+        /* ─── GLOSS TOGGLE BUTTON ─── */
+      
+        /* ─── BOOK SPINE CENTER EFFECT ─── */
+#book::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 80px;
+    height: 100%;
+    background: linear-gradient(
+        to right,
+        rgba(0,0,0,0.0)  0%,
+        rgba(0,0,0,0.18) 30%,
+        rgba(0,0,0,0.55) 48%,
+        rgba(0,0,0,0.65) 50%,
+        rgba(0,0,0,0.55) 52%,
+        rgba(0,0,0,0.18) 70%,
+        rgba(0,0,0,0.0)  100%
+    );
+    pointer-events: none;
+    z-index: 1;
+    transition: opacity 0.3s ease;
+}
+
+/* ─── SPINE CENTER CRACK LINE ─── */
+#book::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: calc(50% - 1px);
+    width: 2px;
+    height: 100%;
+    background: linear-gradient(
+        to bottom,
+        rgba(0,0,0,0.0)  0%,
+        rgba(0,0,0,0.75) 15%,
+        rgba(0,0,0,0.90) 50%,
+        rgba(0,0,0,0.75) 85%,
+        rgba(0,0,0,0.0)  100%
+    );
+    pointer-events: none;
+    z-index: 1;
+    transition: opacity 0.3s ease;
+}
+
+/* ─── HIDE SPINE DURING FLIP ─── */
+#book.flipping::before,
+#book.flipping::after {
+    opacity: 0;
+    transition: opacity 0.15s ease;
+}
+
+#book::before {
+    z-index: 0;
+}
+
+#book::after {
+    z-index: 0;
+}
+#book {
+    overflow: hidden;
+}
+    
     </style>
 </head>
 <body>
@@ -169,7 +286,7 @@
             </div>
         </div>
     </div>
-
+    
     <div class="book-wrapper">
         <div id="book"></div>
     </div>
@@ -181,7 +298,7 @@
         </div>
         <div class="cb-side">
             <button class="cb-btn" onclick="goNext()">Next →</button>
-            <button class="cb-btn pri" onclick="window.open('editor.html','_blank')">✏️ Edit</button>
+<button class="cb-btn pri" onclick="saveAndShare()">💾 Save & Share</button>
         </div>
     </div>
     <div class="update-banner" id="updateBanner" onclick="location.reload()">📝 Editor updated — click to reload</div>
@@ -190,6 +307,71 @@
     </audio>
 
 <script>
+
+/* ════════════════════════════════════════
+   GLOSS SYSTEM
+════════════════════════════════════════ */
+let glossEnabled = true;
+
+function injectGlossLayers() {
+    document.querySelectorAll('.my-page').forEach((page, idx) => {
+        if (page.querySelector('.page-gloss')) return;
+
+        // Static gloss coat
+        const gloss = document.createElement('div');
+        gloss.className = 'page-gloss';
+        page.appendChild(gloss);
+
+        // Moving specular — alternate angle per page side
+        const spec = document.createElement('div');
+        spec.className = 'page-specular';
+        if (idx % 2 !== 0) {
+            spec.style.background = `linear-gradient(
+                75deg,
+                rgba(255,255,255,0) 0%,
+                rgba(255,255,255,0) 38%,
+                rgba(255,255,255,0.20) 47%,
+                rgba(255,255,255,0.30) 50%,
+                rgba(255,255,255,0.20) 53%,
+                rgba(255,255,255,0) 62%,
+                rgba(255,255,255,0) 100%
+            )`;
+        }
+        page.appendChild(spec);
+
+        // Spine edge highlight
+        const edge = document.createElement('div');
+        edge.className = 'page-edge';
+        if (idx % 2 === 0) {
+            edge.style.cssText = 'left:0; background: linear-gradient(to right, rgba(255,255,255,0.35) 0%, rgba(255,255,255,0.0) 100%);';
+        } else {
+            edge.style.cssText = 'right:0; background: linear-gradient(to left, rgba(255,255,255,0.35) 0%, rgba(255,255,255,0.0) 100%);';
+        }
+        page.appendChild(edge);
+    });
+}
+
+function animateFlipShine(pageEl) {
+    if (!glossEnabled || !pageEl) return;
+    const spec = pageEl.querySelector('.page-specular');
+    if (!spec) return;
+    spec.style.transition = 'none';
+    spec.style.opacity = '0';
+    spec.style.left = '-60%';
+    requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+            spec.style.transition = 'left 0.75s cubic-bezier(0.25,0.46,0.45,0.94), opacity 0.12s ease';
+            spec.style.opacity = '1';
+            spec.style.left = '100%';
+            setTimeout(() => {
+                spec.style.transition = 'opacity 0.2s ease';
+                spec.style.opacity = '0';
+            }, 680);
+        });
+    });
+}
+
+
 /* ════════════════════════════════════════
    BACKGROUND SWITCHER
    — committed choice is stored in the URL (?bg=...)
@@ -205,14 +387,27 @@
         try{ return new URLSearchParams(window.location.search).get('bg') || null; }catch(e){ return null; }
     }
     function setBgInURL(value){
-        /* Replaces ?bg= without reloading the page.
-           Preserves all other existing query params (e.g. ?id=...) */
-        const u = new URL(window.location.href);
-        if(value) u.searchParams.set('bg', value);
-        else       u.searchParams.delete('bg');
-        window.history.replaceState(null, '', u.toString());
-    }
+    const u = new URL(window.location.href);
+    // Only store gradients/colors in URL — never base64 (too large)
+    const isBase64 = value && value.startsWith('data:');
+    if(value && !isBase64) u.searchParams.set('bg', value);
+    else u.searchParams.delete('bg');  // base64: remove from URL, DB only
+    window.history.replaceState(null, '', u.toString());
 
+    // Save to server regardless
+    const pathParts = window.location.pathname.split('/');
+    const share_id  = pathParts[1] === 'preview' ? pathParts[2] : null;
+    const pId       = new URLSearchParams(window.location.search).get('id');
+    const id        = share_id || pId;
+    if (id) {
+        fetch('/api/projects/save-bg', {
+            method: 'POST',
+            headers: {'Content-Type':'application/json'},
+            body: JSON.stringify({ share_id, project_id: pId, preview_bg: value })
+        }).catch(()=>{});
+    }
+}
+   
     /* ── apply raw value (a gradient, color hex, image URL, or base64) to <body> ── */
     function applyValue(val){
         if(!val){
@@ -261,38 +456,36 @@
     });
 
     uploadInput.addEventListener('change', function(){
-        const file = this.files[0];
-        if(!file) return;
-        const reader = new FileReader();
-        reader.onload = function(ev){
-            const dataUrl = ev.target.result;
-            /* show preview thumbnail */
-            uploadThumb.src = dataUrl;
-            uploadPreview.style.display = 'block';
-            /* apply immediately as committed choice */
-            document.querySelectorAll('.bg-opt').forEach(o=>o.classList.remove('sel'));
-            uploadedOpt.classList.add('sel');
-            applyValue(dataUrl);
-            snap();
-            /* Note: base64 images are too large for URL params —
-               stored only in this session. For sharing, use a preset instead. */
-        };
-        reader.readAsDataURL(file);
-    });
+    const file = this.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = function(ev){
+        const dataUrl = ev.target.result;
+        uploadThumb.src = dataUrl;
+        uploadPreview.style.display = 'block';
+        document.querySelectorAll('.bg-opt').forEach(o=>o.classList.remove('sel'));
+        uploadedOpt.classList.add('sel');
+        applyValue(dataUrl);
+        snap();
+        setBgInURL(dataUrl);  // ← ADD THIS
+    };
+    reader.readAsDataURL(file);
+});
 
     /* wire uploaded opt hover/click like other opts */
     uploadedOpt.addEventListener('mouseenter', function(){ if(uploadThumb.src) applyValue(uploadThumb.src); });
     uploadedOpt.addEventListener('mouseleave', function(){ revert(); });
     uploadedOpt.addEventListener('click', function(e){
-        e.stopPropagation();
-        if(!uploadThumb.src) return;
-        document.querySelectorAll('.bg-opt').forEach(o=>o.classList.remove('sel'));
-        uploadedOpt.classList.add('sel');
-        applyValue(uploadThumb.src);
-        snap();
-        panel.classList.remove('open');
-        btn.classList.remove('open');
-    });
+    e.stopPropagation();
+    if(!uploadThumb.src) return;
+    document.querySelectorAll('.bg-opt').forEach(o=>o.classList.remove('sel'));
+    uploadedOpt.classList.add('sel');
+    applyValue(uploadThumb.src);
+    snap();
+    setBgInURL(uploadThumb.src);  // ← ADD THIS
+    panel.classList.remove('open');
+    btn.classList.remove('open');
+});
 
     /* ── snapshot / revert for hover-preview ── */
     function snap(){
@@ -407,6 +600,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             const r    = await fetch(`/api/preview/${share_id}`);
             const proj = await r.json();
             pagesData  = proj.data.map((json, i) => ({ page_number: i, canvas_json: json }));
+            // ── ADD THIS ──
+            if (proj.preview_bg) {
+                applyPreviewBg(proj.preview_bg);
+                const u = new URL(window.location.href);
+                u.searchParams.set('bg', proj.preview_bg);
+                window.history.replaceState(null, '', u.toString());
+            }
         } catch (e) { console.warn('Share ID load failed', e); }
     }
 
@@ -415,6 +615,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             const r    = await fetch(`/api/project/${pId}`);
             const proj = await r.json();
             pagesData  = proj.data.map((json, i) => ({ page_number: i, canvas_json: json }));
+            // ── ADD THIS ──
+            if (proj.preview_bg) {
+                applyPreviewBg(proj.preview_bg);
+                const u = new URL(window.location.href);
+                u.searchParams.set('bg', proj.preview_bg);
+                window.history.replaceState(null, '', u.toString());
+            }
         } catch (e) { console.warn('DB load failed, falling back to localStorage', e); }
     }
 
@@ -434,6 +641,23 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (e.key === LS_KEY) document.getElementById('updateBanner').classList.add('show');
     });
 });
+
+
+function applyPreviewBg(val) {
+    if (!val) return;
+    if (val.startsWith('linear-gradient') || val.startsWith('radial-gradient')) {
+        document.body.style.backgroundImage    = val;
+        document.body.style.backgroundSize     = '';
+        document.body.style.backgroundPosition = '';
+    } else if (val.startsWith('#') || val.startsWith('rgb')) {
+        document.body.style.backgroundImage = '';
+        document.body.style.backgroundColor = val;
+    } else {
+        document.body.style.backgroundImage    = `url('${val}')`;
+        document.body.style.backgroundSize     = 'cover';
+        document.body.style.backgroundPosition = 'center';
+    }
+}
 
 // ─── LOAD FROM LOCALSTORAGE ───────────────────────────────────────────────────
 async function loadPages() {
@@ -483,20 +707,35 @@ async function buildDOM(pagesData) {
         bookEl.appendChild(pageDiv);
 
         await renderPage(cvEl.id, renderList[i].canvas_json, overlay, i);
+    
     }
+    injectGlossLayers();
+
 }
 
 
 // ─── RENDER ONE PAGE ──────────────────────────────────────────────────────────
 async function renderPage(canvasId, jsonData, overlay, pageIndex) {
     return new Promise(resolve => {
+        // Must match editor.html's canvas init EXACTLY so text layout is identical
+        fabric.Text.prototype.canvasTextBaseline = 'alphabetic';
+
         const sc = new fabric.Canvas(canvasId, {
             width: PAGE_W,
             height: PAGE_H,
             interactive: false,
             selection: false,
-            enableRetinaScaling: false
+            enableRetinaScaling: true,
+            preserveObjectStacking: true,
+            backgroundColor: '#ffffff',
         });
+
+        // HiDPI: scale the backing store so text/images are crisp
+        const dpr = Math.min(window.devicePixelRatio || 1, 3);
+        sc.setDimensions({ width: PAGE_W * dpr, height: PAGE_H * dpr }, { backstoreOnly: true });
+        sc.setZoom(dpr);
+        sc.getElement().style.width  = PAGE_W + 'px';
+        sc.getElement().style.height = PAGE_H + 'px';
 
         pageCanvases[pageIndex] = sc;
 
@@ -508,11 +747,68 @@ async function renderPage(canvasId, jsonData, overlay, pageIndex) {
 
         const data = typeof jsonData === 'string' ? JSON.parse(jsonData) : jsonData;
 
+        // Collect all font families referenced in objects AND their per-char styles
+        // so Google Fonts are loaded before Fabric renders (prevents wrong metrics)
+        const fontsNeeded = new Set();
+        (data.objects || []).forEach(function collectFonts(obj) {
+            if (obj.fontFamily) fontsNeeded.add(obj.fontFamily);
+            // Per-char style overrides
+            if (obj.styles) {
+                Object.values(obj.styles).forEach(line => {
+                    Object.values(line).forEach(charStyle => {
+                        if (charStyle.fontFamily) fontsNeeded.add(charStyle.fontFamily);
+                    });
+                });
+            }
+            // Recurse into groups
+            if (obj.objects) obj.objects.forEach(collectFonts);
+        });
+
+        const fontLoadPromises = [...fontsNeeded].map(function(family) {
+            return new Promise(function(res) {
+                const id = 'gf-flip-' + family.replace(/\s+/g, '-');
+                if (document.getElementById(id)) { setTimeout(res, 30); return; }
+                const link = document.createElement('link');
+                link.id   = id;
+                link.rel  = 'stylesheet';
+                link.href = `https://fonts.googleapis.com/css2?family=${encodeURIComponent(family)}:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,700&display=swap`;
+                link.onload  = () => setTimeout(res, 60);
+                link.onerror = () => res();
+                document.head.appendChild(link);
+                setTimeout(res, 900);
+            });
+        });
+
+        Promise.all(fontLoadPromises).then(function() {
+            // Extra tick to let the browser apply the loaded fonts before Fabric measures
+            setTimeout(function() {
         sc.loadFromJSON(data, () => {
+            // Restore per-char clip paths on text objects (same as editor's loadCurrentPage)
+            const savedClipPaths = (data.objects || []).map(o => o.clipPath || null);
+            const objs = sc.getObjects();
+            let pending = 0;
+            objs.forEach(function(obj, i) {
+                const rawClip = savedClipPaths[i];
+                if (!rawClip) return;
+                pending++;
+                fabric.util.enlivenObjects([rawClip], function(enlivened) {
+                    const cp = enlivened[0];
+                    if (cp) {
+                        cp.set({ originX:'center', originY:'center', left:0, top:0, absolutePositioned:false, objectCaching:false });
+                        obj.clipPath = cp;
+                        obj.set({ dirty: true });
+                    }
+                    pending--;
+                    if (pending === 0) afterRender();
+                });
+            });
+            if (pending === 0) afterRender();
+
+            function afterRender() {
             // 1. GLOBAL OBJECT LOCKING
             sc.getObjects().forEach(obj => {
                 obj.selectable = false;
-                obj.evented = (obj.customPageTarget != null); // Only targetable objects get events
+                obj.evented = (obj.customPageTarget != null);
                 obj.lockMovementX = obj.lockMovementY = true;
                 obj.lockScalingX = obj.lockScalingY = true;
                 obj.lockRotation = true;
@@ -523,7 +819,15 @@ async function renderPage(canvasId, jsonData, overlay, pageIndex) {
             // 2. INTERACTIVE OVERLAYS
             sc.getObjects().forEach(obj => {
                 obj.setCoords();
-                const rect = obj.getBoundingRect();
+                const rawRect = obj.getBoundingRect();
+                // Divide by dpr because getBoundingRect returns coords in the HiDPI
+                // backstore space (scaled by dpr), but CSS positions are in CSS pixels
+                const rect = {
+                    left:   rawRect.left   / dpr,
+                    top:    rawRect.top    / dpr,
+                    width:  rawRect.width  / dpr,
+                    height: rawRect.height / dpr,
+                };
 
              
                 // --- FUNCTIONALITY A: VIDEOS ---
@@ -571,16 +875,19 @@ if (obj.customVideoSrc) {
                     const a = document.createElement('a');
                     a.href = obj.customLink;
                     a.target = '_blank';
-                    a.style.cssText = `position:absolute; left:${rect.left}px; top:${rect.top}px; width:${rect.width}px; height:${rect.height}px; cursor:pointer; pointer-events:auto; z-index:10;`;
+                    a.style.cssText = `position:absolute; left:${rect.left / dpr}px; top:${rect.top / dpr}px; width:${rect.width / dpr}px; height:${rect.height / dpr}px; cursor:pointer; pointer-events:auto; z-index:10;`;
                     a.addEventListener('mousedown', e => e.stopPropagation());
                     overlay.appendChild(a);
                 }
             });
 
             resolve();
-        });
-    });
-}
+            } // end afterRender
+        }); // end loadFromJSON
+        }, 80); // end setTimeout for font loading
+        }); // end Promise.all
+    }); // end outer Promise
+} // end renderPage
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // ─── VIDEO FUNCTIONS ──────────────────────────────────────────────────────────
@@ -1046,9 +1353,18 @@ function initFlip() {
 
     window.pageFlip = pageFlip;
     pageFlip.loadFromHTML(document.querySelectorAll('#book .my-page'));
-
+    
     recenter(0);
     setTimeout(() => document.getElementById('loadOverlay').classList.add('hidden'), 500);
+
+    pageFlip.on('changeState', e => {
+        const book = document.getElementById('book');
+        if (e.data === 'flipping') {
+            book.classList.add('flipping');
+        } else {
+            book.classList.remove('flipping');
+        }
+    });
 
     pageFlip.on('flip', e => {
         currentIdx = e.data;
@@ -1062,6 +1378,16 @@ function initFlip() {
         updateUI(e.data);
         playPageAnimations(e.data);
         playPageAnimations(e.data + 1);
+
+         if (glossEnabled) {
+            const pages = document.querySelectorAll('#book .my-page');
+            [e.data, e.data + 1].forEach((pi, i) => {
+                if (pages[pi]) {
+                    setTimeout(() => animateFlipShine(pages[pi]), i * 80);
+                }
+            });
+        }
+          document.getElementById('book').classList.remove('flipping');
     });
 
     pageFlip.on('flip', e => {
@@ -1106,6 +1432,65 @@ function goNext() {
     } else {
         pageFlip.flipNext();
     }
+}
+
+async function saveAndShare() {
+    const btn = document.querySelector('.cb-btn.pri');
+    btn.textContent = '⏳ Saving...';
+    btn.disabled = true;
+
+    const currentBg = new URLSearchParams(window.location.search).get('bg') || '';
+    // Get the real bg value (may be base64, stored in DB only)
+    const realBg = document.body.style.backgroundImage.match(/url\(['"]?(data:[^'"]+)['"]?\)/)?.[1]
+                || document.body.style.backgroundColor
+                || currentBg;
+    const isBase64 = realBg && realBg.startsWith('data:');
+
+    const pathParts = window.location.pathname.split('/');
+    const share_id  = pathParts[1] === 'preview' ? pathParts[2] : null;
+    const pId       = new URLSearchParams(window.location.search).get('id');
+
+    if (!share_id && !pId) {
+        const shareUrl = new URL(window.location.href);
+        // Don't add base64 to URL
+        if (currentBg && !isBase64) shareUrl.searchParams.set('bg', currentBg);
+        try {
+            await navigator.clipboard.writeText(shareUrl.toString());
+            btn.textContent = '✅ Link Copied!';
+        } catch {
+            btn.textContent = '⚠️ No Project ID';
+        }
+        setTimeout(() => { btn.textContent = '💾 Save & Share'; btn.disabled = false; }, 2500);
+        return;
+    }
+
+    try {
+        // Save the real bg (including base64) to DB
+        await fetch('/api/projects/save-bg', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ share_id, project_id: pId, preview_bg: realBg })
+        });
+
+        const shareBase = share_id
+            ? `${window.location.origin}/preview/${share_id}`
+            : window.location.href;
+        const shareUrl = new URL(shareBase);
+        // Only add bg to URL if it's NOT base64 (gradients/colors are fine)
+        if (currentBg && !isBase64) shareUrl.searchParams.set('bg', currentBg);
+
+        if (navigator.clipboard && window.isSecureContext) {
+            await navigator.clipboard.writeText(shareUrl.toString());
+            btn.textContent = '✅ Link Copied!';
+        } else {
+            btn.textContent = '✅ Saved!';
+        }
+    } catch(e) {
+        btn.textContent = '❌ Failed';
+        console.error(e);
+    }
+
+    setTimeout(() => { btn.textContent = '💾 Save & Share'; btn.disabled = false; }, 2500);
 }
 
 function setTxt(t) { document.getElementById('loadTxt').textContent = t; }
