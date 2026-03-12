@@ -36,7 +36,7 @@ class Project(Base):
     user_id = Column(Integer, ForeignKey("users.id"))
     data = Column(JSON) 
     share_id = Column(String, unique=True, index=True, default=lambda: str(uuid4()))
-
+    preview_bg = Column(String, nullable=True)
 class CustomElement(Base):
     __tablename__ = "custom_elements"
     id = Column(Integer, primary_key=True, index=True)
@@ -58,6 +58,11 @@ def run_migrations():
             conn.execute(text("ALTER TABLE users ADD COLUMN last_name VARCHAR"))
         if 'email' not in existing_columns:
             conn.execute(text("ALTER TABLE users ADD COLUMN email VARCHAR"))
+
+        # ── ADD THIS BLOCK ──
+        proj_columns = [col['name'] for col in inspector.get_columns('projects')]
+        if 'preview_bg' not in proj_columns:
+            conn.execute(text("ALTER TABLE projects ADD COLUMN preview_bg VARCHAR"))
         
         conn.commit()
 
@@ -134,7 +139,11 @@ def get_preview_data(share_id: str, db: Session = Depends(get_db)):
     project = db.query(Project).filter(Project.share_id == share_id).first()
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
-    return {"data": project.data, "title": project.title}
+    return {
+        "data": project.data,
+        "title": project.title,
+        "preview_bg": project.preview_bg or ""    # ← ADD
+    }
 
 # Static file mounting for frontend assets and uploaded media
 app.mount("/frontend", StaticFiles(directory=FRONTEND_DIR), name="frontend")
@@ -198,12 +207,17 @@ def get_projects(user_id: int, db: Session = Depends(get_db)):
 
 @app.get("/api/project/{p_id}")
 def get_project(p_id: int, db: Session = Depends(get_db)):
-    return db.query(Project).filter(Project.id == p_id).first()
+    p = db.query(Project).filter(Project.id == p_id).first()
+    if not p:
+        raise HTTPException(status_code=404, detail="Project not found")
+    return {"id": p.id, "title": p.title, "data": p.data, 
+            "share_id": p.share_id, "preview_bg": p.preview_bg or ""}
 
 @app.post("/api/projects/save")
 def save_project(proj: dict, db: Session = Depends(get_db)):
     p_id = proj.get("id")
     data_content = proj.get("data")
+    preview_bg = proj.get("preview_bg", None)   # ← ADD
     
     if isinstance(data_content, str):
         import json
@@ -214,7 +228,8 @@ def save_project(proj: dict, db: Session = Depends(get_db)):
         if db_p:
             db_p.data = data_content
             db_p.title = proj.get('title', db_p.title)
-            # Fix: assign share_id if it's missing (old projects)
+            if preview_bg is not None:             # ← ADD
+                db_p.preview_bg = preview_bg       # ← ADD
             if not db_p.share_id:
                 db_p.share_id = str(uuid4())
             db.commit()
@@ -225,14 +240,39 @@ def save_project(proj: dict, db: Session = Depends(get_db)):
         project_type=proj.get('type', 'flipbook'),
         user_id=proj.get('user_id'),
         data=data_content,
+        preview_bg=preview_bg,                     # ← ADD
         share_id=str(uuid4())
     )
     db.add(new_p)
     db.commit()
     db.refresh(new_p)
     return {"id": new_p.id, "share_id": new_p.share_id}
-
     
+@app.post("/api/projects/save-bg")
+def save_project_bg(payload: dict, db: Session = Depends(get_db)):
+    share_id   = payload.get("share_id")
+    project_id = payload.get("project_id")
+    preview_bg = payload.get("preview_bg", "")
+
+    if share_id:
+        db_p = db.query(Project).filter(Project.share_id == share_id).first()
+    elif project_id:
+        try:
+            db_p = db.query(Project).filter(Project.id == int(project_id)).first()
+        except (ValueError, TypeError):
+            raise HTTPException(status_code=400, detail="Invalid project_id")
+        
+    else:
+        raise HTTPException(status_code=400, detail="No project identifier provided")
+
+    if not db_p:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    db_p.preview_bg = preview_bg
+    db.commit()
+    return {"status": "saved", "share_id": db_p.share_id}
+
+
 
 # --- CUSTOM ELEMENTS API ---
 @app.post("/api/custom-elements/save")
