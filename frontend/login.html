@@ -278,7 +278,7 @@
                     <input type="password" id="pass" class="form-control form-control-custom" placeholder="Password">
                 </div>
 
-                <button class="btn-signup" onclick="doLogin()">Sign up</button>
+                <button class="btn-signup" onclick="doLogin()">Sign In</button>
 
                 <div class="divider">
                     <span>Or continue with</span>
@@ -286,18 +286,20 @@
 
                 <p class="footer-text">Don't have an account? <a href="/signup">Create one here</a></p>
 
+                <p class="footer-text"><a href="/forgot-password">Forgot your password?</a></p>
+
                 <p class="footer-text">By registering you with our <a href="#">Terms and Conditions</a></p>
             </div>
         </div>
     </div>
 
     <script>
-       async function doLogin() {
-    const user = document.getElementById('user').value;
-    const pass = document.getElementById('pass').value;
+      async function doLogin() {
+    const user = document.getElementById('user').value.trim();
+    const pass = document.getElementById('pass').value.trim();
     const btn = document.querySelector('.btn-signup');
-    
-    if(!user || !pass) return alert("Please enter credentials");
+
+    if (!user || !pass) return alert("Please enter your username/email and password.");
 
     btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Loading...';
     btn.disabled = true;
@@ -311,39 +313,54 @@
 
         const data = await res.json();
 
-        if (!res.ok) {
-            // IF THE USER IS NOT FOUND (401), REDIRECT TO SIGNUP
-            if (res.status === 401) {
-                if(confirm("Account not found. Would you like to create a new adventure account?")) {
-                    window.location.href = "/signup"; 
-                }
-            } else {
-                alert(data.detail || "An error occurred");
+        if (res.status === 404) {
+            // No account found
+            if (confirm("❌ No account found with these details.\n\nWould you like to create a new account?")) {
+                window.location.href = "/signup";
             }
-            
-            // Reset button state
-            btn.innerHTML = 'Sign up';
+            btn.innerHTML = 'Sign In';
             btn.disabled = false;
             return;
         }
 
-        // SUCCESS: Save user and go to dashboard
-        localStorage.setItem("droidal_user", JSON.stringify(data));
-         localStorage.setItem('user_id', data.user_id);
-      localStorage.setItem('droidal_user_id', data.user_id);
-      localStorage.setItem('username', data.username);
-      localStorage.setItem('droidal_first_name', data.first_name || '');
-      localStorage.setItem('droidal_last_name',  data.last_name  || '');
+        if (res.status === 401) {
+            // Wrong password — suggest forgot password
+            const tryForgot = confirm("❌ Wrong password.\n\nWould you like to reset your password?");
+            if (tryForgot) window.location.href = "/forgot-password";
+            btn.innerHTML = 'Sign In';
+            btn.disabled = false;
+            return;
+        }
 
+        if (res.status === 403) {
+            alert("⚠ Email not verified. Please check your inbox.");
+            btn.innerHTML = 'Sign In';
+            btn.disabled = false;
+            return;
+        }
+
+        if (!res.ok) {
+            alert(data.detail || "Something went wrong.");
+            btn.innerHTML = 'Sign In';
+            btn.disabled = false;
+            return;
+        }
+
+        // SUCCESS
+        localStorage.setItem("droidal_user", JSON.stringify(data));
+        localStorage.setItem('user_id', data.user_id);
+        localStorage.setItem('droidal_user_id', data.user_id);
+        localStorage.setItem('username', data.username);
+        localStorage.setItem('droidal_first_name', data.first_name || '');
+        localStorage.setItem('droidal_last_name', data.last_name || '');
         window.location.href = "/dashboard";
 
     } catch (err) {
-        alert("Failed to connect to backend. Make sure main.py is running!");
-        btn.innerHTML = 'Sign up';
+        alert("Could not connect to server.");
+        btn.innerHTML = 'Sign In';
         btn.disabled = false;
     }
 }
-   
    </script>
 </body>
 </html>

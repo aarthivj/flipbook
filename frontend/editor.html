@@ -222,7 +222,7 @@ input[type=range]{accent-color:var(--pri)}
   <div id="tbText" style="display:none;align-items:center;gap:5px;flex-wrap:nowrap">
     <div class="pg">
       <label>Color</label>
-      <input type="color" id="pFill" oninput="cp('fill',this.value)" onchange="hist()">
+      <input type="color" id="pFill" oninput="setTextColor(this.value)" onchange="hist()">
     </div>
     <div class="dvd"></div>
     <input type="number" class="pi" id="pSize" style="width:46px" oninput="cp('fontSize',+this.value)" title="Font Size">
@@ -291,6 +291,8 @@ input[type=range]{accent-color:var(--pri)}
       <label>Opacity</label>
       <input type="range" id="pOpacityText" min=".05" max="1" step=".05" style="width:60px" oninput="cp('opacity',+this.value)">
     </div>
+    <button class="pb" id="bJump" onclick="setJumpTarget()" title="Jump to Page"><i class="fa-solid fa-share-from-square"></i></button>
+
     <div class="dvd"></div>
     <button class="pb" onclick="dupObj()"  title="Duplicate"><i class="fa-regular fa-copy"></i></button>
     <button class="pb red-btn" onclick="delObj()" title="Delete"><i class="fa-solid fa-trash"></i></button>
@@ -333,11 +335,9 @@ input[type=range]{accent-color:var(--pri)}
     <button class="tab-btn active" data-tab="tabElements" onclick="openTab(this)"><i class="fa-solid fa-shapes"></i>Elements</button>
     <button class="tab-btn" data-tab="tabFrames" onclick="openTab(this)"><i class="fa-solid fa-crop"></i>Frames</button>
     <button class="tab-btn" data-tab="tabText" onclick="openTab(this)"><i class="fa-solid fa-t"></i>Text</button>
-    <button class="tab-btn" data-tab="tabBrand" onclick="openTab(this)"><i class="fa-solid fa-star"></i>Brand</button>
     <button class="tab-btn" data-tab="tabUploads" onclick="openTab(this)"><i class="fa-solid fa-cloud-arrow-up"></i>Uploads</button>
     <button class="tab-btn" data-tab="tabDraw" onclick="openTab(this);showDrawBar()"><i class="fa-solid fa-paintbrush"></i>Draw</button>
     <button class="tab-btn" data-tab="tabCharts" onclick="openTab(this)"><i class="fa-solid fa-chart-pie"></i>Charts</button>
-    <button class="tab-btn" data-tab="tabApps" onclick="openTab(this)"><i class="fa-solid fa-grid-2"></i>Apps</button>
     <button class="tab-btn" data-tab="tabAnims" onclick="openTab(this)"><i class="fa-solid fa-wand-sparkles"></i>Anims</button>
     <div class="sep"></div>
     <button class="tab-btn" data-tab="tabLayers" onclick="openTab(this);renderLayers()"><i class="fa-solid fa-layer-group"></i>Layers</button>
@@ -441,50 +441,51 @@ input[type=range]{accent-color:var(--pri)}
       </div>
     </div>
 
-    <!-- BRAND -->
-    <div id="tabBrand" class="panel">
-      <div class="panel-title">Brand Kit</div>
-      <div class="section">Brand Colors</div>
-      <div class="color-row" id="brandColors"></div>
-      <div style="display:flex;gap:7px;align-items:center;margin-bottom:12px">
-        <input type="color" id="newColor" value="#6366f1" style="width:28px;height:28px;border-radius:5px;border:1px solid var(--bdr);cursor:pointer;padding:1px">
-        <button class="tool" style="flex:1;flex-direction:row;gap:6px;padding:7px 10px" onclick="addBrandColor()"><i class="fa-solid fa-plus"></i>Add Color</button>
-      </div>
-      <div class="section">Brand Fonts</div>
-      <div id="brandFonts"></div>
-      <select id="newFont" class="search" style="margin-bottom:7px">
-        <option>Inter</option><option>Roboto</option><option>Montserrat</option>
-        <option>Poppins</option><option>Playfair Display</option><option>Bebas Neue</option>
-        <option>Dancing Script</option><option>Oswald</option><option>Raleway</option>
-      </select>
-      <button class="tool wide" onclick="addBrandFont()"><i class="fa-solid fa-plus"></i>Add Font</button>
-      <div class="section">Brand Logo</div>
-      <label class="tool wide" for="logo-upload" style="cursor:pointer">
-        <i class="fa-solid fa-image"></i>Upload Logo
-        <input type="file" id="logo-upload" accept="image/*" onchange="uploadLogo(event)">
-      </label>
-      <div id="logoPreview" style="margin-top:8px"></div>
-    </div>
+   
 
     <!-- UPLOADS -->
-    <div id="tabUploads" class="panel">
+    <!-- UPLOADS -->
+    <div id="tabUploads" class="panel" style="padding-bottom:10px">
       <div class="upload-card pri">
         <i class="fa-solid fa-image"></i>
         <span>Upload Image(s)</span>
-        <input type="file" id="img-up" accept="image/*" multiple onchange="uploadMedia(event,'image')">
+        <input type="file" id="img-up" accept="image/*,image/svg+xml" multiple onchange="uploadMedia(event,'image')">
       </div>
       <div class="upload-card grn">
         <i class="fa-solid fa-video"></i>
-        <span>Upload Video</span>
-        <input type="file" id="vid-up" accept="video/*" onchange="uploadMedia(event,'video')">
+        <span>Upload Video(s)</span>
+        <input type="file" id="vid-up" accept="video/*" multiple onchange="uploadMedia(event,'video')">
       </div>
-      <div class="upload-card">
-        <i class="fa-solid fa-bezier-curve"></i>
-        <span>Upload SVG</span>
-        <input type="file" id="svg-up" accept=".svg" onchange="uploadMedia(event,'svg')">
+
+      <!-- IMAGE GROUP -->
+      <div id="imgGroupHeader" style="display:none;align-items:center;justify-content:space-between;margin:10px 0 5px;cursor:pointer" onclick="toggleMediaGroup('img')">
+        <div style="display:flex;align-items:center;gap:6px">
+          <i class="fa-solid fa-images" style="color:var(--pri);font-size:.85rem"></i>
+          <span style="font-size:.72rem;font-weight:700;color:var(--txt);text-transform:uppercase;letter-spacing:.06em">Images</span>
+          <span id="imgCount" style="background:#e0e7ff;color:var(--pri);font-size:.62rem;font-weight:700;padding:1px 6px;border-radius:10px">0</span>
+        </div>
+        <i id="imgChevron" class="fa-solid fa-chevron-down" style="font-size:.7rem;color:var(--muted);transition:transform .2s"></i>
       </div>
-      <div class="section">Recent Uploads</div>
-      <div class="g3" id="uploadGallery"></div>
+      <div id="imgGalleryWrap" style="display:none">
+        <input type="text" placeholder="🔍 Search images..." oninput="filterMedia('img',this.value)"
+          style="width:100%;padding:5px 9px;border:1px solid var(--bdr);border-radius:6px;font-size:.78rem;outline:none;margin-bottom:6px;background:#f9fafb;font-family:inherit">
+        <div id="uploadGallery" style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;max-height:calc(9 * (((272px - 28px - 12px) / 3) + 6px));overflow-y:auto;scrollbar-width:thin"></div>
+      </div>
+
+      <!-- VIDEO GROUP -->
+      <div id="vidGroupHeader" style="display:none;align-items:center;justify-content:space-between;margin:10px 0 5px;cursor:pointer" onclick="toggleMediaGroup('vid')">
+        <div style="display:flex;align-items:center;gap:6px">
+          <i class="fa-solid fa-film" style="color:var(--grn);font-size:.85rem"></i>
+          <span style="font-size:.72rem;font-weight:700;color:var(--txt);text-transform:uppercase;letter-spacing:.06em">Videos</span>
+          <span id="vidCount" style="background:#d1fae5;color:var(--grn);font-size:.62rem;font-weight:700;padding:1px 6px;border-radius:10px">0</span>
+        </div>
+        <i id="vidChevron" class="fa-solid fa-chevron-down" style="font-size:.7rem;color:var(--muted);transition:transform .2s"></i>
+      </div>
+      <div id="vidGalleryWrap" style="display:none">
+        <input type="text" placeholder="🔍 Search videos..." oninput="filterMedia('vid',this.value)"
+          style="width:100%;padding:5px 9px;border:1px solid var(--bdr);border-radius:6px;font-size:.78rem;outline:none;margin-bottom:6px;background:#f9fafb;font-family:inherit">
+        <div id="uploadVideoGallery" style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;max-height:calc(9 * (((272px - 28px - 12px) / 3) + 6px));overflow-y:auto;scrollbar-width:thin"></div>
+      </div>
     </div>
 
     <!-- DRAW -->
@@ -535,21 +536,6 @@ input[type=range]{accent-color:var(--pri)}
       </div>
       <button class="tool pri wide" onclick="insertChart()"><i class="fa-solid fa-plus"></i>Insert Chart</button>
     </div>
-
-    <!-- APPS -->
-    <div id="tabApps" class="panel">
-      <div class="panel-title">Apps</div>
-      <div class="app-grid" style="margin-bottom:12px">
-        <div class="app-card" onclick="addTable()"><div class="app-icon" style="background:#f59e0b"><i class="fa-solid fa-table"></i></div>Table</div>
-        <div class="app-card" onclick="addQR()"><div class="app-icon" style="background:#111827"><i class="fa-solid fa-qrcode"></i></div>QR Code</div>
-        <div class="app-card" onclick="openModal('modalNotes')"><div class="app-icon" style="background:#6b7280"><i class="fa-solid fa-note-sticky"></i></div>Notes</div>
-        <div class="app-card" onclick="openModal('modalTimer')"><div class="app-icon" style="background:#ef4444"><i class="fa-solid fa-stopwatch"></i></div>Timer</div>
-        <div class="app-card" onclick="openModal('modalExport')"><div class="app-icon" style="background:#059669"><i class="fa-solid fa-file-export"></i></div>Export</div>
-        <div class="app-card" onclick="openPositionModal()"><div class="app-icon" style="background:#6366f1"><i class="fa-solid fa-ruler-combined"></i></div>Position</div>
-      </div>
-    </div>
-
-    <!-- ANIMS -->
     <!-- ANIMS -->
 <div id="tabAnims" class="panel">
   <div class="panel-title">Animations</div>
@@ -682,12 +668,33 @@ input[type=range]{accent-color:var(--pri)}
       <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:12px" id="bgPresets"></div>
       <div class="section">Gradients</div>
       <div id="bgGrads" style="margin-bottom:12px"></div>
-      <div class="section">Background Image</div>
-      <label class="tool pri wide">
-        <i class="fa-solid fa-image"></i>Choose Image
-        <input type="file" accept="image/*" onchange="setBgImg(event,'image')" hidden>
-      </label>
-      <button class="tool wide" onclick="removeBgImg()"><i class="fa-solid fa-trash"></i>Remove BG Image</button>
+     <div class="section">Background Image</div>
+<label class="tool pri wide">
+  <i class="fa-solid fa-image"></i>Choose Image
+  <input type="file" accept="image/*" id="bgImgInput" onchange="setBgImg(event)" hidden>
+</label>
+<div id="bgImgControls" style="display:none">
+  <div style="margin:10px 0 4px;font-size:.75rem;font-weight:600;color:var(--muted)">Opacity</div>
+  <input type="range" id="bgOpacity" min="0" max="100" value="100"
+    style="width:100%;accent-color:var(--pri)"
+    oninput="setBgOpacity(this.value)">
+  <div style="display:flex;justify-content:space-between;font-size:.7rem;color:var(--muted);margin-bottom:10px">
+    <span>0%</span><span id="bgOpacityVal">100%</span><span>100%</span>
+  </div>
+  <div style="margin:4px 0;font-size:.75rem;font-weight:600;color:var(--muted)">Position</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:8px">
+    <button class="ct-btn bgpos-btn sel" data-pos="cover" onclick="setBgPosition('cover')">Fill</button>
+    <button class="ct-btn bgpos-btn" data-pos="contain" onclick="setBgPosition('contain')">Fit</button>
+    <button class="ct-btn bgpos-btn" data-pos="100% 100%" onclick="setBgPosition('100% 100%')">Stretch</button>
+    <button class="ct-btn bgpos-btn" data-pos="center" onclick="setBgPosition('center')">Center</button>
+  </div>
+  <button class="tool wide" onclick="removeBgImg()"><i class="fa-solid fa-trash"></i>Remove BG Image</button>
+</div>
+<div id="bgImgNoControls">
+  <button class="tool wide" style="margin-top:6px" onclick="removeBgImg()"><i class="fa-solid fa-trash"></i>Remove BG Image</button>
+</div>
+    
+    
     </div>
   </div><!-- /panel-wrap -->
 
@@ -903,10 +910,25 @@ const LS_META = `droidal_meta_${BOOK_ID}`;
 
 // ─── PAGES ────────────────────────────────────────────────────────────────────
 let pages = [null], cur = 0;
+
+async function _loadPagesFromServer() {
+  try {
+    const uid = parseInt(localStorage.getItem('droidal_user_id') || 1);
+    const res = await fetch(`/api/pages/load?user_id=${uid}&book_id=${BOOK_ID}`);
+    if (!res.ok) return;
+    const data = await res.json();
+    if (data.pages && data.pages.length) {
+      pages = data.pages;
+      cur   = data.meta?.cur || 0;
+      loadCurrentPage();
+      renderDots();
+    }
+  } catch(err) { console.warn('Pages load failed:', err); }
+}
+
 const pageNotes = {};
 
-const CUSTOM_PROPS = ['customLink','customVideoSrc','locked','animData','isFrame','_frameId','customPageTarget','selectable','evented','isVideoFabric','isVideoGroup'];
-
+const CUSTOM_PROPS = ['customLink','customVideoSrc','locked','animData','isFrame','_frameId','customPageTarget','selectable','evented','isVideoFabric','isVideoGroup','_b64src'];
 const CURRENT_USER_ID = localStorage.getItem('droidal_user_id') || 1;
 
 (function showWelcome() {
@@ -920,7 +942,11 @@ const CURRENT_USER_ID = localStorage.getItem('droidal_user_id') || 1;
   }
 })();
 
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener('DOMContentLoaded', () => {
+  _loadPagesFromServer(); // restore canvas pages (with videos) for this user // restore uploaded media library from previous session
+if (!new URLSearchParams(window.location.search).get('id')) {
+    _loadMediaStore();
+  }
   document.getElementById("grad1").addEventListener("input",function(){
     document.getElementById("grad1Preview").style.background=this.value;
     applyLiveGradient();
@@ -1000,26 +1026,47 @@ function loadCurrentPage() {
     if (pending === 0) afterLoad();
   });
 
-  function afterLoad() {
-    // Force all objects out of any stuck editing/lock state from save
+ function afterLoad() {
     canvas.getObjects().forEach(function(obj) {
-      // Exit editing mode if saved mid-edit
       if (obj.isEditing) {
         try { obj.exitEditing(); } catch(e) {}
       }
-      // Re-enable selectability unless user explicitly locked it
       if (obj.locked !== true) {
         obj.set({
-          selectable: true,
-          evented: true,
-          lockMovementX: false,
-          lockMovementY: false,
-          lockScalingX: false,
-          lockScalingY: false,
+          selectable: true, evented: true,
+          lockMovementX: false, lockMovementY: false,
+          lockScalingX: false,  lockScalingY: false,
           lockRotation: false,
         });
       }
       if (obj.animData) runAnim(obj, canvas.renderAll.bind(canvas));
+
+      // Restore images that were saved with b64src
+      if (obj.type === 'image' && obj._b64src && !obj.isVideoFabric) {
+        fabric.Image.fromURL(obj._b64src, function(freshImg) {
+          // Copy position/transform from the dead object
+          freshImg.set({
+            left:     obj.left,
+            top:      obj.top,
+            scaleX:   obj.scaleX,
+            scaleY:   obj.scaleY,
+            angle:    obj.angle,
+            opacity:  obj.opacity,
+            flipX:    obj.flipX,
+            flipY:    obj.flipY,
+            originX:  obj.originX,
+            originY:  obj.originY,
+            _b64src:  obj._b64src,
+            locked:   obj.locked,
+            animData: obj.animData,
+          });
+          freshImg.objectCaching = false;
+          const idx = canvas.getObjects().indexOf(obj);
+          canvas.remove(obj);
+          canvas.insertAt(freshImg, idx);
+          canvas.requestRenderAll();
+        }, { crossOrigin: null });
+      }
     });
     canvas.discardActiveObject();
     canvas.renderAll();
@@ -1028,6 +1075,7 @@ function loadCurrentPage() {
     histReset();
     refreshUI();
   }
+
 }
 
 // ─── RESTORE VIDEO GROUPS — FIXED ────────────────────────────────────────────
@@ -1062,78 +1110,53 @@ function reviveVideoGroup(fabImg, targetCanvas, parentGroup, frameChild) {
 
   const videoSrc = fabImg.customVideoSrc;
   if (!videoSrc) return;
+  // blob: URLs are dead after refresh — if we somehow have one, abort
+  if (videoSrc.startsWith('blob:')) { console.warn('[revive] blob URL dead after refresh, skipping'); return; }
 
   const vid = document.createElement('video');
-  vid.src         = videoSrc;
-  vid.autoplay    = true;
-  vid.loop        = true;
-  vid.muted       = true;
-  vid.playsInline = true;
-  vid.crossOrigin = 'anonymous';
+  vid.src = videoSrc;
+  vid.autoplay = true; vid.loop = true; vid.muted = true; vid.playsInline = true; vid.preload = 'auto';
 
   function startLoop(v) {
-    // Use fabImg's stored dimensions — never native video resolution.
-    // This prevents scale drift on repeated page switches.
     const off = document.createElement('canvas');
-    off.width  = fabImg.width;
-    off.height = fabImg.height;
-    const offCtx = off.getContext('2d');
+    off.width  = fabImg.width  || 200;
+    off.height = fabImg.height || 150;
+    const offCtx = off.getContext('2d', { alpha:false });
 
     fabImg._offCanvas    = off;
     fabImg.objectCaching = false;
-
     fabImg._render = function(ctx) {
       if (!this._offCanvas) return;
-      ctx.drawImage(this._offCanvas,
-        -this.width / 2, -this.height / 2,
-        this.width, this.height);
+      ctx.drawImage(this._offCanvas, -this.width/2, -this.height/2, this.width, this.height);
     };
 
-    if (parentGroup) {
-      parentGroup.set({ objectCaching: false, dirty: true });
+    const dirtyTarget = parentGroup || fabImg;
 
+    if (parentGroup) {
+      parentGroup.set({ objectCaching:false, dirty:true });
       if (parentGroup.clipPath) {
-        // ── Priority 1: use the clipPath already restored by loadCurrentPage ──
-        parentGroup.clipPath.set({
-          absolutePositioned: false,
-          objectCaching: false,
-        });
-        parentGroup.set({ dirty: true });
+        parentGroup.clipPath.set({ absolutePositioned:false, objectCaching:false });
+        parentGroup.set({ dirty:true });
         targetCanvas.requestRenderAll();
       } else if (frameChild) {
-        // ── Priority 2: rebuild by cloning the frame shape inside the group ──
         frameChild.clone(function(clip) {
-          clip.set({
-            originX: 'center', originY: 'center',
-            left: 0, top: 0,
-            absolutePositioned: false,
-            objectCaching: false,
-          });
+          clip.set({ originX:'center', originY:'center', left:0, top:0, absolutePositioned:false, objectCaching:false });
           parentGroup.clipPath = clip;
-          parentGroup.set({ dirty: true });
+          parentGroup.set({ dirty:true });
           targetCanvas.requestRenderAll();
         });
       }
     }
 
-    (function drawLoop() {
-      if (!fabImg.canvas) return;
-      if (!v.paused && !v.ended) {
-        offCtx.drawImage(v, 0, 0, fabImg.width, fabImg.height);
-        if (parentGroup) parentGroup.set('dirty', true);
-        else fabImg.set('dirty', true);
-        targetCanvas.renderAll();
-      }
-      requestAnimationFrame(drawLoop);
-    })();
-
-    v.play().catch(function(err){ console.error('[REVIVE] play failed:', err); });
+    // Register with global loop — no per-video RAF
+    _videoRegistry.set(fabImg, { vid:v, offCtx, vw:off.width, vh:off.height, dirtyTarget });
+    _startGlobalVideoLoop();
+    v.play().catch(function(err){ console.warn('[revive] play failed:', err); });
   }
 
   if (vid.readyState >= 2) startLoop(vid);
-  else vid.addEventListener('loadeddata', function(){ startLoop(vid); }, { once: true });
+  else vid.addEventListener('loadeddata', function(){ startLoop(vid); }, {once:true});
 }
-
 // ─── GET JSON — FIXED ─────────────────────────────────────────────────────────
 // Manually serializes clipPath (Fabric doesn't do this by default).
 // Uses index-based matching to avoid left/top collision bugs.
@@ -1295,6 +1318,19 @@ function onSel() {
   document.getElementById('tbText').style.display  = isText ? 'flex' : 'none';
   document.getElementById('tbShape').style.display = isText ? 'none' : 'flex';
 
+
+  const bJump = document.getElementById('bJump');
+if (bJump) {
+  if (obj.customPageTarget != null) {
+    bJump.style.background = '#6366f1';
+    bJump.title = 'Jumps to Page ' + (obj.customPageTarget + 1) + ' — click to change';
+  } else {
+    bJump.style.background = '';
+    bJump.title = 'Jump to Page';
+  }
+}
+
+
   if (isText) {
     // ── TEXT BAR sync ──
     const pFill = document.getElementById('pFill');
@@ -1379,6 +1415,34 @@ function cp(prop, val) {
   const apply = o => { if (o) o.set(prop, val); };
   if (obj.type==='activeSelection') obj.forEachObject(apply); else apply(obj);
   canvas.requestRenderAll(); hist();
+}
+
+
+// ── Text color: per-char when editing with selection, else whole object ──
+function setTextColor(val) {
+  const obj = canvas.getActiveObject(); if (!obj) return;
+
+  function applyColor(o) {
+    if (!isTextObj(o)) { o.set('fill', val); return; }
+
+    if (o.isEditing) {
+      const start = o.selectionStart;
+      const end   = o.selectionEnd;
+      if (start !== end) {
+        o.setSelectionStyles({ fill: val }, start, end);
+        canvas.requestRenderAll();
+        return;
+      }
+    }
+
+    o.set('fill', val);
+  }
+
+  if (obj.type === 'activeSelection') obj.forEachObject(applyColor);
+  else applyColor(obj);
+
+  canvas.requestRenderAll();
+  hist();
 }
 
 function isTextObj(o) { return o.type==='i-text'||o.type==='text'||o.type==='textbox'; }
@@ -1484,7 +1548,41 @@ function toggleLock()      { const o=canvas.getActiveObject();if(!o)return;const
 function groupObjs() {
   const o = canvas.getActiveObject();
   if (!o || o.type !== 'activeSelection') return;
+
+  // Find any video fabric objects in the selection BEFORE grouping
+  const videoMembers = o.getObjects().filter(function(c) { return c.isVideoFabric && c.customVideoSrc; });
+
   const newGroup = o.toGroup();
+  newGroup.objectCaching = false;
+
+  // Re-register each video with the global loop, pointing dirtyTarget at the new group
+  videoMembers.forEach(function(fabImg) {
+    const existing = _videoRegistry.get(fabImg);
+    if (existing) {
+      // Update dirtyTarget so marking dirty on the group triggers group re-render
+      existing.dirtyTarget = newGroup;
+      _videoRegistry.set(fabImg, existing);
+    } else {
+      // Video was added before registry existed — revive it
+      const vid = document.createElement('video');
+      vid.src = fabImg.customVideoSrc; vid.muted=true; vid.loop=true; vid.autoplay=true; vid.playsInline=true;
+      const off = document.createElement('canvas');
+      off.width = fabImg.width; off.height = fabImg.height;
+      const offCtx = off.getContext('2d', { alpha:false });
+      fabImg._offCanvas = off;
+      fabImg.objectCaching = false;
+      fabImg._render = function(ctx) {
+        if (!this._offCanvas) return;
+        ctx.drawImage(this._offCanvas, -this.width/2, -this.height/2, this.width, this.height);
+      };
+      _videoRegistry.set(fabImg, { vid, offCtx, vw:fabImg.width, vh:fabImg.height, dirtyTarget:newGroup });
+      vid.addEventListener('loadeddata', function(){ vid.play().catch(()=>{}); }, {once:true});
+      vid.load();
+    }
+  });
+
+  if (videoMembers.length) _startGlobalVideoLoop();
+
   canvas.requestRenderAll(); onSel(); hist(); renderLayers();
   if (confirm("Objects grouped! Would you like to save this as a 'Custom Element' for future use?")) saveAsCustomElement();
 }
@@ -1644,323 +1742,393 @@ function runAnim(obj, renderFn) {
   const h    = dur / 2;
   const q    = dur / 4;
 
-  // Snapshot originals so clearAnim() can restore them
-  if (obj._origLeft    == null) obj._origLeft    = obj.left;
-  if (obj._origTop     == null) obj._origTop     = obj.top;
-  if (obj._origOpacity == null) obj._origOpacity = obj.opacity != null ? obj.opacity : 1;
-  if (obj._origScaleX  == null) obj._origScaleX  = obj.scaleX  != null ? obj.scaleX  : 1;
-  if (obj._origScaleY  == null) obj._origScaleY  = obj.scaleY  != null ? obj.scaleY  : 1;
-  if (obj._origAngle   == null) obj._origAngle   = obj.angle   != null ? obj.angle   : 0;
+  // Always re-snapshot before each play so drift never accumulates
+  obj._origLeft    = obj.left;
+  obj._origTop     = obj.top;
+  obj._origOpacity = obj.opacity != null ? obj.opacity : 1;
+  obj._origScaleX  = obj.scaleX  != null ? obj.scaleX  : 1;
+  obj._origScaleY  = obj.scaleY  != null ? obj.scaleY  : 1;
+  obj._origAngle   = obj.angle   != null ? obj.angle   : 0;
 
-  const oL  = obj._origLeft;
-  const oT  = obj._origTop;
-  const oOp = obj._origOpacity;
-  const oSX = obj._origScaleX;
-  const oSY = obj._origScaleY;
-  const oAng= obj._origAngle;
+  const oL   = obj._origLeft;
+  const oT   = obj._origTop;
+  const oOp  = obj._origOpacity;
+  const oSX  = obj._origScaleX;
+  const oSY  = obj._origScaleY;
+  const oAng = obj._origAngle;
   const ease = fabric.util.ease;
+
+  // Master restore — resets ALL properties instantly, no delay, nothing hidden
+  function restore() {
+    obj.set({
+      left:    oL,
+      top:     oT,
+      opacity: oOp,
+      scaleX:  oSX,
+      scaleY:  oSY,
+      angle:   oAng,
+    });
+    obj.setCoords();
+    obj.dirty = true;
+    renderFn();
+  }
 
   switch (data.type) {
 
     // ── ENTRANCE ──────────────────────────────────────────────────────────────
     case 'fade':
       obj.set('opacity', 0);
-      obj.animate('opacity', oOp, { duration: dur, onChange: renderFn });
+      obj.animate('opacity', oOp, { duration: dur, onChange: renderFn,
+        onComplete: function() { restore(); } });
       break;
 
     case 'fadeDown':
       obj.set({ opacity: 0, top: oT - 60 });
       obj.animate('opacity', oOp, { duration: dur, onChange: renderFn });
-      obj.animate('top', oT, { duration: dur, easing: ease.easeOutCubic, onChange: renderFn });
+      obj.animate('top', oT, { duration: dur, easing: ease.easeOutCubic, onChange: renderFn,
+        onComplete: function() { restore(); } });
       break;
 
     case 'fadeUp':
       obj.set({ opacity: 0, top: oT + 60 });
       obj.animate('opacity', oOp, { duration: dur, onChange: renderFn });
-      obj.animate('top', oT, { duration: dur, easing: ease.easeOutCubic, onChange: renderFn });
+      obj.animate('top', oT, { duration: dur, easing: ease.easeOutCubic, onChange: renderFn,
+        onComplete: function() { restore(); } });
       break;
 
     case 'fadeLeft':
       obj.set({ opacity: 0, left: oL + 60 });
       obj.animate('opacity', oOp, { duration: dur, onChange: renderFn });
-      obj.animate('left', oL, { duration: dur, easing: ease.easeOutCubic, onChange: renderFn });
+      obj.animate('left', oL, { duration: dur, easing: ease.easeOutCubic, onChange: renderFn,
+        onComplete: function() { restore(); } });
       break;
 
     case 'fadeRight':
       obj.set({ opacity: 0, left: oL - 60 });
       obj.animate('opacity', oOp, { duration: dur, onChange: renderFn });
-      obj.animate('left', oL, { duration: dur, easing: ease.easeOutCubic, onChange: renderFn });
+      obj.animate('left', oL, { duration: dur, easing: ease.easeOutCubic, onChange: renderFn,
+        onComplete: function() { restore(); } });
       break;
 
     case 'pop':
       obj.set({ scaleX: 0.01, scaleY: 0.01, opacity: 0 });
-      obj.animate({ scaleX: oSX, scaleY: oSY }, { duration: dur, easing: ease.easeOutBack, onChange: renderFn });
-      obj.animate('opacity', oOp, { duration: dur / 2, onChange: renderFn });
+      obj.animate({ scaleX: oSX, scaleY: oSY }, { duration: dur, easing: ease.easeOutBack, onChange: renderFn,
+        onComplete: function() { restore(); } });
+      obj.animate('opacity', oOp, { duration: h, onChange: renderFn });
       break;
 
     case 'zoomOut':
       obj.set({ scaleX: oSX * 2.5, scaleY: oSY * 2.5, opacity: 0 });
-      obj.animate({ scaleX: oSX, scaleY: oSY }, { duration: dur, easing: ease.easeOutCubic, onChange: renderFn });
+      obj.animate({ scaleX: oSX, scaleY: oSY }, { duration: dur, easing: ease.easeOutCubic, onChange: renderFn,
+        onComplete: function() { restore(); } });
       obj.animate('opacity', oOp, { duration: dur, onChange: renderFn });
       break;
 
     case 'slideL':
       obj.set('left', oL + 120);
-      obj.animate('left', oL, { duration: dur, easing: ease.easeOutCubic, onChange: renderFn });
+      obj.animate('left', oL, { duration: dur, easing: ease.easeOutCubic, onChange: renderFn,
+        onComplete: function() { restore(); } });
       break;
 
     case 'slideR':
       obj.set('left', oL - 120);
-      obj.animate('left', oL, { duration: dur, easing: ease.easeOutCubic, onChange: renderFn });
+      obj.animate('left', oL, { duration: dur, easing: ease.easeOutCubic, onChange: renderFn,
+        onComplete: function() { restore(); } });
       break;
 
     case 'slideU':
       obj.set('top', oT + 120);
-      obj.animate('top', oT, { duration: dur, easing: ease.easeOutCubic, onChange: renderFn });
+      obj.animate('top', oT, { duration: dur, easing: ease.easeOutCubic, onChange: renderFn,
+        onComplete: function() { restore(); } });
       break;
 
     case 'slideD':
       obj.set('top', oT - 120);
-      obj.animate('top', oT, { duration: dur, easing: ease.easeOutCubic, onChange: renderFn });
+      obj.animate('top', oT, { duration: dur, easing: ease.easeOutCubic, onChange: renderFn,
+        onComplete: function() { restore(); } });
       break;
 
     case 'dropIn':
       obj.set({ top: oT - 300, opacity: 0 });
-      obj.animate('top', oT, { duration: dur, easing: ease.easeOutBounce, onChange: renderFn });
-      obj.animate('opacity', oOp, { duration: dur / 3, onChange: renderFn });
+      obj.animate('top', oT, { duration: dur, easing: ease.easeOutBounce, onChange: renderFn,
+        onComplete: function() { restore(); } });
+      obj.animate('opacity', oOp, { duration: h, onChange: renderFn });
       break;
 
     case 'riseUp':
       obj.set({ top: oT + 300, opacity: 0 });
-      obj.animate('top', oT, { duration: dur, easing: ease.easeOutCubic, onChange: renderFn });
-      obj.animate('opacity', oOp, { duration: dur / 2, onChange: renderFn });
+      obj.animate('top', oT, { duration: dur, easing: ease.easeOutCubic, onChange: renderFn,
+        onComplete: function() { restore(); } });
+      obj.animate('opacity', oOp, { duration: h, onChange: renderFn });
       break;
 
     case 'flipX':
       obj.set('scaleY', 0.01);
-      obj.animate('scaleY', oSY, { duration: dur, easing: ease.easeOutCubic, onChange: renderFn });
+      obj.animate('scaleY', oSY, { duration: dur, easing: ease.easeOutCubic, onChange: renderFn,
+        onComplete: function() { restore(); } });
       break;
 
     case 'flipY':
       obj.set('scaleX', 0.01);
-      obj.animate('scaleX', oSX, { duration: dur, easing: ease.easeOutCubic, onChange: renderFn });
+      obj.animate('scaleX', oSX, { duration: dur, easing: ease.easeOutCubic, onChange: renderFn,
+        onComplete: function() { restore(); } });
       break;
 
     case 'rotateIn':
       obj.set({ angle: oAng - 180, opacity: 0, scaleX: 0.3, scaleY: 0.3 });
       obj.animate('angle',   oAng, { duration: dur, easing: ease.easeOutCubic, onChange: renderFn });
       obj.animate('opacity', oOp,  { duration: dur, onChange: renderFn });
-      obj.animate({ scaleX: oSX, scaleY: oSY }, { duration: dur, easing: ease.easeOutCubic, onChange: renderFn });
+      obj.animate({ scaleX: oSX, scaleY: oSY }, { duration: dur, easing: ease.easeOutCubic, onChange: renderFn,
+        onComplete: function() { restore(); } });
       break;
 
     case 'swingIn':
       obj.set({ angle: oAng - 45, opacity: 0 });
-      obj.animate('angle',   oAng, { duration: dur, easing: ease.easeOutBack, onChange: renderFn });
-      obj.animate('opacity', oOp,  { duration: dur / 2, onChange: renderFn });
+      obj.animate('angle',   oAng, { duration: dur, easing: ease.easeOutBack, onChange: renderFn,
+        onComplete: function() { restore(); } });
+      obj.animate('opacity', oOp,  { duration: h, onChange: renderFn });
       break;
 
     case 'rollIn':
       obj.set({ left: oL - 200, angle: oAng - 120, opacity: 0 });
       obj.animate('left',    oL,   { duration: dur, easing: ease.easeOutCubic, onChange: renderFn });
       obj.animate('angle',   oAng, { duration: dur, easing: ease.easeOutCubic, onChange: renderFn });
-      obj.animate('opacity', oOp,  { duration: dur / 2, onChange: renderFn });
+      obj.animate('opacity', oOp,  { duration: h, onChange: renderFn,
+        onComplete: function() { restore(); } });
       break;
 
     case 'expandH':
       obj.set('scaleX', 0.01);
-      obj.animate('scaleX', oSX, { duration: dur, easing: ease.easeOutCubic, onChange: renderFn });
+      obj.animate('scaleX', oSX, { duration: dur, easing: ease.easeOutCubic, onChange: renderFn,
+        onComplete: function() { restore(); } });
       break;
 
     case 'expandV':
       obj.set('scaleY', 0.01);
-      obj.animate('scaleY', oSY, { duration: dur, easing: ease.easeOutCubic, onChange: renderFn });
+      obj.animate('scaleY', oSY, { duration: dur, easing: ease.easeOutCubic, onChange: renderFn,
+        onComplete: function() { restore(); } });
       break;
 
     // ── ATTENTION ─────────────────────────────────────────────────────────────
     case 'bounce':
       obj.animate('top', oT - 50, { duration: h, easing: ease.easeOutCubic, onChange: renderFn,
-        onComplete: () => obj.animate('top', oT, { duration: h, easing: ease.easeOutBounce, onChange: renderFn }) });
+        onComplete: function() {
+          obj.animate('top', oT, { duration: h, easing: ease.easeOutBounce, onChange: renderFn,
+            onComplete: function() { restore(); } });
+        }});
       break;
 
     case 'bounceX':
       obj.animate('left', oL + 40, { duration: q, easing: ease.easeOutCubic, onChange: renderFn,
-        onComplete: () => obj.animate('left', oL, { duration: h, easing: ease.easeOutBounce, onChange: renderFn }) });
+        onComplete: function() {
+          obj.animate('left', oL, { duration: h, easing: ease.easeOutBounce, onChange: renderFn,
+            onComplete: function() { restore(); } });
+        }});
       break;
 
     case 'shake':
       obj.animate('left', oL - 12, { duration: 60, onChange: renderFn,
-        onComplete: () => obj.animate('left', oL + 12, { duration: 60, onChange: renderFn,
-          onComplete: () => obj.animate('left', oL - 10, { duration: 60, onChange: renderFn,
-            onComplete: () => obj.animate('left', oL + 10, { duration: 60, onChange: renderFn,
-              onComplete: () => obj.animate('left', oL - 6, { duration: 60, onChange: renderFn,
-                onComplete: () => obj.animate('left', oL, { duration: 60, onChange: renderFn }) }) }) }) }) });
+        onComplete: function() { obj.animate('left', oL + 12, { duration: 60, onChange: renderFn,
+          onComplete: function() { obj.animate('left', oL - 10, { duration: 60, onChange: renderFn,
+            onComplete: function() { obj.animate('left', oL + 10, { duration: 60, onChange: renderFn,
+              onComplete: function() { obj.animate('left', oL - 6, { duration: 60, onChange: renderFn,
+                onComplete: function() { obj.animate('left', oL + 6, { duration: 60, onChange: renderFn,
+                  onComplete: function() { restore(); } }); } }); } }); } }); } }); } });
       break;
 
     case 'shakeY':
       obj.animate('top', oT - 12, { duration: 60, onChange: renderFn,
-        onComplete: () => obj.animate('top', oT + 12, { duration: 60, onChange: renderFn,
-          onComplete: () => obj.animate('top', oT - 8, { duration: 60, onChange: renderFn,
-            onComplete: () => obj.animate('top', oT + 8, { duration: 60, onChange: renderFn,
-              onComplete: () => obj.animate('top', oT, { duration: 60, onChange: renderFn }) }) }) }) });
+        onComplete: function() { obj.animate('top', oT + 12, { duration: 60, onChange: renderFn,
+          onComplete: function() { obj.animate('top', oT - 8, { duration: 60, onChange: renderFn,
+            onComplete: function() { obj.animate('top', oT + 8, { duration: 60, onChange: renderFn,
+              onComplete: function() { obj.animate('top', oT - 4, { duration: 60, onChange: renderFn,
+                onComplete: function() { obj.animate('top', oT + 4, { duration: 60, onChange: renderFn,
+                  onComplete: function() { restore(); } }); } }); } }); } }); } }); } });
       break;
 
     case 'pulse':
       obj.animate({ scaleX: oSX * 1.25, scaleY: oSY * 1.25 }, { duration: h, onChange: renderFn,
-        onComplete: () => obj.animate({ scaleX: oSX, scaleY: oSY }, { duration: h, onChange: renderFn }) });
+        onComplete: function() {
+          obj.animate({ scaleX: oSX, scaleY: oSY }, { duration: h, onChange: renderFn,
+            onComplete: function() { restore(); } });
+        }});
       break;
 
     case 'float':
       obj.animate('top', oT - 18, { duration: h, easing: ease.easeInOutSine, onChange: renderFn,
-        onComplete: () => obj.animate('top', oT, { duration: h, easing: ease.easeInOutSine, onChange: renderFn }) });
+        onComplete: function() {
+          obj.animate('top', oT, { duration: h, easing: ease.easeInOutSine, onChange: renderFn,
+            onComplete: function() { restore(); } });
+        }});
       break;
 
     case 'swing':
       obj.animate('angle', oAng + 20, { duration: q, easing: ease.easeOutSine, onChange: renderFn,
-        onComplete: () => obj.animate('angle', oAng - 16, { duration: q, easing: ease.easeInOutSine, onChange: renderFn,
-          onComplete: () => obj.animate('angle', oAng + 10, { duration: q, easing: ease.easeInOutSine, onChange: renderFn,
-            onComplete: () => obj.animate('angle', oAng, { duration: q, easing: ease.easeOutSine, onChange: renderFn }) }) }) });
+        onComplete: function() { obj.animate('angle', oAng - 16, { duration: q, easing: ease.easeInOutSine, onChange: renderFn,
+          onComplete: function() { obj.animate('angle', oAng + 10, { duration: q, easing: ease.easeInOutSine, onChange: renderFn,
+            onComplete: function() { obj.animate('angle', oAng, { duration: q, easing: ease.easeOutSine, onChange: renderFn,
+              onComplete: function() { restore(); } }); } }); } }); } });
       break;
 
     case 'wobble':
       obj.animate('left', oL + 20, { duration: q, onChange: renderFn,
-        onComplete: () => obj.animate('angle', oAng - 8, { duration: q, onChange: renderFn,
-          onComplete: () => obj.animate('left', oL - 15, { duration: q, onChange: renderFn,
-            onComplete: () => obj.animate('angle', oAng + 6, { duration: q, onChange: renderFn,
-              onComplete: () => obj.animate('left', oL, { duration: q, onChange: renderFn,
-                onComplete: () => obj.animate('angle', oAng, { duration: q, onChange: renderFn }) }) }) }) }) });
+        onComplete: function() { obj.animate('angle', oAng - 8, { duration: q, onChange: renderFn,
+          onComplete: function() { obj.animate('left', oL - 15, { duration: q, onChange: renderFn,
+            onComplete: function() { obj.animate('angle', oAng + 6, { duration: q, onChange: renderFn,
+              onComplete: function() { obj.animate('left', oL, { duration: q, onChange: renderFn,
+                onComplete: function() { obj.animate('angle', oAng, { duration: q, onChange: renderFn,
+                  onComplete: function() { restore(); } }); } }); } }); } }); } }); } });
       break;
 
     case 'tada':
       obj.animate({ scaleX: oSX * 0.9, scaleY: oSY * 0.9 }, { duration: q / 2, onChange: renderFn,
-        onComplete: () => obj.animate({ scaleX: oSX * 1.15, scaleY: oSY * 1.15, angle: oAng - 5 }, { duration: q, onChange: renderFn,
-          onComplete: () => obj.animate({ angle: oAng + 5 }, { duration: q / 2, onChange: renderFn,
-            onComplete: () => obj.animate({ angle: oAng - 4 }, { duration: q / 2, onChange: renderFn,
-              onComplete: () => obj.animate({ scaleX: oSX, scaleY: oSY, angle: oAng }, { duration: q, onChange: renderFn }) }) }) }) });
+        onComplete: function() { obj.animate({ scaleX: oSX * 1.15, scaleY: oSY * 1.15, angle: oAng - 5 }, { duration: q, onChange: renderFn,
+          onComplete: function() { obj.animate({ angle: oAng + 5 }, { duration: q / 2, onChange: renderFn,
+            onComplete: function() { obj.animate({ angle: oAng - 4 }, { duration: q / 2, onChange: renderFn,
+              onComplete: function() { obj.animate({ scaleX: oSX, scaleY: oSY, angle: oAng }, { duration: q, onChange: renderFn,
+                onComplete: function() { restore(); } }); } }); } }); } }); } });
       break;
 
     case 'jello':
       obj.animate({ scaleX: oSX * 1.2, scaleY: oSY * 0.85 }, { duration: q / 2, onChange: renderFn,
-        onComplete: () => obj.animate({ scaleX: oSX * 0.85, scaleY: oSY * 1.15 }, { duration: q / 2, onChange: renderFn,
-          onComplete: () => obj.animate({ scaleX: oSX * 1.1, scaleY: oSY * 0.92 }, { duration: q / 2, onChange: renderFn,
-            onComplete: () => obj.animate({ scaleX: oSX, scaleY: oSY }, { duration: q / 2, onChange: renderFn }) }) }) });
+        onComplete: function() { obj.animate({ scaleX: oSX * 0.85, scaleY: oSY * 1.15 }, { duration: q / 2, onChange: renderFn,
+          onComplete: function() { obj.animate({ scaleX: oSX * 1.1, scaleY: oSY * 0.92 }, { duration: q / 2, onChange: renderFn,
+            onComplete: function() { obj.animate({ scaleX: oSX, scaleY: oSY }, { duration: q / 2, onChange: renderFn,
+              onComplete: function() { restore(); } }); } }); } }); } });
       break;
 
     case 'rubberBand':
       obj.animate({ scaleX: oSX * 1.4, scaleY: oSY * 0.75 }, { duration: q, onChange: renderFn,
-        onComplete: () => obj.animate({ scaleX: oSX * 0.8, scaleY: oSY * 1.25 }, { duration: q, onChange: renderFn,
-          onComplete: () => obj.animate({ scaleX: oSX * 1.1, scaleY: oSY * 0.9 }, { duration: q, onChange: renderFn,
-            onComplete: () => obj.animate({ scaleX: oSX, scaleY: oSY }, { duration: q, onChange: renderFn }) }) }) });
+        onComplete: function() { obj.animate({ scaleX: oSX * 0.8, scaleY: oSY * 1.25 }, { duration: q, onChange: renderFn,
+          onComplete: function() { obj.animate({ scaleX: oSX * 1.1, scaleY: oSY * 0.9 }, { duration: q, onChange: renderFn,
+            onComplete: function() { obj.animate({ scaleX: oSX, scaleY: oSY }, { duration: q, onChange: renderFn,
+              onComplete: function() { restore(); } }); } }); } }); } });
       break;
 
     case 'heartbeat':
       obj.animate({ scaleX: oSX * 1.3, scaleY: oSY * 1.3 }, { duration: 120, onChange: renderFn,
-        onComplete: () => obj.animate({ scaleX: oSX, scaleY: oSY }, { duration: 120, onChange: renderFn,
-          onComplete: () => obj.animate({ scaleX: oSX * 1.2, scaleY: oSY * 1.2 }, { duration: 120, onChange: renderFn,
-            onComplete: () => obj.animate({ scaleX: oSX, scaleY: oSY }, { duration: 200, onChange: renderFn }) }) }) });
+        onComplete: function() { obj.animate({ scaleX: oSX, scaleY: oSY }, { duration: 120, onChange: renderFn,
+          onComplete: function() { obj.animate({ scaleX: oSX * 1.2, scaleY: oSY * 1.2 }, { duration: 120, onChange: renderFn,
+            onComplete: function() { obj.animate({ scaleX: oSX, scaleY: oSY }, { duration: 200, onChange: renderFn,
+              onComplete: function() { restore(); } }); } }); } }); } });
       break;
 
     case 'flash':
       obj.animate('opacity', 0, { duration: q, onChange: renderFn,
-        onComplete: () => obj.animate('opacity', oOp, { duration: q, onChange: renderFn,
-          onComplete: () => obj.animate('opacity', 0, { duration: q, onChange: renderFn,
-            onComplete: () => obj.animate('opacity', oOp, { duration: q, onChange: renderFn }) }) }) });
+        onComplete: function() { obj.animate('opacity', oOp, { duration: q, onChange: renderFn,
+          onComplete: function() { obj.animate('opacity', 0, { duration: q, onChange: renderFn,
+            onComplete: function() { obj.animate('opacity', oOp, { duration: q, onChange: renderFn,
+              onComplete: function() { restore(); } }); } }); } }); } });
       break;
 
     case 'blink':
       obj.animate('opacity', 0, { duration: h, onChange: renderFn,
-        onComplete: () => obj.animate('opacity', oOp, { duration: h, onChange: renderFn }) });
+        onComplete: function() {
+          obj.animate('opacity', oOp, { duration: h, onChange: renderFn,
+            onComplete: function() { restore(); } });
+        }});
       break;
 
     case 'spin':
       obj.animate('angle', oAng + 360, { duration: dur, easing: ease.easeInOutCubic, onChange: renderFn,
-        onComplete: () => obj.set('angle', oAng) });
+        onComplete: function() { restore(); } });
       break;
 
     case 'spinReverse':
       obj.animate('angle', oAng - 360, { duration: dur, easing: ease.easeInOutCubic, onChange: renderFn,
-        onComplete: () => obj.set('angle', oAng) });
+        onComplete: function() { restore(); } });
       break;
 
     case 'rockLeft':
       obj.animate('angle', oAng - 20, { duration: h, easing: ease.easeOutSine, onChange: renderFn,
-        onComplete: () => obj.animate('angle', oAng, { duration: h, easing: ease.easeOutSine, onChange: renderFn }) });
+        onComplete: function() {
+          obj.animate('angle', oAng, { duration: h, easing: ease.easeOutSine, onChange: renderFn,
+            onComplete: function() { restore(); } });
+        }});
       break;
 
     case 'rockRight':
       obj.animate('angle', oAng + 20, { duration: h, easing: ease.easeOutSine, onChange: renderFn,
-        onComplete: () => obj.animate('angle', oAng, { duration: h, easing: ease.easeOutSine, onChange: renderFn }) });
+        onComplete: function() {
+          obj.animate('angle', oAng, { duration: h, easing: ease.easeOutSine, onChange: renderFn,
+            onComplete: function() { restore(); } });
+        }});
       break;
 
     case 'sway':
       obj.animate('left', oL + 25, { duration: h, easing: ease.easeInOutSine, onChange: renderFn,
-        onComplete: () => obj.animate('left', oL - 25, { duration: dur, easing: ease.easeInOutSine, onChange: renderFn,
-          onComplete: () => obj.animate('left', oL, { duration: h, easing: ease.easeInOutSine, onChange: renderFn }) }) });
+        onComplete: function() { obj.animate('left', oL - 25, { duration: dur, easing: ease.easeInOutSine, onChange: renderFn,
+          onComplete: function() { obj.animate('left', oL, { duration: h, easing: ease.easeInOutSine, onChange: renderFn,
+            onComplete: function() { restore(); } }); } }); } });
       break;
 
     case 'vibrate':
-      let vt = 0;
-      const vDur = 30;
-      const vSteps = Math.floor(dur / vDur);
+      var vt = 0;
+      var vDur = 30;
+      var vSteps = Math.floor(dur / vDur);
       (function vStep() {
-        if (vt >= vSteps) { obj.set('left', oL); renderFn(); return; }
-        const offset = (vt % 2 === 0) ? 4 : -4;
+        if (vt >= vSteps) { restore(); return; }
+        var offset = (vt % 2 === 0) ? 4 : -4;
         obj.animate('left', oL + offset, { duration: vDur, onChange: renderFn, onComplete: vStep });
         vt++;
       })();
       break;
 
-    // ── EXIT ──────────────────────────────────────────────────────────────────
+    // ── EXIT — plays effect then snaps back so object is never lost ────────────
     case 'fadeOut':
       obj.animate('opacity', 0, { duration: dur, onChange: renderFn,
-        onComplete: () => setTimeout(() => obj.animate('opacity', oOp, { duration: q, onChange: renderFn }), 400) });
+        onComplete: function() { restore(); } });
       break;
 
     case 'shrink':
       obj.animate({ scaleX: 0.01, scaleY: 0.01, opacity: 0 }, { duration: dur, easing: ease.easeInCubic, onChange: renderFn,
-        onComplete: () => { obj.set({ scaleX: oSX, scaleY: oSY, opacity: oOp }); renderFn(); } });
+        onComplete: function() { restore(); } });
       break;
 
     case 'exitL':
       obj.animate('left', oL - 400, { duration: dur, easing: ease.easeInCubic, onChange: renderFn,
-        onComplete: () => { obj.set('left', oL); renderFn(); } });
+        onComplete: function() { restore(); } });
       break;
 
     case 'exitR':
       obj.animate('left', oL + 400, { duration: dur, easing: ease.easeInCubic, onChange: renderFn,
-        onComplete: () => { obj.set('left', oL); renderFn(); } });
+        onComplete: function() { restore(); } });
       break;
 
     case 'exitU':
       obj.animate('top', oT - 400, { duration: dur, easing: ease.easeInCubic, onChange: renderFn,
-        onComplete: () => { obj.set('top', oT); renderFn(); } });
+        onComplete: function() { restore(); } });
       break;
 
     case 'exitD':
       obj.animate('top', oT + 400, { duration: dur, easing: ease.easeInCubic, onChange: renderFn,
-        onComplete: () => { obj.set('top', oT); renderFn(); } });
+        onComplete: function() { restore(); } });
       break;
 
     case 'sinkDown':
       obj.animate({ top: oT + 200, opacity: 0 }, { duration: dur, easing: ease.easeInCubic, onChange: renderFn,
-        onComplete: () => { obj.set({ top: oT, opacity: oOp }); renderFn(); } });
+        onComplete: function() { restore(); } });
       break;
 
     case 'flyOff':
       obj.animate({ left: oL + 500, top: oT - 300, opacity: 0, angle: oAng + 45 }, { duration: dur, easing: ease.easeInCubic, onChange: renderFn,
-        onComplete: () => { obj.set({ left: oL, top: oT, opacity: oOp, angle: oAng }); renderFn(); } });
+        onComplete: function() { restore(); } });
       break;
 
     case 'explode':
       obj.animate({ scaleX: oSX * 3, scaleY: oSY * 3, opacity: 0 }, { duration: dur, easing: ease.easeOutCubic, onChange: renderFn,
-        onComplete: () => { obj.set({ scaleX: oSX, scaleY: oSY, opacity: oOp }); renderFn(); } });
+        onComplete: function() { restore(); } });
       break;
 
     case 'collapse':
       obj.animate({ scaleY: 0.01 }, { duration: dur, easing: ease.easeInCubic, onChange: renderFn,
-        onComplete: () => { obj.set('scaleY', oSY); renderFn(); } });
+        onComplete: function() { restore(); } });
       break;
   }
 }
+
+
+
 // ─── SHAPES ───────────────────────────────────────────────────────────────────
 const palette=['#6366f1','#10b981','#f59e0b','#ef4444','#3b82f6','#8b5cf6','#ec4899'];
 let palIdx=0;
@@ -2287,6 +2455,22 @@ canvas.on('mouse:up', function() {
   }
 });
 
+// ─── JUMP-TO-PAGE CLICK HANDLER ───────────────────────────────────────────
+canvas.on('mouse:up', function(e) {
+  if (canvas.isDrawingMode) return;
+  if (e.transform) return;
+  const obj = e.target;
+  if (!obj) return;
+  const pageTarget = obj.customPageTarget != null ? obj.customPageTarget
+                   : (obj.group && obj.group.customPageTarget != null ? obj.group.customPageTarget : null);
+  if (pageTarget == null) return;
+  if (e.e && (e.e.ctrlKey || e.e.metaKey)) {
+    canvas.discardActiveObject();
+    canvas.renderAll();
+    saveAndSwitch(pageTarget);
+  }
+});
+
 function setFrameHighlight(frame) {
   frame._savedStroke      = frame.stroke;
   frame._savedStrokeWidth = frame.strokeWidth;
@@ -2377,11 +2561,8 @@ function fitVideoToFrame(frame, videoObj) {
       grp.clipPath = clip;
       canvas.add(grp); canvas.setActiveObject(grp);
 
-      (function drawLoop() {
-        if (!grp.canvas) return;
-        if (!vid.paused && !vid.ended) offCtx.drawImage(vid, 0, 0, vw, vh);
-        requestAnimationFrame(drawLoop);
-      })();
+      _videoRegistry.set(fabVid, { vid, offCtx, vw, vh, dirtyTarget: grp });
+      _startGlobalVideoLoop();
 
       vid.play().catch(()=>{});
       canvas.requestRenderAll();
@@ -2423,109 +2604,489 @@ function insertChart() {
   setTimeout(()=>{const url=el.toDataURL('image/png');fabric.Image.fromURL(url,img=>{img.scaleToWidth(Math.min(360,CW-40));img.set({left:20,top:40});canvas.add(img);canvas.setActiveObject(img);hist();});},300);
 }
 
+// ─── MEDIA STORE (DOM-based, no server required) ─────────────────────────────
+// Each entry: { id, name, url (blob URL), type ('image'|'video'), thumb }
+const _mediaStore = { image: [], video: [] };
+const _mediaPageSize = 30; // items rendered per batch
+const _mediaPage = { image: 1, video: 1 };
+const _mediaFilter = { image: '', video: '' };
+const _groupOpen = { img: true, vid: true };
+const _blobUrls = []; // track for cleanup
+
+function _nextMediaId() { return 'med_' + Date.now() + '_' + Math.random().toString(36).slice(2,7); }
+
 // ─── UPLOADS ─────────────────────────────────────────────────────────────────
-async function uploadMedia(e, type) {
-  const files = Array.from(e.target.files);
-  for (const file of files) {
-    if (type === 'image' || type === 'svg') {
-      const reader = new FileReader();
-      reader.onload = function(ev) {
-        const dataUrl = ev.target.result;
-        fabric.Image.fromURL(dataUrl, function(img) {
-          img.set({ left:100, top:100 });
-          img.scaleToWidth(Math.min(260, CW-40));
-          canvas.add(img); canvas.setActiveObject(img);
-          addThumb(dataUrl); hist();
-        });
-      };
-      reader.readAsDataURL(file);
-    } else if (type === 'video') {
-      const formData = new FormData();
-      formData.append("video", file);
-      try {
-        const res = await fetch("/upload_video", { method:"POST", body:formData });
-        if (!res.ok) throw new Error("Upload failed");
-        const data = await res.json();
-        addVideoToCanvas(data.url);
-      } catch (err) {
-        console.error("Video Upload Error:", err);
-        alert("Failed to upload video. Check if main.py is running.");
-      }
-    }
-  }
+function _fileToBase64(file) {
+  return new Promise(function(resolve) {
+    const reader = new FileReader();
+    reader.onload = function(e) { resolve(e.target.result); };
+    reader.readAsDataURL(file);
+  });
 }
 
-function addVideoToCanvas(url) {
-  const placeholder = new fabric.Rect({ left:100, top:100, width:200, height:150, fill:'#222', opacity:0.5, customVideoSrc:url, objectCaching:false });
-  const label = new fabric.IText("VIDEO", { fontSize:20, fill:'#fff', originX:'center', originY:'center', left:100, top:75, selectable:false });
-  const group = new fabric.Group([placeholder, label], { left:100, top:100, customVideoSrc:url, isVideoButton:true });
-  canvas.add(group); canvas.setActiveObject(group);
-  createVideoOverlay(group, url);
-  hist();
+async function _uploadFileToServer(file) {
+  const formData = new FormData();
+  formData.append('video', file); // backend accepts 'video' for all files
+  const res = await fetch('/upload_video', { method: 'POST', body: formData });
+  if (!res.ok) throw new Error('Upload failed');
+  const data = await res.json();
+  return window.location.origin + data.url; // full public URL
 }
+
+function uploadMedia(e, type) {
+  const files = Array.from(e.target.files);
+  if (!files.length) return;
+  e.target.value = '';
+  const isImg = (type === 'image' || type === 'svg');
+
+  files.forEach(async function(file) {
+    // Show loading indicator
+    const loadingId = 'loading_' + Date.now();
+    const mediaType = isImg ? 'image' : 'video';
+
+    try {
+      // Upload to server — get permanent public URL
+      const serverUrl = await _uploadFileToServer(file);
+      const entry = {
+        id: 'med_'+Date.now()+'_'+Math.random().toString(36).slice(2,6),
+        name: file.name,
+        url: serverUrl,  // permanent server URL — works everywhere
+        b64: serverUrl   // use server URL as persistent src too
+      };
+
+      if (isImg) {
+        _makeImgThumb(serverUrl, function(thumb) {
+          entry.thumb = thumb;
+          _mediaStore.image.unshift(entry);
+          _renderGallery('image');
+          _saveMediaStore();
+          if (files.length === 1) _addImageToCanvas(serverUrl);
+        });
+      } else {
+        _makeVidThumb(serverUrl, function(thumb) {
+          entry.thumb = thumb;
+          _mediaStore.video.unshift(entry);
+          _renderGallery('video');
+          _saveMediaStore();
+          if (files.length === 1) addVideoToCanvas(serverUrl, file.name);
+        });
+      }
+    } catch(err) {
+      alert('Upload failed: ' + err.message);
+    }
+  });
+}
+
+function _renderGallery(mediaType) {
+  const isImg = mediaType === 'image';
+  const store    = _mediaStore[mediaType];
+  const filter   = _mediaFilter[mediaType];
+  const header   = document.getElementById(isImg ? 'imgGroupHeader' : 'vidGroupHeader');
+  const wrap     = document.getElementById(isImg ? 'imgGalleryWrap'  : 'vidGalleryWrap');
+  const gallery  = document.getElementById(isImg ? 'uploadGallery'   : 'uploadVideoGallery');
+  const countEl  = document.getElementById(isImg ? 'imgCount'        : 'vidCount');
+
+  if (!gallery) return;
+  const filtered = filter ? store.filter(e => e.name.toLowerCase().includes(filter)) : store;
+  countEl.textContent = store.length;
+  header.style.display = store.length ? 'flex' : 'none';
+  if (!store.length) { wrap.style.display='none'; return; }
+  if (_groupOpen[isImg?'img':'vid']) wrap.style.display = 'block';
+
+  const frag = document.createDocumentFragment();
+  filtered.forEach(function(entry) {
+    const cell = document.createElement('div');
+    cell.style.cssText = 'position:relative;aspect-ratio:1;border-radius:6px;background:#1a1a1a;border:1px solid var(--bdr);cursor:pointer;overflow:hidden;transition:.15s';
+    cell.title = entry.name;
+
+    // Thumbnail image
+    if (entry.thumb) {
+      const img = document.createElement('img');
+      img.src = entry.thumb;
+      img.style.cssText = 'width:100%;height:100%;object-fit:cover;display:block';
+      img.loading = 'lazy';
+      cell.appendChild(img);
+    }
+
+    // Play icon overlay for videos
+    if (!isImg) {
+      const overlay = document.createElement('div');
+      overlay.style.cssText = 'position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.25)';
+      overlay.innerHTML = '<i class="fa-solid fa-circle-play" style="font-size:1.4rem;color:rgba(255,255,255,.9);filter:drop-shadow(0 1px 3px rgba(0,0,0,.6))"></i>';
+      cell.appendChild(overlay);
+    }
+
+    // Hover border
+    cell.onmouseenter = function() { this.style.borderColor='var(--pri)'; this.style.transform='scale(1.04)'; };
+    cell.onmouseleave = function() { this.style.borderColor='var(--bdr)'; this.style.transform=''; };
+
+    // Click to add
+    if (isImg) {
+      cell.onclick = function() { _addImageToCanvas(entry.url); };
+    } else {
+      cell.onclick = function() { addVideoToCanvas(entry.url, entry.name); };
+    }
+
+    // Right-click to delete
+    cell.oncontextmenu = function(ev) {
+      ev.preventDefault();
+      if (!confirm('Remove "'+entry.name+'" from library?')) return;
+      const arr = _mediaStore[mediaType];
+      const idx = arr.findIndex(function(x){ return x.id===entry.id; });
+      if (idx > -1) { URL.revokeObjectURL(entry.url); arr.splice(idx,1); }
+      _renderGallery(mediaType);
+    };
+
+    frag.appendChild(cell);
+  });
+
+  gallery.innerHTML = '';
+  gallery.appendChild(frag);
+}
+
+function _makeImgThumb(url, cb) {
+  const img = new Image();
+  img.onload = function() {
+    const c = document.createElement('canvas'); c.width = 80; c.height = 60;
+    const ctx = c.getContext('2d');
+    // letterbox into 80×60
+    const scale = Math.min(80/img.width, 60/img.height);
+    const w = img.width*scale, h = img.height*scale;
+    ctx.fillStyle = '#1a1a1a'; ctx.fillRect(0,0,80,60);
+    ctx.drawImage(img, (80-w)/2, (60-h)/2, w, h);
+    cb(c.toDataURL('image/jpeg', 0.75));
+  };
+  img.onerror = () => cb(null);
+  img.src = url;
+}
+
+function _makeVidThumb(url, cb) {
+  let called = false;
+  const vid = document.createElement('video');
+  vid.muted = true; vid.playsInline = true; vid.preload = 'auto';
+
+  function grab() {
+    if (called) return; called = true;
+    const c = document.createElement('canvas'); c.width = 80; c.height = 60;
+    const ctx = c.getContext('2d');
+    ctx.fillStyle = '#1a1a1a'; ctx.fillRect(0,0,80,60);
+    if (vid.videoWidth && vid.videoHeight) {
+      const scale = Math.min(80/vid.videoWidth, 60/vid.videoHeight);
+      const w = vid.videoWidth*scale, h = vid.videoHeight*scale;
+      ctx.drawImage(vid, (80-w)/2, (60-h)/2, w, h);
+    }
+    cb(c.toDataURL('image/jpeg', 0.75));
+    vid.src = '';
+  }
+  vid.addEventListener('loadeddata',    function() { setTimeout(()=>{ vid.currentTime=0.5; }, 50); }, {once:true});
+  vid.addEventListener('seeked',        function() { setTimeout(grab, 30); },                        {once:true});
+  vid.addEventListener('canplay',       function() { if (!called && vid.readyState>=2) { vid.currentTime=0.1; } }, {once:true});
+  vid.addEventListener('error',         function() { if (!called) { called=true; cb(null); } },       {once:true});
+  setTimeout(function() { if (!called) grab(); }, 3000); // hard fallback
+  vid.src = url;
+  vid.load();
+}
+
+function _addImageToCanvas(url) {
+  // url must always be b64 here — never a blob URL
+  // so it survives JSON serialization and page refresh
+  fabric.Image.fromURL(url, function(img) {
+    img.objectCaching = false;
+    img._b64src = url;  // store permanently on object
+    img.set({ left:60+Math.random()*40, top:60+Math.random()*40 });
+    img.scaleToWidth(Math.min(260, CW-40));
+    canvas.add(img); canvas.setActiveObject(img); hist(); renderLayers();
+  }, { crossOrigin: null });
+}
+
+// ─── GALLERY RENDERING — virtualized with IntersectionObserver ───────────────
+const _thumbObservers = new Map(); // el -> observer
+
+function _refreshMediaGroup(mediaType) {
+  const isImg = mediaType === 'image';
+  const key = isImg ? 'img' : 'vid';
+  const store = _mediaStore[mediaType];
+  const filter = _mediaFilter[mediaType];
+  const header = document.getElementById(isImg ? 'imgGroupHeader' : 'vidGroupHeader');
+  const wrap   = document.getElementById(isImg ? 'imgGalleryWrap' : 'vidGalleryWrap');
+  const gallery= document.getElementById(isImg ? 'uploadGallery' : 'uploadVideoGallery');
+  const countEl= document.getElementById(isImg ? 'imgCount' : 'vidCount');
+  const moreEl = document.getElementById(isImg ? 'imgLoadMore' : 'vidLoadMore');
+
+  if (!gallery) return;
+  countEl.textContent = store.length;
+  header.style.display = store.length ? 'flex' : 'none';
+  if (!store.length) { wrap.style.display='none'; return; }
+  if (_groupOpen[key]) wrap.style.display = 'block';
+
+  // Filter
+  const filtered = filter
+    ? store.filter(e => e.name.toLowerCase().includes(filter))
+    : store;
+
+  const page = _mediaPage[mediaType];
+  const visible = filtered.slice(0, page * _mediaPageSize);
+
+  // Clear old observers
+  gallery.querySelectorAll('.upload-thumb[data-mid]').forEach(el => {
+    const obs = _thumbObservers.get(el);
+    if (obs) { obs.disconnect(); _thumbObservers.delete(el); }
+  });
+
+  // Fragment build — only create DOM nodes for visible items
+  const frag = document.createDocumentFragment();
+  visible.forEach(entry => {
+    const d = document.createElement('div');
+    d.className = 'upload-thumb';
+    d.dataset.mid = entry.id;
+    d.dataset.url = entry.url;
+    d.title = entry.name;
+
+    if (entry.thumb) {
+      // Lazy-load background via IntersectionObserver
+      d.dataset.bg = entry.thumb;
+      const obs = new IntersectionObserver(entries => {
+        entries.forEach(en => {
+          if (en.isIntersecting) {
+            en.target.style.backgroundImage = `url(${en.target.dataset.bg})`;
+            obs.disconnect();
+            _thumbObservers.delete(en.target);
+          }
+        });
+      }, { rootMargin: '60px' });
+      obs.observe(d);
+      _thumbObservers.set(d, obs);
+    }
+
+    if (isImg) {
+      d.onclick = () => _addImageToCanvas(entry.url);
+    } else {
+      // Video thumb: play icon overlay
+      d.style.position = 'relative';
+      const playIcon = document.createElement('div');
+      playIcon.style.cssText = 'position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none';
+      playIcon.innerHTML = '<i class="fa-solid fa-circle-play" style="font-size:1.3rem;color:rgba(255,255,255,.85);text-shadow:0 1px 4px rgba(0,0,0,.5)"></i>';
+      d.appendChild(playIcon);
+      d.onclick = () => addVideoToCanvas(entry.url, entry.name);
+    }
+
+    // Right-click to delete
+    d.addEventListener('contextmenu', e => {
+      e.preventDefault();
+      if (!confirm(`Remove "${entry.name}" from library?`)) return;
+      const arr = _mediaStore[mediaType];
+      const idx = arr.findIndex(x => x.id === entry.id);
+      if (idx > -1) arr.splice(idx, 1);
+      URL.revokeObjectURL(entry.url);
+      _refreshMediaGroup(mediaType);
+    });
+
+    frag.appendChild(d);
+  });
+
+  gallery.innerHTML = '';
+  gallery.appendChild(frag);
+
+  // Show/hide "load more" button
+  moreEl.style.display = (visible.length < filtered.length) ? 'block' : 'none';
+}
+
+function toggleMediaGroup(key) {
+  _groupOpen[key] = !_groupOpen[key];
+  const wrap = document.getElementById(key==='img' ? 'imgGalleryWrap' : 'vidGalleryWrap');
+  const chev = document.getElementById(key==='img' ? 'imgChevron'     : 'vidChevron');
+  wrap.style.display = _groupOpen[key] ? 'block' : 'none';
+  if (chev) chev.style.transform = _groupOpen[key] ? '' : 'rotate(-90deg)';
+}
+
+function filterMediaGallery(key, q) {
+  const mediaType = key === 'img' ? 'image' : 'video';
+  _mediaFilter[mediaType] = q.toLowerCase().trim();
+  _mediaPage[mediaType] = 1;
+  _refreshMediaGroup(mediaType);
+}
+
+function filterMedia(key, q) {
+  const mediaType = key==='img' ? 'image' : 'video';
+  _mediaFilter[mediaType] = q.toLowerCase().trim();
+  _renderGallery(mediaType);
+}
+
+// ─── MEDIA PERSISTENCE (server-backed) ───────────────────────────────────────
+
+
+async function _saveMediaStore() {
+  try {
+    const data = {
+      image: _mediaStore.image.map(e => ({ id:e.id, name:e.name, b64:e.b64, thumb:e.thumb })),
+      video: _mediaStore.video.map(e => ({ id:e.id, name:e.name, b64:e.b64, thumb:e.thumb })),
+    };
+    await fetch('/api/media/save', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ user_id: parseInt(localStorage.getItem('droidal_user_id') || 1), media: data })    });
+  } catch(err) { console.warn('Media save failed:', err); }
+}
+
+async function _loadMediaStore() {
+  try {
+    const uid = parseInt(localStorage.getItem('droidal_user_id') || 1);
+    const res = await fetch('/api/media/load?user_id=' + uid);
+    if (!res.ok) return;
+    const saved = await res.json();
+    ['image','video'].forEach(function(t) {
+      (saved[t] || []).forEach(function(e) {
+        if (!e.b64) return;
+        _mediaStore[t].push({ id:e.id, name:e.name, url:e.b64, b64:e.b64, thumb:e.thumb });
+      });
+      if (_mediaStore[t].length) _renderGallery(t);
+    });
+  } catch(err) { console.warn('Media load failed:', err); }
+}
+
+async function _deleteMediaEntry(mediaType, id) {
+  const arr = _mediaStore[mediaType];
+  const idx = arr.findIndex(e => e.id === id);
+  if (idx === -1) return;
+  arr.splice(idx, 1);
+  _renderGallery(mediaType);
+  await _saveMediaStore();
+}
+
+function _fileToBase64(file) {
+  return new Promise(function(resolve) {
+    const r = new FileReader();
+    r.onload = e => resolve(e.target.result);
+    r.readAsDataURL(file);
+  });
+}
+
+
+function loadMoreMedia(key) {
+  const mediaType = key === 'img' ? 'image' : 'video';
+  _mediaPage[mediaType]++;
+  _refreshMediaGroup(mediaType);
+}
+
+// ─── GLOBAL VIDEO RENDER LOOP ─────────────────────────────────────────────────
+const _videoRegistry = new Map(); // fabImg -> {vid, offCtx, vw, vh, dirtyTarget}
+let _videoLoopRunning = false;
+
+function _startGlobalVideoLoop() {
+  if (_videoLoopRunning) return;
+  _videoLoopRunning = true;
+  function tick() {
+    if (_videoRegistry.size === 0) { _videoLoopRunning = false; return; }
+    let dirty = false;
+    _videoRegistry.forEach(function(entry, fabImg) {
+      if (!fabImg.canvas) { _videoRegistry.delete(fabImg); return; }
+      const { vid, offCtx, vw, vh, dirtyTarget } = entry;
+      if (!vid.paused && !vid.ended && vid.readyState >= 2) {
+        offCtx.drawImage(vid, 0, 0, vw, vh);
+        (dirtyTarget || fabImg).set('dirty', true);
+        dirty = true;
+      }
+    });
+    if (dirty) canvas.renderAll();
+    requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+}
+// ─── VIDEO ON CANVAS (fabric-native draw loop) ────────────────────────────────
+function addVideoToCanvas(url, name, b64Src) {
+  // If url is a blob (dies on refresh), fall back to b64Src for persistence
+  // b64Src is stored on the fabric object so reviveVideoGroup can use it after reload
+  const persistentSrc = (url && !url.startsWith('blob:')) ? url : (b64Src || url);
+
+  const vid = document.createElement('video');
+  vid.muted = true; vid.loop = true; vid.autoplay = true; vid.playsInline = true; vid.preload = 'auto';
+
+  function doAdd() {
+    const vw = vid.videoWidth  || 320;
+    const vh = vid.videoHeight || 240;
+    const maxW  = Math.min(260, CW-40);
+    const scale = maxW / vw;
+    const dispW = Math.round(vw * scale);
+    const dispH = Math.round(vh * scale);
+
+    const off = document.createElement('canvas');
+    off.width = dispW; off.height = dispH;
+    const offCtx = off.getContext('2d', { alpha:false });
+    offCtx.drawImage(vid, 0, 0, dispW, dispH);
+
+    const fabVid = new fabric.Image(off, {
+      left: 60+Math.random()*60, top: 60+Math.random()*60,
+      scaleX:1, scaleY:1, objectCaching:false,
+      customVideoSrc: persistentSrc,  // always b64/permanent, not blob
+      isVideoFabric:true,
+    });
+    fabVid.width  = dispW;
+    fabVid.height = dispH;
+    fabVid._offCanvas = off;
+    fabVid._render = function(ctx) {
+      if (!this._offCanvas) return;
+      ctx.drawImage(this._offCanvas, -this.width/2, -this.height/2, this.width, this.height);
+    };
+
+    _videoRegistry.set(fabVid, { vid, offCtx, vw:dispW, vh:dispH, dirtyTarget:fabVid });
+    _startGlobalVideoLoop();
+    vid.play().catch(()=>{});
+    canvas.add(fabVid); canvas.setActiveObject(fabVid); hist(); renderLayers();
+  }
+
+  if (vid.readyState >= 2) doAdd();
+  else { vid.addEventListener('loadeddata', doAdd, {once:true}); vid.src = persistentSrc; vid.load(); }
+}
+
 
 function createVideoOverlay(fabricObj, url) {
+  // Legacy path only — for old saved isVideoButton groups
   const vid = document.createElement('video');
   vid.src=url; vid.muted=true; vid.loop=true; vid.autoplay=true; vid.playsInline=true;
   vid.className='video-entity';
   let container = document.getElementById('video-overlay-wrap');
   if (!container) {
     container = document.createElement('div');
-    container.id='video-overlay-wrap';
-    container.className='video-overlay-container';
+    container.id='video-overlay-wrap'; container.className='video-overlay-container';
     document.querySelector('.cv-wrap').appendChild(container);
   }
   container.appendChild(vid);
   function sync() {
     if (!fabricObj.canvas) { vid.remove(); return; }
-    const rect = fabricObj.getBoundingRect();
-    const z = canvas.getZoom();
-    vid.style.width   = (rect.width  * z) + 'px';
-    vid.style.height  = (rect.height * z) + 'px';
-    vid.style.left    = (rect.left   * z) + 'px';
-    vid.style.top     = (rect.top    * z) + 'px';
-    vid.style.transform = `rotate(${fabricObj.angle}deg)`;
+    const rect = fabricObj.getBoundingRect(), z = canvas.getZoom();
+    vid.style.cssText = `width:${rect.width*z}px;height:${rect.height*z}px;left:${rect.left*z}px;top:${rect.top*z}px;transform:rotate(${fabricObj.angle}deg)`;
     requestAnimationFrame(sync);
   }
   sync();
 }
 
-function addThumb(url){const g=document.getElementById('uploadGallery');const d=document.createElement('div');d.className='upload-thumb';d.style.backgroundImage=`url(${url})`;d.onclick=()=>fabric.Image.fromURL(url,img=>{img.scaleToWidth(Math.min(260,CW-40));canvas.add(img);canvas.setActiveObject(img);hist();});g.insertBefore(d,g.firstChild);}
+
+function addThumb(url){ } // backward compat shim
 
 function restoreVideos() {
   const wrap = document.getElementById('video-overlay-wrap');
   if (wrap) wrap.innerHTML = '';
-  canvas.getObjects().forEach(obj => {
-    if (obj.customVideoSrc && !obj.isVideoGroup) createVideoOverlay(obj, obj.customVideoSrc);
+  canvas.getObjects().forEach(function(obj) {
+    if (obj.customVideoSrc && !obj.isVideoGroup && !obj.isVideoFabric)
+      createVideoOverlay(obj, obj.customVideoSrc);
   });
 }
 
-function uploadLogo(e) {
+async function uploadLogo(e) {
   const file = e.target.files[0]; if (!file) return;
-  const reader = new FileReader();
-  reader.onload = function(ev) {
-    const dataUrl = ev.target.result;
+  document.getElementById('logoPreview').innerHTML = '<p style="color:#94a3b8;font-size:0.8rem">Uploading...</p>';
+  try {
+    const serverUrl = await _uploadFileToServer(file);
     document.getElementById('logoPreview').innerHTML = `
-      <img src="${dataUrl}" style="max-width:100%;border-radius:5px;border:1px solid var(--bdr)">
-      <button class="tool wide" style="margin-top:6px" onclick="addLogoToCanvas('${dataUrl}')">
+      <img src="${serverUrl}" style="max-width:100%;border-radius:5px;border:1px solid var(--bdr)">
+      <button class="tool wide" style="margin-top:6px" onclick="addLogoToCanvas('${serverUrl}')">
         <i class="fa-solid fa-plus"></i>Add to Canvas</button>`;
-  };
-  reader.readAsDataURL(file);
+  } catch(err) {
+    document.getElementById('logoPreview').innerHTML = '<p style="color:#f87171">Upload failed</p>';
+  }
 }
-function addLogoToCanvas(url){fabric.Image.fromURL(url,img=>{img.scaleToWidth(100);canvas.add(img);canvas.setActiveObject(img);hist();});}
+function addLogoToCanvas(url){fabric.Image.fromURL(url,img=>{img.scaleToWidth(100);canvas.add(img);canvas.setActiveObject(img);hist();},{crossOrigin:'anonymous'});}
 
-// ─── BRAND ────────────────────────────────────────────────────────────────────
-let brandColors=['#6366f1','#10b981','#f59e0b','#111827','#ffffff'];
-let brandFonts=['Inter','Montserrat'];
-function renderBrand(){
-  const bc=document.getElementById('brandColors');bc.innerHTML='';
-  brandColors.forEach(c=>{const d=document.createElement('div');d.className='cswatch';d.style.background=c;d.title=c;d.onclick=()=>cp('fill',c);bc.appendChild(d);});
-  const bf=document.getElementById('brandFonts');bf.innerHTML='';
-  brandFonts.forEach(f=>{const d=document.createElement('div');d.className='font-row';d.style.fontFamily=`'${f}'`;d.textContent=f;d.onclick=()=>cp('fontFamily',f);bf.appendChild(d);});
-}
-function addBrandColor(){const c=document.getElementById('newColor').value;if(!brandColors.includes(c))brandColors.push(c);renderBrand();}
-function addBrandFont(){const f=document.getElementById('newFont').value;if(!brandFonts.includes(f))brandFonts.push(f);renderBrand();}
-renderBrand();
 
 // ─── BACKGROUND ───────────────────────────────────────────────────────────────
 const bgPresets=['#ffffff','#000000','#64748b','#ef4444','#f43f5e','#ec4899','#d946ef','#a855f7','#8b5cf6','#6366f1','#3b82f6','#0ea5e9','#06b6d4','#14b8a6','#10b981','#22c55e','#84cc16','#facc15','#f59e0b','#f97316'];
@@ -2577,21 +3138,88 @@ function setBackground(c1, c2=null){
   hist();
 }
 
-function setBgImg(e){const file=e.target.files[0];if(!file)return;const url=URL.createObjectURL(file);fabric.Image.fromURL(url,img=>{canvas.setBackgroundImage(img,canvas.renderAll.bind(canvas),{scaleX:CW/img.width,scaleY:CH/img.height});hist();});}
-function removeBgImg(){canvas.setBackgroundImage(null,canvas.renderAll.bind(canvas));hist();}
 
-// ─── APPS ─────────────────────────────────────────────────────────────────────
-function addTable(){
-  const rows=3,cols=3,cw=100,ch=34,ox=30,oy=60;
-  for(let r=0;r<rows;r++){for(let c=0;c<cols;c++){
-    const rect=new fabric.Rect({left:ox+c*cw,top:oy+r*ch,width:cw,height:ch,fill:r===0?'#6366f1':'#ffffff',stroke:'#e5e7eb',strokeWidth:1});
-    const txt=new fabric.IText(r===0?`Header ${c+1}`:'Cell',{left:ox+c*cw+6,top:oy+r*ch+8,fontSize:11,fontFamily:'Inter',fill:r===0?'#fff':'#374151',selectable:false});
-    canvas.add(rect);canvas.add(txt);
-  }}
-  hist();renderLayers();
+let _bgImgUrl = null;
+let _bgPosition = 'cover'; // default fill
+
+async function setBgImg(e) {
+  const file = e.target.files[0]; if (!file) return;
+  try {
+    const serverUrl = await _uploadFileToServer(file);
+    _bgImgUrl = serverUrl;
+    _applyBgImg(_bgPosition);
+    document.getElementById('bgImgControls').style.display = 'block';
+    document.getElementById('bgImgNoControls').style.display = 'none';
+    document.getElementById('bgOpacity').value = 100;
+    document.getElementById('bgOpacityVal').textContent = '100%';
+    hist();
+  } catch(err) {
+    alert('Background upload failed: ' + err.message);
+  }
 }
-function addQR(){const url=prompt('Enter URL for QR Code:','https://droidal.com');if(!url)return;const qrUrl=`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(url)}`;fabric.Image.fromURL(qrUrl,img=>{img.set({left:80,top:80});canvas.add(img);canvas.setActiveObject(img);hist();});}
-function openPositionModal(){const obj=canvas.getActiveObject();if(obj){const b=obj.getBoundingRect();document.getElementById('mX').value=Math.round(obj.left||0);document.getElementById('mY').value=Math.round(obj.top||0);document.getElementById('mW').value=Math.round(b.width);document.getElementById('mH').value=Math.round(b.height);document.getElementById('mA').value=Math.round(obj.angle||0);document.getElementById('mO').value=obj.opacity!=null?obj.opacity:1;}openModal('modalPos');}
+
+function _applyBgImg(position) {
+  if (!_bgImgUrl) return;
+  fabric.Image.fromURL(_bgImgUrl, function(img) {
+    img.objectCaching = false;
+    let opts = {};
+    if (position === 'cover') {
+      // Scale to cover full canvas — fixes the white space issue
+      const scaleX = CW / img.width;
+      const scaleY = CH / img.height;
+      const scale  = Math.max(scaleX, scaleY); // cover = use the LARGER scale
+      opts = { scaleX: scale, scaleY: scale, originX:'center', originY:'center', left: CW/2, top: CH/2 };
+    } else if (position === 'contain') {
+      const scaleX = CW / img.width;
+      const scaleY = CH / img.height;
+      const scale  = Math.min(scaleX, scaleY);
+      opts = { scaleX: scale, scaleY: scale, originX:'center', originY:'center', left: CW/2, top: CH/2 };
+    } else if (position === '100% 100%') {
+      opts = { scaleX: CW / img.width, scaleY: CH / img.height };
+    } else {
+      // center
+      opts = { scaleX: 1, scaleY: 1, originX:'center', originY:'center', left: CW/2, top: CH/2 };
+    }
+    // Apply current opacity
+    const opVal = parseInt(document.getElementById('bgOpacity')?.value || 100);
+    img.set({ ...opts, opacity: opVal / 100 });
+    canvas.setBackgroundImage(img, canvas.renderAll.bind(canvas));
+  });
+}
+
+function setBgOpacity(val) {
+  document.getElementById('bgOpacityVal').textContent = val + '%';
+  const bg = canvas.backgroundImage;
+  if (bg) {
+    bg.set('opacity', val / 100);
+    canvas.renderAll();
+    hist();
+  }
+}
+
+function setBgPosition(pos) {
+  _bgPosition = pos;
+  // Update selected button
+  document.querySelectorAll('.bgpos-btn').forEach(b => {
+    b.classList.toggle('sel', b.dataset.pos === pos);
+  });
+  _applyBgImg(pos);
+  hist();
+}
+
+function removeBgImg() {
+  // Remove background image
+  canvas.setBackgroundImage(null, canvas.renderAll.bind(canvas));
+  _bgImgUrl = null;
+  // Remove solid color / gradient background
+  canvas.setBackgroundColor('#ffffff', canvas.renderAll.bind(canvas));
+  // Reset color picker to white
+  document.getElementById('bgColor').value = '#ffffff';
+  document.getElementById('solidPreview').style.background = '#ffffff';
+  document.getElementById('bgImgControls').style.display = 'none';
+  document.getElementById('bgImgNoControls').style.display = 'block';
+  hist();
+}
 
 // ─── GRID / SNAP ──────────────────────────────────────────────────────────────
 let gridOn=false,snapOn=false;
@@ -2976,32 +3604,20 @@ function redo(){if(histPos>=histStack.length)return;histLock=true;canvas.loadFro
 
 // ─── AUTO-SAVE ────────────────────────────────────────────────────────────────
 let syncTimer=null,badgeTimer=null;
-function scheduleSync(){clearTimeout(syncTimer);syncTimer=setTimeout(syncToLS,500);}
+function scheduleSync(){clearTimeout(syncTimer);syncTimer=setTimeout(syncToLS,3000);}
 function syncToLS(){
   try{
-    pages[cur]=getJSON();
-    const flipPages=pages.map((pd,i)=>({page_number:i,canvas_json:pd||{version:'5.3.1',objects:[],background:'#ffffff'}}));
-    localStorage.setItem(LS_KEY,JSON.stringify(flipPages));
-    localStorage.setItem(LS_META,JSON.stringify({currentPage:cur,total:pages.length,savedAt:new Date().toISOString()}));
-    showBadge();
+    pages[cur] = getJSON();
+    if (currentProjectId) {
+      // Auto-save to project in DB — debounced by scheduleSync
+      actualSaveLogic().then(() => showBadge()).catch(e => console.warn('Auto-save failed', e));
+    }
   }catch(e){console.warn('Sync failed',e);}
 }
+
 function showBadge(){const b=document.getElementById('saveBadge');b.style.opacity='1';clearTimeout(badgeTimer);badgeTimer=setTimeout(()=>{b.style.opacity='0';},2000);}
 
 // ─── LOAD SESSION ─────────────────────────────────────────────────────────────
-(function loadSession(){
-  try{
-    const raw=localStorage.getItem(LS_KEY);if(!raw)return;
-    const saved=JSON.parse(raw);if(!saved||!saved.length)return;
-    const meta=JSON.parse(localStorage.getItem(LS_META)||'{}');
-    const time=meta.savedAt?new Date(meta.savedAt).toLocaleString():'previously';
-    if(!confirm(`Resume ${saved.length} page(s) saved ${time}?\n\nOK = continue  |  Cancel = start fresh`))return;
-    pages=saved.map(fp=>fp.canvas_json||null);
-    const idx=Math.min(meta.currentPage||0,pages.length-1);cur=idx;
-    if(pages[idx]){canvas.loadFromJSON(pages[idx],()=>{canvas.renderAll();restoreVideos();histReset();refreshUI();});}
-    else{histReset();refreshUI();}
-  }catch(e){console.warn('Load session failed',e);}
-})();
 
 // ─── NOTES ────────────────────────────────────────────────────────────────────
 function saveNote(){const txt=document.getElementById('noteInput').value.trim();if(!txt)return;if(!pageNotes[cur])pageNotes[cur]=[];pageNotes[cur].push(txt);document.getElementById('noteInput').value='';renderNotes();}
@@ -3032,56 +3648,89 @@ const currentUserId  = localStorage.getItem('user_id') || 1;
 async function initEditor() {
   const params = new URLSearchParams(window.location.search);
   currentProjectId = params.get('id');
-  if (currentProjectId) {
-    try {
-      const res = await fetch(`/api/project/${currentProjectId}`);
-      const project = await res.json();
-      if (project && project.data) {
-        pages = Array.isArray(project.data) ? project.data : [project.data];
-        cur = 0;
-        loadCurrentPage();
-        return;
+
+  if (!currentProjectId) return; // new project — start blank
+
+  try {
+    const res = await fetch(`/api/project/${currentProjectId}`);
+    if (!res.ok) throw new Error('Project not found');
+    const project = await res.json();
+
+    if (project && project.data) {
+      // data can be an array of pages or a single page JSON
+      if (Array.isArray(project.data)) {
+        pages = project.data;
+      } else if (typeof project.data === 'object' && project.data.objects !== undefined) {
+        // single canvas JSON stored directly
+        pages = [project.data];
+      } else {
+        pages = [null];
       }
-    } catch (e) { console.warn("Could not load from DB, checking local storage..."); }
+      cur = 0;
+      renderDots();
+      loadCurrentPage();
+      // Also restore media library for this user
+      await _loadMediaStore();
+    }
+  } catch(e) {
+    console.warn('initEditor failed:', e);
   }
 }
 
+// Call initEditor immediately (replaces the broken loadSession that used localStorage)
+initEditor();
+
 async function actualSaveLogic() {
-  // Read current bg value from the preview URL param if set, or store locally
-  const bgVal = localStorage.getItem(`droidal_bg_${BOOK_ID}`) || '';
+  pages[cur] = getJSON();
+
+  const params = new URLSearchParams(window.location.search);
+  const titleParam = params.get('title') || 'Untitled';
+
   const projectData = {
     id: currentProjectId,
-    user_id: CURRENT_USER_ID,
-    title: "Untitled",
+    user_id: parseInt(localStorage.getItem('droidal_user_id') || localStorage.getItem('user_id') || 1),
+    title: titleParam,
     type: "flipbook",
     data: pages,
-    preview_bg: bgVal
+    preview_bg: localStorage.getItem(`droidal_bg_${BOOK_ID}`) || ''
   };
-  const response = await fetch("/api/projects/save", {
-    method: "POST",
-    headers: {"Content-Type": "application/json"},
+
+  const res = await fetch('/api/projects/save', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(projectData)
   });
-  if (!response.ok) { const text = await response.text(); throw new Error(text); }
-  const result = await response.json();
-  if (result.id)       currentProjectId = result.id;
-  if (result.share_id) currentShareId   = result.share_id;
+
+  if (!res.ok) {
+    const errText = await res.text();
+    throw new Error(`Save failed (${res.status}): ${errText}`);
+  }
+
+  const result = await res.json();
+  currentProjectId = result.id || currentProjectId;
+  currentShareId   = result.share_id || result.id;
   return result;
 }
 
 async function saveAllPages() {
-  const btn = document.getElementById("saveBtn");
-  btn.innerHTML = "Saving..."; btn.disabled = true;
+  pages[cur] = getJSON();
+  const btn = document.getElementById('saveBtn');
+  if (btn) { btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving…'; btn.disabled = true; }
   try {
-    await actualSaveLogic();
-    btn.innerHTML = "✓ Saved";
-    btn.classList.remove("btn-primary"); btn.classList.add("btn-green");
-    setTimeout(() => {
-      btn.innerHTML = '<i class="fa-solid fa-cloud-arrow-up"></i> Save';
-      btn.classList.remove("btn-green"); btn.classList.add("btn-primary");
-      btn.disabled = false;
-    }, 2000);
-  } catch (e) { console.error("SAVE ERROR:", e); btn.innerHTML = "Error"; btn.disabled = false; }
+    await fetch('/api/pages/save', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        user_id: parseInt(CURRENT_USER_ID),
+        book_id: BOOK_ID,
+        pages:   pages,
+        meta:    { cur }
+      })
+    });
+    const badge = document.getElementById('saveBadge');
+    if (badge) { badge.style.opacity='1'; setTimeout(()=>badge.style.opacity='0', 2000); }
+  } catch(err) { console.warn('Save failed:', err); }
+  if (btn) { btn.innerHTML = '<i class="fa-solid fa-cloud-arrow-up"></i> Save'; btn.disabled = false; }
 }
 
 function setJumpTarget() {
@@ -3207,7 +3856,7 @@ updateBrush();
 applyZoom(100);
 buildFramePanel();
 initEditor();
-renderBrand();
+
 
 // ══════════════════════════════════════════════════
 //  FONT PICKER v3 — Google Fonts API + live preview
@@ -3443,5 +4092,6 @@ function filterFontDd(q){_fpQuery=q;fpBuildFiltered();fpRenderList();}
 
 fpInit();
 </script>
+
 </body>
 </html>

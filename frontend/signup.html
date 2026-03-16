@@ -600,13 +600,13 @@ async function doSignup() {
       })
     });
     if (res.ok) {
-      go('success');
-      launchConfetti();
-      setTimeout(() => { alert('Account created! Please sign in.'); window.location.href = '/'; }, 2400);
-    } else {
+      window.location.href = `/verify-email?email=${encodeURIComponent(email)}`;
+    }else {
       const err = await res.json();
       go('wrong', 2800);
-      setTimeout(() => alert(err.detail || 'Signup failed'), 400);
+      errEl.textContent = '⚠ ' + (err.detail || 'Signup failed. Please try again.');
+      errEl.classList.add('show');
+      setTimeout(() => errEl.classList.remove('show'), 3000);
     }
   } catch(e) {
     go('wrong', 2800);
