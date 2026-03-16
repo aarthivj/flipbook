@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Droidal - Verify Email</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root {
+  --pri: #6366f1;
+  --accent: #a855f7;
+  --bg: #05071a;
+}
+*,*::before,*::after { box-sizing:border-box; margin:0; padding:0; }
+body,html {
+  height:100%; font-family:'Plus Jakarta Sans',sans-serif;
+  background:var(--bg); color:#fff;
+  display:flex; align-items:center; justify-content:center;
+  overflow:hidden;
+}
+.bg-canvas { position:fixed; inset:0; z-index:0; }
+.orb { position:absolute; border-radius:50%; filter:blur(80px); opacity:0.5; animation:orbFloat linear infinite; }
+.orb1 { width:600px;height:600px; background:radial-gradient(circle,#2563eb,#1e40af 50%,transparent 70%); top:-150px;left:-100px; animation-duration:18s; }
+.orb2 { width:380px;height:380px; background:radial-gradient(circle,#7c3aed,#6d28d9 50%,transparent 70%); top:40%;left:40%; animation-duration:14s;animation-delay:-4s; }
+@keyframes orbFloat {
+  0%,100%{transform:translate(0,0) scale(1)} 25%{transform:translate(30px,-20px) scale(1.04)}
+  50%{transform:translate(-20px,30px) scale(0.97)} 75%{transform:translate(20px,20px) scale(1.02)}
+}
+
+.card-wrap { position:relative; width:460px; z-index:1; }
+.card-glow {
+  position:absolute; inset:-2px; border-radius:28px;
+  background:linear-gradient(135deg,rgba(99,102,241,0.45),rgba(168,85,247,0.3),rgba(34,211,238,0.2));
+  filter:blur(8px); z-index:0;
+  animation:glowPulse 4s ease-in-out infinite;
+}
+@keyframes glowPulse { 0%,100%{opacity:0.6} 50%{opacity:1} }
+
+.card {
+  position:relative; z-index:1;
+  background:rgba(8,12,35,0.9);
+  backdrop-filter:blur(24px);
+  border:1px solid rgba(99,102,241,0.25);
+  border-radius:26px;
+  padding:48px 44px 40px;
+  text-align:center;
+}
+
+/* Icon states */
+.icon-wrap {
+  width:80px; height:80px; border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+  margin:0 auto 24px;
+  font-size:2rem;
+  transition:all 0.4s ease;
+}
+.icon-wrap.email-icon {
+  background:rgba(99,102,241,0.15);
+  border:2px solid rgba(99,102,241,0.4);
+  color:#818cf8;
+}
+.icon-wrap.success-icon {
+  background:rgba(16,185,129,0.15);
+  border:2px solid rgba(16,185,129,0.4);
+  color:#34d399;
+}
+.icon-wrap.error-icon {
+  background:rgba(239,68,68,0.15);
+  border:2px solid rgba(239,68,68,0.4);
+  color:#f87171;
+}
+
+.card h2 { font-size:2rem; font-weight:900; letter-spacing:-1px; margin-bottom:10px; }
+.card p { color:#94a3b8; font-size:0.9rem; line-height:1.65; margin-bottom:28px; }
+.card p strong { color:#c7d2fe; }
+
+/* OTP Input row */
+.otp-row {
+  display:flex; gap:10px; justify-content:center; margin-bottom:24px;
+}
+.otp-digit {
+  width:52px; height:60px;
+  background:rgba(15,20,50,0.8);
+  border:1.5px solid rgba(99,102,241,0.25);
+  border-radius:14px;
+  text-align:center; font-size:1.6rem; font-weight:800;
+  color:#fff; font-family:inherit; outline:none;
+  transition:border-color 0.2s, box-shadow 0.2s;
+  caret-color: transparent;
+}
+.otp-digit:focus {
+  border-color:var(--pri);
+  box-shadow:0 0 0 4px rgba(99,102,241,0.18);
+}
+.otp-digit.filled { border-color:rgba(99,102,241,0.55); }
+.otp-digit.err {
+  border-color:#ef4444;
+  box-shadow:0 0 0 4px rgba(239,68,68,0.12);
+  animation:shake 0.4s ease;
+}
+@keyframes shake {
+  0%,100%{transform:translateX(0)} 20%{transform:translateX(-6px)}
+  40%{transform:translateX(6px)} 60%{transform:translateX(-4px)} 80%{transform:translateX(4px)}
+}
+
+.btn {
+  width:100%; padding:15px;
+  background:linear-gradient(90deg, #6366f1, #a855f7);
+  border:none; border-radius:14px;
+  color:#fff; font-weight:800; font-size:1rem;
+  cursor:pointer; font-family:inherit;
+  transition:transform 0.2s, filter 0.2s, box-shadow 0.2s;
+  box-shadow:0 4px 20px rgba(99,102,241,0.35);
+  margin-bottom:16px;
+}
+.btn:hover { filter:brightness(1.15); transform:translateY(-2px); box-shadow:0 8px 30px rgba(99,102,241,0.5); }
+.btn:disabled { opacity:0.5; cursor:not-allowed; transform:none; }
+
+.btn-ghost {
+  width:100%; padding:12px;
+  background:transparent;
+  border:1.5px solid rgba(99,102,241,0.3);
+  border-radius:14px;
+  color:#818cf8; font-weight:700; font-size:0.9rem;
+  cursor:pointer; font-family:inherit;
+  transition:all 0.2s;
+}
+.btn-ghost:hover { border-color:var(--pri); color:#fff; background:rgba(99,102,241,0.08); }
+.btn-ghost:disabled { opacity:0.4; cursor:not-allowed; }
+
+.err-msg {
+  font-size:0.78rem; font-weight:600; color:#f87171;
+  margin:-16px 0 16px; display:none;
+}
+.err-msg.show { display:block; }
+
+.timer {
+  font-size:0.8rem; color:#64748b; margin-top:14px;
+}
+.timer strong { color:#818cf8; }
+
+/* Spinner */
+.spinner {
+  display:inline-block; width:18px; height:18px;
+  border:2.5px solid rgba(255,255,255,0.3);
+  border-top-color:#fff;
+  border-radius:50%;
+  animation:spin 0.7s linear infinite;
+  vertical-align:middle; margin-right:8px;
+}
+@keyframes spin { to{transform:rotate(360deg)} }
+
+/* Success screen */
+#successScreen { display:none; }
+#verifyScreen { display:block; }
+</style>
+</head>
+<body>
+
+<div class="bg-canvas">
+  <div class="orb orb1"></div>
+  <div class="orb orb2"></div>
+</div>
+
+<div class="card-wrap">
+  <div class="card-glow"></div>
+  <div class="card">
+
+    <!-- VERIFY SCREEN -->
+    <div id="verifyScreen">
+      <div class="icon-wrap email-icon" id="iconWrap">
+        <i class="fa-solid fa-envelope-open-text"></i>
+      </div>
+      <h2>Check Your Inbox</h2>
+      <p>We sent a 6-digit code to<br><strong id="emailDisplay">your@email.com</strong><br>Enter it below to verify your account.</p>
+
+      <div class="otp-row" id="otpRow">
+        <input class="otp-digit" maxlength="1" inputmode="numeric" pattern="[0-9]" id="d0">
+        <input class="otp-digit" maxlength="1" inputmode="numeric" pattern="[0-9]" id="d1">
+        <input class="otp-digit" maxlength="1" inputmode="numeric" pattern="[0-9]" id="d2">
+        <input class="otp-digit" maxlength="1" inputmode="numeric" pattern="[0-9]" id="d3">
+        <input class="otp-digit" maxlength="1" inputmode="numeric" pattern="[0-9]" id="d4">
+        <input class="otp-digit" maxlength="1" inputmode="numeric" pattern="[0-9]" id="d5">
+      </div>
+      <div class="err-msg" id="otpErr">⚠ Invalid code. Please try again.</div>
+
+      <button class="btn" id="verifyBtn" onclick="verifyOTP()">Verify Email</button>
+      <button class="btn-ghost" id="resendBtn" onclick="resendCode()" disabled>
+        Resend Code
+      </button>
+      <div class="timer" id="timerDisplay">Resend available in <strong id="countdown">60</strong>s</div>
+    </div>
+
+    <!-- SUCCESS SCREEN -->
+    <div id="successScreen">
+      <div class="icon-wrap success-icon">
+        <i class="fa-solid fa-circle-check"></i>
+      </div>
+      <h2>Email Verified!</h2>
+      <p>Your account is confirmed. You're ready to explore Droidal.</p>
+      <button class="btn" onclick="window.location.href='/'">Go to Sign In</button>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ── Get email from URL params ──────────────────────────────────────
+const params = new URLSearchParams(window.location.search);
+const email  = params.get('email') || 'your@email.com';
+document.getElementById('emailDisplay').textContent = email;
+
+// ── OTP digit navigation ───────────────────────────────────────────
+const digits = Array.from({length:6}, (_,i) => document.getElementById('d'+i));
+
+digits.forEach((inp, i) => {
+  inp.addEventListener('input', e => {
+    const val = e.target.value.replace(/\D/g,'');
+    e.target.value = val.slice(-1);
+    e.target.classList.toggle('filled', !!e.target.value);
+    if (val && i < 5) digits[i+1].focus();
+  });
+  inp.addEventListener('keydown', e => {
+    if (e.key === 'Backspace' && !inp.value && i > 0) digits[i-1].focus();
+    if (e.key === 'ArrowLeft'  && i > 0) digits[i-1].focus();
+    if (e.key === 'ArrowRight' && i < 5) digits[i+1].focus();
+  });
+  inp.addEventListener('paste', e => {
+    e.preventDefault();
+    const paste = (e.clipboardData.getData('text')).replace(/\D/g,'').slice(0,6);
+    paste.split('').forEach((ch, j) => {
+      if (digits[j]) { digits[j].value = ch; digits[j].classList.add('filled'); }
+    });
+    if (paste.length < 6) digits[paste.length].focus();
+    else digits[5].focus();
+  });
+});
+
+// ── Countdown timer ───────────────────────────────────────────────
+let seconds = 60;
+const countdownEl = document.getElementById('countdown');
+const resendBtn   = document.getElementById('resendBtn');
+const timerEl     = document.getElementById('timerDisplay');
+
+const timer = setInterval(() => {
+  seconds--;
+  countdownEl.textContent = seconds;
+  if (seconds <= 0) {
+    clearInterval(timer);
+    resendBtn.disabled = false;
+    timerEl.style.display = 'none';
+    resendBtn.textContent = 'Resend Code';
+  }
+}, 1000);
+
+// ── Verify OTP ────────────────────────────────────────────────────
+async function verifyOTP() {
+  const code = digits.map(d => d.value).join('');
+  const errEl = document.getElementById('otpErr');
+  const btn   = document.getElementById('verifyBtn');
+  errEl.classList.remove('show');
+
+  if (code.length < 6) {
+    digits.forEach(d => { if (!d.value) d.classList.add('err'); });
+    errEl.textContent = '⚠ Please enter all 6 digits.';
+    errEl.classList.add('show');
+    setTimeout(() => digits.forEach(d => d.classList.remove('err')), 800);
+    return;
+  }
+
+  btn.innerHTML = '<span class="spinner"></span>Verifying…';
+  btn.disabled = true;
+
+  try {
+    const res = await fetch('/api/verify-email', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ email, code })
+    });
+    if (res.ok) {
+      document.getElementById('verifyScreen').style.display = 'none';
+      document.getElementById('successScreen').style.display = 'block';
+    } else {
+      digits.forEach(d => d.classList.add('err'));
+      errEl.textContent = '⚠ Invalid or expired code. Try again.';
+      errEl.classList.add('show');
+      setTimeout(() => digits.forEach(d => d.classList.remove('err')), 800);
+      digits.forEach(d => d.value = '');
+      digits[0].focus();
+      btn.innerHTML = 'Verify Email';
+      btn.disabled = false;
+    }
+  } catch {
+    errEl.textContent = '⚠ Network error. Please try again.';
+    errEl.classList.add('show');
+    btn.innerHTML = 'Verify Email';
+    btn.disabled = false;
+  }
+}
+
+// ── Resend code ───────────────────────────────────────────────────
+async function resendCode() {
+  resendBtn.disabled = true;
+  resendBtn.textContent = 'Sending…';
+  try {
+    await fetch('/api/resend-verification', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ email })
+    });
+    resendBtn.textContent = '✓ Sent!';
+    setTimeout(() => { resendBtn.textContent = 'Resend Code'; resendBtn.disabled = false; }, 3000);
+  } catch {
+    resendBtn.textContent = 'Try again';
+    resendBtn.disabled = false;
+  }
+}
+</script>
+</body>
+</html>
