@@ -141,6 +141,15 @@
             rgba(255,255,255,0.13) 100%
             );
         }
+        /* Loading state for the upload button */
+.bg-upload-btn.loading {
+    opacity: 0.7;
+    cursor: wait;
+    pointer-events: none;
+}
+.bg-upload-btn.loading i {
+    animation: spin 1s linear infinite;
+}
 
         /* ─── SPECULAR HOTSPOT (hover shine strip) ─── */
         .my-page .page-specular {
@@ -430,64 +439,74 @@ function animateFlipShine(pageEl) {
     }
 
     /* ── file upload handler ── */
-    const uploadInput   = document.getElementById('bg-upload-input');
+   const uploadInput   = document.getElementById('bg-upload-input');
     const uploadBtn     = document.getElementById('bg-upload-btn');
     const uploadPreview = document.getElementById('bg-upload-preview');
     const uploadedOpt   = document.getElementById('bg-uploaded-opt');
     const uploadThumb   = document.getElementById('bg-upload-thumb');
 
-    uploadBtn.addEventListener('click', function(e){
+    uploadBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         uploadInput.click();
     });
 
-    uploadInput.addEventListener('change', function(){
-    const file = this.files[0];
-    if(!file) return;
-    uploadInput.addEventListener('change', async function(){
-  const file = uploadInput.files[0]; if (!file) return;
-  try {
-    const formData = new FormData();
-    formData.append('video', file);
-    const res = await fetch('/upload_video', { method:'POST', body: formData });
-    const data = await res.json();
-    const serverUrl = window.location.origin + data.url;
-    uploadThumb.src = serverUrl;
-    uploadPreview.style.display = 'block';
-    uploadedOpt.classList.add('sel');
-    applyValue(serverUrl);
-    setBgInURL(serverUrl);
-  } catch(err) {
-    alert('Upload failed');
-  }
-});
-    reader.onload = function(ev){
-        const dataUrl = ev.target.result;
-        uploadThumb.src = dataUrl;
-        uploadPreview.style.display = 'block';
-        document.querySelectorAll('.bg-opt').forEach(o=>o.classList.remove('sel'));
-        uploadedOpt.classList.add('sel');
-        applyValue(dataUrl);
-        snap();
-        setBgInURL(dataUrl);  // ← ADD THIS
-    };
-    reader.readAsDataURL(file);
-});
+    uploadInput.addEventListener('change', function() {
+        const file = this.files[0];
+        if (!file) return;
+
+        // Show loading state
+        const originalContent = uploadBtn.innerHTML;
+        uploadBtn.classList.add('loading');
+        uploadBtn.innerHTML = '<i class="fa-solid fa-spinner"></i> Processing...';
+
+        const reader = new FileReader();
+        reader.onload = function(ev) {
+            const dataUrl = ev.target.result;
+            
+            // 1. Update UI
+            uploadThumb.src = dataUrl;
+            uploadPreview.style.display = 'block';
+            
+            // 2. Clear other selections and select this one
+            document.querySelectorAll('.bg-opt').forEach(o => o.classList.remove('sel'));
+            uploadedOpt.classList.add('sel');
+            
+            // 3. Apply the background and SAVE it
+            applyValue(dataUrl);
+            snap(); // Commit this as the current "permanent" background
+            setBgInURL(dataUrl);
+
+            // Reset button
+            uploadBtn.classList.remove('loading');
+            uploadBtn.innerHTML = originalContent;
+            
+            // Close panel after a short delay
+            setTimeout(() => {
+                panel.classList.remove('open');
+                btn.classList.remove('open');
+            }, 500);
+        };
+        reader.readAsDataURL(file);
+    });
+
 
     /* wire uploaded opt hover/click like other opts */
     uploadedOpt.addEventListener('mouseenter', function(){ if(uploadThumb.src) applyValue(uploadThumb.src); });
     uploadedOpt.addEventListener('mouseleave', function(){ revert(); });
-    uploadedOpt.addEventListener('click', function(e){
-    e.stopPropagation();
-    if(!uploadThumb.src) return;
-    document.querySelectorAll('.bg-opt').forEach(o=>o.classList.remove('sel'));
-    uploadedOpt.classList.add('sel');
-    applyValue(uploadThumb.src);
-    snap();
-    setBgInURL(uploadThumb.src);  // ← ADD THIS
-    panel.classList.remove('open');
-    btn.classList.remove('open');
-});
+    uploadedOpt.addEventListener('click', function(e) {
+        e.stopPropagation();
+        if (!uploadThumb.src) return;
+
+        document.querySelectorAll('.bg-opt').forEach(o => o.classList.remove('sel'));
+        uploadedOpt.classList.add('sel');
+        
+        applyValue(uploadThumb.src);
+        snap(); // Lock it in
+        setBgInURL(uploadThumb.src);
+        
+        panel.classList.remove('open');
+        btn.classList.remove('open');
+    });
 
     /* ── snapshot / revert for hover-preview ── */
     function snap(){
@@ -593,6 +612,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     const pathParts = window.location.pathname.split('/');
     const share_id  = pathParts[1] === 'preview' ? pathParts[2] : null;
 
+    // ── If opened via a shared link, hide editor-only controls ──
+    const isOwnerPreview = new URLSearchParams(window.location.search).get('owner') === '1';
+if (share_id && !isOwnerPreview) {
+    document.getElementById('bg-menu-btn').style.display = 'none';
+    document.getElementById('bg-panel').style.display    = 'none';
+    document.querySelector('.cb-btn.pri').style.display  = 'none';
+}
+
     const params = new URLSearchParams(window.location.search);
     const pId    = params.get('id');
     let pagesData = null;
@@ -660,10 +687,13 @@ function applyPreviewBg(val) {
     } else if (val.startsWith('#') || val.startsWith('rgb')) {
         document.body.style.backgroundImage = '';
         document.body.style.backgroundColor = val;
-    } else {
-        document.body.style.backgroundImage    = `url('${val}')`;
+    }else {
+        // Clean the URL to ensure no double-wrapping of url()
+        const cleanUrl = val.replace(/url\(['"]?/, '').replace(/['"]?\)$/, '');
+        document.body.style.backgroundImage    = `url('${cleanUrl}')`;
         document.body.style.backgroundSize     = 'cover';
         document.body.style.backgroundPosition = 'center';
+        document.body.style.backgroundColor    = '';
     }
 }
 
@@ -1447,62 +1477,62 @@ function goNext() {
 
 async function saveAndShare() {
     const btn = document.querySelector('.cb-btn.pri');
+    const originalText = btn.textContent;
     btn.textContent = '⏳ Saving...';
     btn.disabled = true;
 
+    // Get the background value
     const currentBg = new URLSearchParams(window.location.search).get('bg') || '';
-    // Get the real bg value (may be base64, stored in DB only)
     const realBg = document.body.style.backgroundImage.match(/url\(['"]?(data:[^'"]+)['"]?\)/)?.[1]
                 || document.body.style.backgroundColor
                 || currentBg;
+    
     const isBase64 = realBg && realBg.startsWith('data:');
 
     const pathParts = window.location.pathname.split('/');
     const share_id  = pathParts[1] === 'preview' ? pathParts[2] : null;
     const pId       = new URLSearchParams(window.location.search).get('id');
 
-    if (!share_id && !pId) {
-        const shareUrl = new URL(window.location.href);
-        // Don't add base64 to URL
-        if (currentBg && !isBase64) shareUrl.searchParams.set('bg', currentBg);
-        try {
-            await navigator.clipboard.writeText(shareUrl.toString());
-            btn.textContent = '✅ Link Copied!';
-        } catch {
-            btn.textContent = '⚠️ No Project ID';
-        }
-        setTimeout(() => { btn.textContent = '💾 Save & Share'; btn.disabled = false; }, 2500);
-        return;
-    }
-
     try {
-        // Save the real bg (including base64) to DB
-        await fetch('/api/projects/save-bg', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ share_id, project_id: pId, preview_bg: realBg })
-        });
+        // 1. Save background to database
+        if (share_id || pId) {
+            await fetch('/api/projects/save-bg', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ share_id, project_id: pId, preview_bg: realBg })
+            });
+        }
 
+        // 2. Generate the share URL
         const shareBase = share_id
             ? `${window.location.origin}/preview/${share_id}`
             : window.location.href;
+        
         const shareUrl = new URL(shareBase);
-        // Only add bg to URL if it's NOT base64 (gradients/colors are fine)
+        // Only append bg to URL if it's not a massive base64 string
         if (currentBg && !isBase64) shareUrl.searchParams.set('bg', currentBg);
 
-        if (navigator.clipboard && window.isSecureContext) {
-            await navigator.clipboard.writeText(shareUrl.toString());
-            btn.textContent = '✅ Link Copied!';
-        } else {
-            btn.textContent = '✅ Saved!';
-        }
+        // 3. Show the Dialog Box
+        const finalUrl = shareUrl.toString();
+        
+        // Try to copy automatically first
+        try { await navigator.clipboard.writeText(finalUrl); } catch(e) {}
+
+        // Show prompt for the user
+        window.prompt("Share this URL with others to view your flipbook:", finalUrl);
+        
+        btn.textContent = '✅ Saved!';
     } catch(e) {
-        btn.textContent = '❌ Failed';
+        btn.textContent = '❌ Error';
         console.error(e);
     }
 
-    setTimeout(() => { btn.textContent = '💾 Save & Share'; btn.disabled = false; }, 2500);
+    setTimeout(() => { 
+        btn.textContent = originalText; 
+        btn.disabled = false; 
+    }, 2000);
 }
+
 
 function setTxt(t) { document.getElementById('loadTxt').textContent = t; }
 </script>
