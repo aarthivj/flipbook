@@ -7,6 +7,8 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/page-flip@2.0.7/dist/js/page-flip.browser.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gifuct-js@2.1.2/dist/gifuct-js.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js"></script>
 
 <link href="https://fonts.googleapis.com/css2?family=Roboto&family=Open+Sans&family=Lato&family=Montserrat&family=Poppins&family=Inter&family=Raleway&family=Oswald&family=Nunito&family=Rubik&family=Work+Sans&family=DM+Sans&family=Quicksand&family=Libre+Baskerville&family=Playfair+Display&family=Merriweather&family=Bebas+Neue&family=Dancing+Script&family=Pacifico&family=Caveat&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -187,6 +189,18 @@ textarea.minput:focus{border-color:var(--pri)}
 .fp-footer{border-top:1px solid #f3f4f6;padding:7px 12px;display:flex;align-items:center;justify-content:space-between;background:#fafafa;flex-shrink:0;}
 .fp-empty{text-align:center;padding:28px 12px;color:#9ca3af;font-size:.8rem;line-height:2;}
 input[type=range]{accent-color:var(--pri)}
+.side-add-btn{
+  position:absolute;top:50%;transform:translateY(-50%);
+  width:32px;height:32px;border-radius:50%;
+  background:var(--pri);color:#fff;border:none;
+  font-size:1rem;cursor:pointer;z-index:10;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 2px 10px rgba(99,102,241,.45);
+  transition:all .2s;opacity:0.6;
+}
+.side-add-btn:hover{opacity:1;transform:translateY(-50%) scale(1.18);}
+.side-add-btn.left{left:-44px;}
+.side-add-btn.right{right:-44px;}
 ::-webkit-scrollbar{width:4px;height:4px}
 ::-webkit-scrollbar-thumb{background:#d1d5db;border-radius:2px}
 @keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
@@ -194,9 +208,20 @@ input[type=range]{accent-color:var(--pri)}
 </style>
 </head>
 <body>
-
+<div id="pageLoader" style="
+  position:fixed; inset:0; background:#f0f2f5;
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  z-index:99999; font-family:'Inter',sans-serif; gap:16px;
+">
+  <div style="font-weight:800;font-size:1.2rem;color:#6366f1;letter-spacing:-.4px">✦ Droidal</div>
+  <div style="width:48px;height:48px;border:4px solid #e0e7ff;border-top-color:#6366f1;border-radius:50%;animation:spin .8s linear infinite"></div>
+  <div style="font-size:.82rem;color:#6b7280;font-weight:500">Loading your workspace…</div>
+</div>
 <div class="navbar">
-  <div class="nav-left">
+ <div class="nav-left">
+    <button class="ico-btn" onclick="window.location.href='/dashboard'" title="Back to Dashboard" style="margin-right:4px">
+      <i class="fa-solid fa-arrow-left"></i>
+    </button>
     <div class="brand">✦ Droidal</div>
     <div class="nav-divider"></div>
     <button class="ico-btn" onclick="undo()" title="Undo Ctrl+Z"><i class="fa-solid fa-rotate-left"></i></button>
@@ -210,7 +235,7 @@ input[type=range]{accent-color:var(--pri)}
     <div class="nav-divider"></div>
     <button class="btn btn-outline" onclick="openModal('modalExport')"><i class="fa-solid fa-download"></i> Export</button>
     <button class="btn btn-primary" onclick="saveAllPages()" id="saveBtn"><i class="fa-solid fa-cloud-arrow-up"></i> Save</button>
-    <button class="btn btn-green" onclick="previewBook()"><i class="fa-solid fa-play"></i> Preview</button>
+    <button class="btn btn-green" onclick="previewBook()"><i class="fa-solid fa-play"></i> Share</button>
   </div>
 </div>
 
@@ -323,12 +348,30 @@ input[type=range]{accent-color:var(--pri)}
     <button class="pb" id="bGroup"   style="display:none" onclick="groupObjs()"><i class="fa-solid fa-object-group"></i> Group</button>
     <button class="pb" id="bUngroup" style="display:none" onclick="ungroupObjs()"><i class="fa-solid fa-object-ungroup"></i> Ungroup</button>
     <button class="pb" id="saveElementBtn" onclick="saveAsCustomElement()" title="Save to My Elements"><i class="fa-solid fa-bookmark"></i></button>
+    <div class="dvd" id="imgToolsDvd" style="display:none"></div>
+    <button class="pb" id="btnCropImg"  style="display:none" onclick="startCrop()"            title="Crop"><i class="fa-solid fa-crop-simple"></i> Crop</button>
+<button class="pb" id="btnRemoveBg" style="display:none" onclick="startErase('removebg')" title="AI Remove Background"><i class="fa-solid fa-wand-magic-sparkles"></i> Remove BG</button>
+<button class="pb" id="btnTransBg"  style="display:none" onclick="startErase('manual')"   title="Manual Erase"><i class="fa-solid fa-eraser"></i> Manual</button>
+
+    
+    <!-- Action buttons shown during crop/erase -->
+    <div class="dvd" id="imgActionDvd" style="display:none"></div>
+    <span id="imgActionLabel" style="display:none;font-size:0.75rem;font-weight:600;color:#6366f1"></span>
+    <button id="btnApplyImgTool" style="display:none;padding:6px 14px;background:#10b981;border:none;border-radius:7px;color:#fff;font-weight:700;cursor:pointer;font-size:0.8rem;gap:5px;align-items:center" onclick="applyImgTool()"><i class="fa-solid fa-check"></i> Apply</button>
+    <button id="btnCancelImgTool" style="display:none;padding:6px 12px;background:#ef4444;border:none;border-radius:7px;color:#fff;font-weight:700;cursor:pointer;font-size:0.8rem" onclick="cancelImgTool()"><i class="fa-solid fa-xmark"></i></button>
+    <input type="range" id="imgBrushSize" min="5" max="80" value="20" style="display:none;width:70px" oninput="updateEraseBrush(+this.value)" title="Brush Size">
+
+
+
     <button class="pb" onclick="dupObj()"   title="Duplicate"><i class="fa-regular fa-copy"></i></button>
     <button class="pb red-btn" onclick="delObj()" title="Delete"><i class="fa-solid fa-trash"></i></button>
     <button class="pb" id="bJump" onclick="setJumpTarget()" title="Jump to Page"><i class="fa-solid fa-share-from-square"></i></button>
   </div>
 
-</div>
+    </div>
+
+
+
 
 <div class="main">
   <div class="icon-bar">
@@ -445,48 +488,51 @@ input[type=range]{accent-color:var(--pri)}
 
     <!-- UPLOADS -->
     <!-- UPLOADS -->
-    <div id="tabUploads" class="panel" style="padding-bottom:10px">
-      <div class="upload-card pri">
-        <i class="fa-solid fa-image"></i>
-        <span>Upload Image(s)</span>
-        <input type="file" id="img-up" accept="image/*,image/svg+xml" multiple onchange="uploadMedia(event,'image')">
-      </div>
-      <div class="upload-card grn">
-        <i class="fa-solid fa-video"></i>
-        <span>Upload Video(s)</span>
-        <input type="file" id="vid-up" accept="video/*" multiple onchange="uploadMedia(event,'video')">
-      </div>
+   <div id="tabUploads" class="panel" style="padding-bottom:10px">
+  <div class="upload-card pri">
+    <i class="fa-solid fa-image"></i>
+    <span>Upload Image(s)</span>
+    <input type="file" id="img-up"
+      accept="image/*,.gif,.webp,.apng,.avif,.json,.lottie,application/json"
+      multiple onchange="uploadMedia(event,'image')">
+  </div>
 
-      <!-- IMAGE GROUP -->
-      <div id="imgGroupHeader" style="display:none;align-items:center;justify-content:space-between;margin:10px 0 5px;cursor:pointer" onclick="toggleMediaGroup('img')">
-        <div style="display:flex;align-items:center;gap:6px">
-          <i class="fa-solid fa-images" style="color:var(--pri);font-size:.85rem"></i>
-          <span style="font-size:.72rem;font-weight:700;color:var(--txt);text-transform:uppercase;letter-spacing:.06em">Images</span>
-          <span id="imgCount" style="background:#e0e7ff;color:var(--pri);font-size:.62rem;font-weight:700;padding:1px 6px;border-radius:10px">0</span>
-        </div>
-        <i id="imgChevron" class="fa-solid fa-chevron-down" style="font-size:.7rem;color:var(--muted);transition:transform .2s"></i>
-      </div>
-      <div id="imgGalleryWrap" style="display:none">
-        <input type="text" placeholder="🔍 Search images..." oninput="filterMedia('img',this.value)"
-          style="width:100%;padding:5px 9px;border:1px solid var(--bdr);border-radius:6px;font-size:.78rem;outline:none;margin-bottom:6px;background:#f9fafb;font-family:inherit">
-        <div id="uploadGallery" style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;max-height:calc(9 * (((272px - 28px - 12px) / 3) + 6px));overflow-y:auto;scrollbar-width:thin"></div>
-      </div>
+  <div class="upload-card grn">
+    <i class="fa-solid fa-video"></i>
+    <span>Upload Video(s)</span>
+    <input type="file" id="vid-up" accept="video/*" multiple onchange="uploadMedia(event,'video')">
+  </div>
 
-      <!-- VIDEO GROUP -->
-      <div id="vidGroupHeader" style="display:none;align-items:center;justify-content:space-between;margin:10px 0 5px;cursor:pointer" onclick="toggleMediaGroup('vid')">
-        <div style="display:flex;align-items:center;gap:6px">
-          <i class="fa-solid fa-film" style="color:var(--grn);font-size:.85rem"></i>
-          <span style="font-size:.72rem;font-weight:700;color:var(--txt);text-transform:uppercase;letter-spacing:.06em">Videos</span>
-          <span id="vidCount" style="background:#d1fae5;color:var(--grn);font-size:.62rem;font-weight:700;padding:1px 6px;border-radius:10px">0</span>
-        </div>
-        <i id="vidChevron" class="fa-solid fa-chevron-down" style="font-size:.7rem;color:var(--muted);transition:transform .2s"></i>
-      </div>
-      <div id="vidGalleryWrap" style="display:none">
-        <input type="text" placeholder="🔍 Search videos..." oninput="filterMedia('vid',this.value)"
-          style="width:100%;padding:5px 9px;border:1px solid var(--bdr);border-radius:6px;font-size:.78rem;outline:none;margin-bottom:6px;background:#f9fafb;font-family:inherit">
-        <div id="uploadVideoGallery" style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;max-height:calc(9 * (((272px - 28px - 12px) / 3) + 6px));overflow-y:auto;scrollbar-width:thin"></div>
-      </div>
+  <!-- IMAGE GROUP -->
+  <div id="imgGroupHeader" style="display:none;align-items:center;justify-content:space-between;margin:10px 0 5px;cursor:pointer" onclick="toggleMediaGroup('img')">
+    <div style="display:flex;align-items:center;gap:6px">
+      <i class="fa-solid fa-images" style="color:var(--pri);font-size:.85rem"></i>
+      <span style="font-size:.72rem;font-weight:700;color:var(--txt);text-transform:uppercase;letter-spacing:.06em">Images</span>
+      <span id="imgCount" style="background:#e0e7ff;color:var(--pri);font-size:.62rem;font-weight:700;padding:1px 6px;border-radius:10px">0</span>
     </div>
+    <i id="imgChevron" class="fa-solid fa-chevron-down" style="font-size:.7rem;color:var(--muted);transition:transform .2s"></i>
+  </div>
+  <div id="imgGalleryWrap" style="display:none">
+    <input type="text" placeholder="🔍 Search images..." oninput="filterMedia('img',this.value)"
+      style="width:100%;padding:5px 9px;border:1px solid var(--bdr);border-radius:6px;font-size:.78rem;outline:none;margin-bottom:6px;background:#f9fafb;font-family:inherit">
+    <div id="uploadGallery" style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;max-height:calc(9 * (((272px - 28px - 12px) / 3) + 6px));overflow-y:auto;scrollbar-width:thin"></div>
+  </div>
+
+  <!-- VIDEO GROUP -->
+  <div id="vidGroupHeader" style="display:none;align-items:center;justify-content:space-between;margin:10px 0 5px;cursor:pointer" onclick="toggleMediaGroup('vid')">
+    <div style="display:flex;align-items:center;gap:6px">
+      <i class="fa-solid fa-film" style="color:var(--grn);font-size:.85rem"></i>
+      <span style="font-size:.72rem;font-weight:700;color:var(--txt);text-transform:uppercase;letter-spacing:.06em">Videos</span>
+      <span id="vidCount" style="background:#d1fae5;color:var(--grn);font-size:.62rem;font-weight:700;padding:1px 6px;border-radius:10px">0</span>
+    </div>
+    <i id="vidChevron" class="fa-solid fa-chevron-down" style="font-size:.7rem;color:var(--muted);transition:transform .2s"></i>
+  </div>
+  <div id="vidGalleryWrap" style="display:none">
+    <input type="text" placeholder="🔍 Search videos..." oninput="filterMedia('vid',this.value)"
+      style="width:100%;padding:5px 9px;border:1px solid var(--bdr);border-radius:6px;font-size:.78rem;outline:none;margin-bottom:6px;background:#f9fafb;font-family:inherit">
+    <div id="uploadVideoGallery" style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;max-height:calc(9 * (((272px - 28px - 12px) / 3) + 6px));overflow-y:auto;scrollbar-width:thin"></div>
+  </div>
+</div>
 
     <!-- DRAW -->
     <div id="tabDraw" class="panel">
@@ -714,9 +760,8 @@ input[type=range]{accent-color:var(--pri)}
         <div class="cv-wrap">
           <div class="grid-ov" id="gridOv"></div>
           <canvas id="c" class="cv-shadow"></canvas>
-        </div>
-        <div class="add-page-row">
-          <button class="add-page-btn" onclick="addPage()"><i class="fa-solid fa-plus"></i> Add Page</button>
+          <button class="side-add-btn left" onclick="addPageBefore()" title="Add page before"><i class="fa-solid fa-plus"></i></button>
+          <button class="side-add-btn right" onclick="addPage()" title="Add page after"><i class="fa-solid fa-plus"></i></button>
         </div>
       </div>
     </div>
@@ -864,12 +909,44 @@ function _getActiveBullet(obj) {
 canvas.on("text:changed", function(e) {
   const obj = e.target;
   if (obj.type === "textbox" || obj.type === "i-text" || obj.type === "text") {
-    // Width clamp for textbox
-      if (obj.type === "textbox") {
-      const maxWidth = canvas.getWidth() - obj.left - 20;
-      if (obj.width > maxWidth) obj.set({ width: maxWidth });
-      obj.set({ splitByGrapheme: false });
+     if (obj.type === "textbox") {
+    const maxWidth = canvas.getWidth() - obj.left - 10;
+    
+    // Lock width hard
+    if (obj.width > maxWidth) {
+      obj.width = maxWidth;
+      obj.scaleX = 1;
     }
+
+    // Check if any single line overflows — if yes, split by character
+    const testCanvas = document.createElement('canvas');
+    const testCtx = testCanvas.getContext('2d');
+    testCtx.font = `${obj.fontWeight} ${obj.fontSize}px ${obj.fontFamily}`;
+    
+    const lines = obj.text.split('\n');
+    let needsCharSplit = false;
+    for (const line of lines) {
+      const words = line.split(' ');
+      for (const word of words) {
+        if (testCtx.measureText(word).width > maxWidth) {
+          needsCharSplit = true;
+          break;
+        }
+      }
+      if (needsCharSplit) break;
+    }
+
+    obj.set({
+      width: maxWidth,
+      scaleX: 1,
+      scaleY: 1,
+      splitByGrapheme: needsCharSplit,
+      objectCaching: false,
+    });
+    obj.initDimensions();
+    obj.setCoords();
+    canvas.requestRenderAll();
+  }
 
     // Auto-bullet: ensure EVERY non-empty line has the bullet prefix
     const sym = _getActiveBullet(obj);
@@ -910,8 +987,9 @@ const LS_META = `droidal_meta_${BOOK_ID}`;
 
 // ─── PAGES ────────────────────────────────────────────────────────────────────
 let pages = [null], cur = 0;
-
+let currentProjectTitle = 'Untitled';
 async function _loadPagesFromServer() {
+   if (new URLSearchParams(window.location.search).get('id')) return;
   try {
     const uid = parseInt(localStorage.getItem('droidal_user_id') || 1);
     const res = await fetch(`/api/pages/load?user_id=${uid}&book_id=${BOOK_ID}`);
@@ -928,7 +1006,7 @@ async function _loadPagesFromServer() {
 
 const pageNotes = {};
 
-const CUSTOM_PROPS = ['customLink','customVideoSrc','locked','animData','isFrame','_frameId','customPageTarget','selectable','evented','isVideoFabric','isVideoGroup','_b64src'];
+const CUSTOM_PROPS = ['customLink','customVideoSrc','locked','animData','isFrame','_frameId','customPageTarget','selectable','evented','isVideoFabric','isVideoGroup','_b64src','isGifFabric','customGifSrc'];
 const CURRENT_USER_ID = localStorage.getItem('droidal_user_id') || 1;
 
 (function showWelcome() {
@@ -945,6 +1023,7 @@ const CURRENT_USER_ID = localStorage.getItem('droidal_user_id') || 1;
 document.addEventListener('DOMContentLoaded', () => {
   _loadPagesFromServer(); // restore canvas pages (with videos) for this user // restore uploaded media library from previous session
 if (!new URLSearchParams(window.location.search).get('id')) {
+  _loadPagesFromServer();
     _loadMediaStore();
   }
   document.getElementById("grad1").addEventListener("input",function(){
@@ -1071,6 +1150,7 @@ function loadCurrentPage() {
     canvas.discardActiveObject();
     canvas.renderAll();
     restoreVideos();
+    restoreGifs();  
     restoreVideoGroups();
     histReset();
     refreshUI();
@@ -1194,7 +1274,6 @@ function refreshUI() {
   updatePageLabel(); renderDots(); renderLayers();
   const z = zoom / 100;
   document.getElementById('pageHdr').style.width = (CW * z) + 'px';
-  document.querySelector('.add-page-btn').style.width = (CW * z) + 'px';
 }
 
 function updatePageLabel() {
@@ -1219,7 +1298,18 @@ function renderDots() {
   });
   bar.appendChild(wrap);
 }
-
+function addPageBefore() {
+  pages[cur] = getJSON();
+  canvas.clear();
+  canvas.setBackgroundColor('#ffffff', () => {});
+  addHeaderFooter();
+  const blankPage = getJSON();
+  pages.splice(cur, 0, blankPage);
+  // cur stays same — the new blank is now at cur, old page shifts right
+  loadCurrentPage();
+  renderDots();
+  scheduleSync();
+}
 function addPage() {
   // 1. Save the current page's canvas state
   pages[cur] = getJSON();
@@ -1287,20 +1377,14 @@ canvas.on('selection:updated', onSel);
 canvas.on('selection:cleared', () => document.getElementById('propsBar').classList.remove('on'));
 
 canvas.on('object:modified', () => { hist(); renderLayers(); syncBar(); });
-canvas.on("object:scaling", function(e){
+canvas.on("object:scaling", function(e) {
   const obj = e.target;
-  if(obj.type === "textbox"){
-    // Convert scale into actual width/height change — never scale font
-    const newWidth  = Math.max(40, obj.width  * obj.scaleX);
-    const newHeight = Math.max(20, obj.height * obj.scaleY);
-    const maxWidth  = canvas.getWidth() - obj.left - 20;
-    obj.set({
-      width:  Math.min(newWidth, maxWidth),
-      height: newHeight,
-      scaleX: 1,
-      scaleY: 1,
-    });
+  if (obj.type === "textbox") {
+    const maxWidth = canvas.getWidth() - obj.left - 10;
+    const newWidth = Math.min(Math.max(40, obj.width * obj.scaleX), maxWidth);
+    obj.set({ width: newWidth, scaleX: 1, scaleY: 1 });
     obj.setCoords();
+    canvas.requestRenderAll();
   }
 });
 
@@ -1333,7 +1417,7 @@ if (bJump) {
 
   if (isText) {
     // ── TEXT BAR sync ──
-    const pFill = document.getElementById('pFill');
+    const pFill = document.getElementById('pFill').value ='#000000';
     if (pFill) pFill.value = (typeof obj.fill==='string'&&/^#/.test(obj.fill)) ? obj.fill : '#000000';
     const pSize = document.getElementById('pSize');
     if (pSize && obj.fontSize) pSize.value = Math.round(obj.fontSize);
@@ -1411,10 +1495,32 @@ function syncBar() {
 }
 
 function cp(prop, val) {
-  const obj = canvas.getActiveObject(); if (!obj) return;
-  const apply = o => { if (o) o.set(prop, val); };
-  if (obj.type==='activeSelection') obj.forEachObject(apply); else apply(obj);
-  canvas.requestRenderAll(); hist();
+  const obj = canvas.getActiveObject(); 
+  if (!obj) return;
+
+  const apply = o => { 
+    if (o) {
+      o.set(prop, val);
+
+      // CRITICAL FIX: If it's a text object, force a layout refresh
+      if (o.type === 'textbox' || o.type === 'i-text' || o.type === 'text') {
+        if (o.initDimensions) {
+          o.initDimensions(); // Re-calculates character spacing
+        }
+        o.set('dirty', true);   // Clears the old render cache
+        o.setCoords();          // Corrects the blue selection handles
+      }
+    }
+  };
+
+  if (obj.type === 'activeSelection') {
+    obj.forEachObject(apply);
+  } else {
+    apply(obj);
+  }
+
+  canvas.requestRenderAll(); 
+  hist();
 }
 
 
@@ -1455,10 +1561,31 @@ function setTextAlign(alignment) {
 }
 
 function toggleTxt(prop, on, off) {
-  const obj = canvas.getActiveObject(); if (!obj) return;
+  const obj = canvas.getActiveObject(); 
+  if (!obj) return;
 
   function applyFormatting(o) {
     if (!isTextObj(o)) return;
+
+    // --- NEW: Partial Selection Logic ---
+    if (o.isEditing && o.selectionStart !== o.selectionEnd) {
+      const start = o.selectionStart;
+      const end = o.selectionEnd;
+      
+      // Get current styles of selection to decide if we toggle ON or OFF
+      const styles = o.getSelectionStyles(start, end);
+      const isCurrentlyOn = styles.length > 0 && styles[0][prop] === on;
+      const newVal = isCurrentlyOn ? off : on;
+
+      const styleObj = {};
+      styleObj[prop] = newVal;
+      
+      o.setSelectionStyles(styleObj, start, end);
+      canvas.requestRenderAll();
+      return; // Exit here so we don't apply to the whole object
+    }
+    // ------------------------------------
+
     const sym = _bulletMap.get(o) || null;
 
     if (!sym) {
@@ -1467,16 +1594,15 @@ function toggleTxt(prop, on, off) {
       return;
     }
 
-    // Bullets active — detect current state from per-char styles, not object property
-    // Check the first text character (after bullet) to see if already ON
+    // Bullets active — keep your existing logic for whole-object toggle
     const fullText = o.text;
-    const lines    = fullText.split('\n');
+    const lines = fullText.split('\n');
     let firstTextIdx = -1;
     let ci = 0;
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
       if (line.startsWith(sym) && line.length > sym.length) {
-        firstTextIdx = ci + sym.length; // first real text char
+        firstTextIdx = ci + sym.length;
         break;
       } else if (line.length > 0 && !line.startsWith(sym)) {
         firstTextIdx = ci;
@@ -1485,7 +1611,6 @@ function toggleTxt(prop, on, off) {
       ci += line.length + 1;
     }
 
-    // Read current value: check per-char style first, then fall back to object prop
     let currentVal = o[prop];
     if (firstTextIdx >= 0) {
       const charStyles = o.getSelectionStyles(firstTextIdx, firstTextIdx + 1);
@@ -1495,10 +1620,8 @@ function toggleTxt(prop, on, off) {
     }
     const newVal = currentVal === on ? off : on;
 
-    // Apply to base object as off (so bullets never get the style)
     o.set(prop, off);
 
-    // Apply newVal only to non-bullet text chars via per-char styles
     const savedStart = o.selectionStart;
     const savedEnd   = o.selectionEnd;
     ci = 0;
@@ -1510,7 +1633,6 @@ function toggleTxt(prop, on, off) {
           const s = {}; s[prop] = newVal;
           o.setSelectionStyles(s, textStart, textEnd);
         }
-        // explicitly keep bullet chars as OFF
         const bs = {}; bs[prop] = off;
         o.setSelectionStyles(bs, ci, ci + sym.length);
       } else if (line.length > 0) {
@@ -1526,8 +1648,12 @@ function toggleTxt(prop, on, off) {
 
   if (obj.type === 'activeSelection') obj.forEachObject(applyFormatting);
   else applyFormatting(obj);
-  canvas.requestRenderAll(); hist(); onSel();
+  
+  canvas.requestRenderAll(); 
+  hist(); 
+  onSel();
 }
+
 
 
 function setXY(prop, val) {
@@ -2180,21 +2306,29 @@ function addShape(type) {
 }
 
 // ─── TEXT ─────────────────────────────────────────────────────────────────────
-function addText(size,weight){
-  const t = new fabric.Textbox('Click to edit',{
-    left:40, top:60+Math.random()*30,
-    width:canvas.getWidth()-80,
-    fontFamily:'Inter', fontSize:size, fontWeight:weight,
-    fill:'#1f2937',
-    splitByGrapheme:false,
-    charSpacing:0,
-    lineHeight:1.16,
-    lockScalingFlip:true,
-    noScaleCache:false,
-    objectCaching:true,
+function addText(size, weight) {
+  const fixedWidth = canvas.getWidth() - 80;
+  const t = new fabric.Textbox('Click to edit', {
+    left: 40,
+    top: 60 + Math.random() * 30,
+    width: fixedWidth,
+    fontFamily: 'Inter',
+    fontSize: size,
+    fontWeight: weight,
+    fill: '#000000',
+    splitByGrapheme: false,
+    charSpacing: 0,
+    lineHeight: 1.16,
+    lockScalingFlip: true,
+    noScaleCache: false,
+    objectCaching: false,
   });
-  canvas.add(t); canvas.setActiveObject(t); hist();
+  canvas.add(t);
+  canvas.setActiveObject(t);
+  hist();
 }
+
+
 function addPageNum(){const t=new fabric.IText(String(cur+1),{left:CW/2-8,top:CH-36,fontFamily:'Inter',fontSize:16,fill:'#9ca3af',textAlign:'center'});canvas.add(t);canvas.setActiveObject(t);hist();}
 function addDate(){const d=new Date().toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'});const t=new fabric.IText(d,{left:30,top:80,fontFamily:'Inter',fontSize:15,fill:'#6b7280'});canvas.add(t);canvas.setActiveObject(t);hist();}
 
@@ -2496,24 +2630,66 @@ function hideDropHint() { document.getElementById('frameDropHint').classList.rem
 function fitImageToFrame(frame, img) {
   const fb = frame.getBoundingRect(true);
   if (!fb.width || !fb.height) return;
+
+  // Calculate scale to fill the frame
   const scale = Math.max(fb.width / img.width, fb.height / img.height);
-  img.set({ scaleX:scale, scaleY:scale, originX:'center', originY:'center', left:frame.left, top:frame.top });
+  
+  img.set({ 
+    scaleX: scale, 
+    scaleY: scale, 
+    originX: 'center', 
+    originY: 'center', 
+    left: frame.left, 
+    top: frame.top 
+  });
   img.setCoords();
+
+  // Remove original objects from canvas
   canvas.remove(img);
   canvas.remove(frame);
-  frame.set({ originX:'center', originY:'center', left:0, top:0 });
-  img.set({ originX:'center', originY:'center', left:0, top:0 });
-  const grp = new fabric.Group([frame, img], {
-    left:fb.left+fb.width/2, top:fb.top+fb.height/2,
-    originX:'center', originY:'center', isFrameGroup:true, selectable:true
+
+  // 1. MAKE THE FRAME INVISIBLE (Transparent)
+  frame.set({ 
+    originX: 'center', 
+    originY: 'center', 
+    left: 0, 
+    top: 0,
+    fill: 'transparent', 
+    stroke: 'transparent', 
+    strokeWidth: 0,
+    strokeDashArray: null
   });
+
+  img.set({ originX: 'center', originY: 'center', left: 0, top: 0 });
+
+  // Create the group with the invisible frame and the image
+  const grp = new fabric.Group([frame, img], {
+    left: fb.left + fb.width / 2, 
+    top: fb.top + fb.height / 2,
+    originX: 'center', 
+    originY: 'center', 
+    isFrameGroup: true, 
+    selectable: true
+  });
+
+  // Use a clone of the frame as the clipPath
   frame.clone(function(clip) {
-    clip.set({ originX:'center', originY:'center', left:0, top:0, absolutePositioned:false });
+    clip.set({ 
+        originX: 'center', 
+        originY: 'center', 
+        left: 0, 
+        top: 0, 
+        absolutePositioned: false 
+    });
     grp.clipPath = clip;
-    canvas.add(grp); canvas.setActiveObject(grp); canvas.requestRenderAll();
-    hist(); renderLayers();
+    canvas.add(grp); 
+    canvas.setActiveObject(grp); 
+    canvas.requestRenderAll();
+    hist(); 
+    renderLayers();
   });
 }
+
 
 function fitVideoToFrame(frame, videoObj) {
   const videoSrc = videoObj.customVideoSrc;
@@ -2533,60 +2709,89 @@ function fitVideoToFrame(frame, videoObj) {
   function doFit(vid) {
     const vw = vid.videoWidth  || 320;
     const vh = vid.videoHeight || 240;
-    const scale = Math.max(fb.width/vw, fb.height/vh);
+    const scale = Math.max(fb.width / vw, fb.height / vh);
     const offscreen = document.createElement('canvas');
     offscreen.width = vw; offscreen.height = vh;
     const offCtx = offscreen.getContext('2d');
     offCtx.drawImage(vid, 0, 0, vw, vh);
 
     const fabVid = new fabric.Image(offscreen, {
-      originX:'center', originY:'center', left:0, top:0,
-      scaleX:scale, scaleY:scale, objectCaching:false,
-      customVideoSrc:videoSrc, isVideoFabric:true
+      originX: 'center', 
+      originY: 'center', 
+      left: 0, 
+      top: 0,
+      scaleX: scale, 
+      scaleY: scale, 
+      objectCaching: false,
+      customVideoSrc: videoSrc, 
+      isVideoFabric: true
     });
 
     if (overlayWrap) overlayWrap.innerHTML = '';
     canvas.remove(videoObj);
     canvas.remove(frame);
-    frame.set({ originX:'center', originY:'center', left:0, top:0 });
+
+    // 2. MAKE THE FRAME INVISIBLE (Transparent)
+    frame.set({ 
+        originX: 'center', 
+        originY: 'center', 
+        left: 0, 
+        top: 0,
+        fill: 'transparent', 
+        stroke: 'transparent', 
+        strokeWidth: 0,
+        strokeDashArray: null
+    });
 
     const grp = new fabric.Group([frame, fabVid], {
-      left:fb.left+fb.width/2, top:fb.top+fb.height/2,
-      originX:'center', originY:'center',
-      isFrameGroup:true, isVideoGroup:true, customVideoSrc:videoSrc, objectCaching:false
+      left: fb.left + fb.width / 2, 
+      top: fb.top + fb.height / 2,
+      originX: 'center', 
+      originY: 'center',
+      isFrameGroup: true, 
+      isVideoGroup: true, 
+      customVideoSrc: videoSrc, 
+      objectCaching: false
     });
 
     frame.clone(function(clip) {
-      clip.set({ originX:'center', originY:'center', left:0, top:0, absolutePositioned:false });
+      clip.set({ 
+          originX: 'center', 
+          originY: 'center', 
+          left: 0, 
+          top: 0, 
+          absolutePositioned: false 
+      });
       grp.clipPath = clip;
-      canvas.add(grp); canvas.setActiveObject(grp);
+      canvas.add(grp); 
+      canvas.setActiveObject(grp);
 
       _videoRegistry.set(fabVid, { vid, offCtx, vw, vh, dirtyTarget: grp });
       _startGlobalVideoLoop();
 
       vid.play().catch(()=>{});
       canvas.requestRenderAll();
-      hist(); renderLayers();
+      hist(); 
+      renderLayers();
     });
   }
 
   if (existingVid && existingVid.readyState >= 2) { doFit(existingVid); return; }
 
   const vid = document.createElement('video');
-  vid.src=videoSrc; vid.autoplay=true; vid.loop=true; vid.muted=true; vid.playsInline=true;
-  if (!videoSrc.startsWith('blob:')) vid.crossOrigin='anonymous';
+  vid.src = videoSrc; vid.autoplay = true; vid.loop = true; vid.muted = true; vid.playsInline = true;
+  if (!videoSrc.startsWith('blob:')) vid.crossOrigin = 'anonymous';
 
   let called = false;
-  function safeFit() { if (called) return; called=true; doFit(vid); }
+  function safeFit() { if (called) return; called = true; doFit(vid); }
   if (vid.readyState >= 2) safeFit();
   else {
     vid.addEventListener('loadedmetadata', safeFit, {once:true});
-    vid.addEventListener('loadeddata',     safeFit, {once:true});
+    vid.addEventListener('loadeddata', safeFit, {once:true});
     setTimeout(safeFit, 800);
     vid.load();
   }
 }
-
 // ─── CHARTS ───────────────────────────────────────────────────────────────────
 let chartType = 'bar';
 let chartColors = ['#6366f1','#8b5cf6','#a78bfa','#c4b5fd','#ddd6fe'];
@@ -2633,49 +2838,93 @@ async function _uploadFileToServer(file) {
   return window.location.origin + data.url; // full public URL
 }
 
-function uploadMedia(e, type) {
-  const files = Array.from(e.target.files);
-  if (!files.length) return;
-  e.target.value = '';
-  const isImg = (type === 'image' || type === 'svg');
 
-  files.forEach(async function(file) {
-    // Show loading indicator
-    const loadingId = 'loading_' + Date.now();
-    const mediaType = isImg ? 'image' : 'video';
-
-    try {
-      // Upload to server — get permanent public URL
-      const serverUrl = await _uploadFileToServer(file);
-      const entry = {
-        id: 'med_'+Date.now()+'_'+Math.random().toString(36).slice(2,6),
-        name: file.name,
-        url: serverUrl,  // permanent server URL — works everywhere
-        b64: serverUrl   // use server URL as persistent src too
-      };
-
-      if (isImg) {
-        _makeImgThumb(serverUrl, function(thumb) {
-          entry.thumb = thumb;
-          _mediaStore.image.unshift(entry);
-          _renderGallery('image');
-          _saveMediaStore();
-          if (files.length === 1) _addImageToCanvas(serverUrl);
-        });
-      } else {
-        _makeVidThumb(serverUrl, function(thumb) {
-          entry.thumb = thumb;
-          _mediaStore.video.unshift(entry);
-          _renderGallery('video');
-          _saveMediaStore();
-          if (files.length === 1) addVideoToCanvas(serverUrl, file.name);
-        });
-      }
-    } catch(err) {
-      alert('Upload failed: ' + err.message);
-    }
-  });
+function _showCanvasSpinner(msg) {
+  const el = document.createElement('div');
+  el.style.cssText = `
+position:fixed; top:50%; left:50%; transform:translate(-50%, -50%);
+    background:rgba(17,24,39,0.88); color:#fff; font-size:.8rem; font-weight:600;
+    padding:8px 18px; border-radius:20px; z-index:9999;
+    display:flex; align-items:center; gap:8px;
+    backdrop-filter:blur(6px); box-shadow:0 4px 16px rgba(0,0,0,.3);
+    font-family:'Inter',sans-serif; pointer-events:none;
+  `;
+  el.innerHTML = `<i class="fa-solid fa-spinner" style="animation:spin .7s linear infinite"></i> ${msg}`;
+  document.body.appendChild(el);
+  return el;
 }
+
+async function uploadMedia(e, type) {
+    const files = Array.from(e.target.files);
+    if (!files.length) return;
+    e.target.value = ''; // Reset input so the same file can be picked again later
+    
+    const isImg = (type === 'image' || type === 'svg');
+    const mediaType = isImg ? 'image' : 'video';
+    const spinner = _showCanvasSpinner(`Processing ${files.length} file(s)...`);
+
+    // Use map to create an array of upload actions
+    const uploadPromises = files.map(async (file) => {
+        // --- 1. DUPLICATE CHECK ---
+        const isDuplicate = _mediaStore[mediaType].some(item => item.name === file.name);
+        if (isDuplicate) {
+            const confirmUpload = confirm(`"${file.name}" already exists in your library. Do you want to upload another copy?`);
+            if (!confirmUpload) return null; // User cancelled this specific file
+        }
+
+        try {
+            // --- 2. UPLOAD TO SERVER ---
+            const permanentUrl = await _uploadFileToServer(file);
+            
+            const entry = {
+                id: 'med_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+                name: file.name,
+                url: permanentUrl,
+                type: mediaType
+            };
+
+            // --- 3. HANDLE CANVAS & GALLERY ---
+            if (isImg) {
+    return new Promise((resolve) => {
+        _makeImgThumb(permanentUrl, function(thumb) {
+            entry.thumb = thumb;
+            _mediaStore.image.unshift(entry);
+            _addAnyImageToCanvas(permanentUrl, file.name, file.type);
+            _renderGallery('image');
+            resolve();
+        });
+    });
+            } else {
+                return new Promise((resolve) => {
+                    _makeVidThumb(permanentUrl, function(thumb) {
+                        entry.thumb = thumb;
+                        _mediaStore.video.unshift(entry);
+                        addVideoToCanvas(permanentUrl, file.name);
+                        _renderGallery('video');
+                        resolve();
+                    });
+                });
+            }
+        } catch (err) {
+            console.error(`Upload failed for ${file.name}:`, err);
+            return null;
+        }
+    });
+
+    // Wait for all non-cancelled uploads to finish
+    await Promise.all(uploadPromises);
+
+    // --- 4. CLEANUP & SAVE ---
+    spinner.remove();
+    _saveMediaStore();
+    
+    // Final refresh to ensure gallery is sorted correctly
+    _renderGallery(mediaType);
+}
+
+
+
+
 
 function _renderGallery(mediaType) {
   const isImg = mediaType === 'image';
@@ -2721,9 +2970,11 @@ function _renderGallery(mediaType) {
     cell.onmouseleave = function() { this.style.borderColor='var(--bdr)'; this.style.transform=''; };
 
     // Click to add
-    if (isImg) {
-      cell.onclick = function() { _addImageToCanvas(entry.url); };
-    } else {
+if (isImg) {
+  cell.onclick = function() {
+    _addAnyImageToCanvas(entry.url, entry.name, '');
+  };
+} else {
       cell.onclick = function() { addVideoToCanvas(entry.url, entry.name); };
     }
 
@@ -2746,6 +2997,7 @@ function _renderGallery(mediaType) {
 
 function _makeImgThumb(url, cb) {
   const img = new Image();
+  img.crossOrigin = "anonymous";
   img.onload = function() {
     const c = document.createElement('canvas'); c.width = 80; c.height = 60;
     const ctx = c.getContext('2d');
@@ -2917,14 +3169,23 @@ function filterMedia(key, q) {
 
 async function _saveMediaStore() {
   try {
+    // ✅ Deduplicate by id before saving
+    function dedupe(arr) {
+      const seen = new Set();
+      return arr.filter(e => {
+        if (seen.has(e.id)) return false;
+        seen.add(e.id); return true;
+      });
+    }
     const data = {
-      image: _mediaStore.image.map(e => ({ id:e.id, name:e.name, b64:e.b64, thumb:e.thumb })),
-      video: _mediaStore.video.map(e => ({ id:e.id, name:e.name, b64:e.b64, thumb:e.thumb })),
+      image: dedupe(_mediaStore.image).map(e => ({ id:e.id, name:e.name, b64:e.b64, thumb:e.thumb })),
+      video: dedupe(_mediaStore.video).map(e => ({ id:e.id, name:e.name, b64:e.b64, thumb:e.thumb })),
     };
     await fetch('/api/media/save', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ user_id: parseInt(localStorage.getItem('droidal_user_id') || 1), media: data })    });
+      body: JSON.stringify({ user_id: parseInt(localStorage.getItem('droidal_user_id') || 1), media: data })
+    });
   } catch(err) { console.warn('Media save failed:', err); }
 }
 
@@ -2937,6 +3198,9 @@ async function _loadMediaStore() {
     ['image','video'].forEach(function(t) {
       (saved[t] || []).forEach(function(e) {
         if (!e.b64) return;
+        // ✅ Deduplicate by id — never add the same entry twice
+        const alreadyExists = _mediaStore[t].some(x => x.id === e.id);
+        if (alreadyExists) return;
         _mediaStore[t].push({ id:e.id, name:e.name, url:e.b64, b64:e.b64, thumb:e.thumb });
       });
       if (_mediaStore[t].length) _renderGallery(t);
@@ -2953,13 +3217,7 @@ async function _deleteMediaEntry(mediaType, id) {
   await _saveMediaStore();
 }
 
-function _fileToBase64(file) {
-  return new Promise(function(resolve) {
-    const r = new FileReader();
-    r.onload = e => resolve(e.target.result);
-    r.readAsDataURL(file);
-  });
-}
+
 
 
 function loadMoreMedia(key) {
@@ -3236,7 +3494,6 @@ function applyZoom(z) {
   document.getElementById('zoomLbl').textContent = zoom + '%';
   document.getElementById('zoomRange').value = zoom;
   document.getElementById('pageHdr').style.width = (CW * f) + 'px';
-  document.querySelector('.add-page-btn').style.width = (CW * f) + 'px';
 }
 function zoomIn()  { applyZoom(zoom+10); }
 function zoomOut() { applyZoom(zoom-10); }
@@ -3648,57 +3905,98 @@ const currentUserId  = localStorage.getItem('user_id') || 1;
 async function initEditor() {
   const params = new URLSearchParams(window.location.search);
   currentProjectId = params.get('id');
+  const isNew = params.get('new') === 'true';
 
-  if (!currentProjectId) return; // new project — start blank
+  pages = [null];
+  cur = 0;
+  canvas.clear();
 
+  if (!currentProjectId) {
+    await _loadMediaStore();
+    document.getElementById('pageLoader')?.remove();
+    return;
+  }
+
+  // ✅ NEW PROJECT — start completely blank
+  if (isNew) {
+    canvas.clear();
+    canvas.setBackgroundColor('#ffffff', canvas.renderAll.bind(canvas));
+    addHeaderFooter();
+    pages = [getJSON()];
+    cur = 0;
+    renderDots();
+    await _loadMediaStore();
+    setTimeout(() => document.getElementById('pageLoader')?.remove(), 300);
+    return; // ✅ Exit early — never loads old project data
+  }
+
+  // EXISTING PROJECT — load from server by ID
   try {
     const res = await fetch(`/api/project/${currentProjectId}`);
     if (!res.ok) throw new Error('Project not found');
     const project = await res.json();
 
     if (project && project.data) {
-      // data can be an array of pages or a single page JSON
-      if (Array.isArray(project.data)) {
-        pages = project.data;
-      } else if (typeof project.data === 'object' && project.data.objects !== undefined) {
-        // single canvas JSON stored directly
-        pages = [project.data];
-      } else {
-        pages = [null];
-      }
-      cur = 0;
-      renderDots();
-      loadCurrentPage();
-      // Also restore media library for this user
-      await _loadMediaStore();
-    }
+  currentProjectTitle = project.title || 'Untitled'; // ← store it
+  pages = Array.isArray(project.data) ? project.data : [project.data];
+  cur = 0;
+  loadCurrentPage();
+  renderDots();
+}
+    await _loadMediaStore();
   } catch(e) {
     console.warn('initEditor failed:', e);
+    // Fallback to blank canvas on error
+    canvas.clear();
+    canvas.setBackgroundColor('#ffffff', canvas.renderAll.bind(canvas));
+    addHeaderFooter();
+  } finally {
+    setTimeout(() => document.getElementById('pageLoader')?.remove(), 300);
   }
 }
 
-// Call initEditor immediately (replaces the broken loadSession that used localStorage)
-initEditor();
+
+function captureFirstPagePreview() {
+    // Adjust this selector to match your actual first-page canvas element
+    const canvas = document.querySelector('canvas');
+    if (!canvas) return null;
+    try {
+        return canvas.toDataURL('image/jpeg', 0.7);
+    } catch(e) {
+        return null;
+    }
+}
 
 async function actualSaveLogic() {
   pages[cur] = getJSON();
 
-  const params = new URLSearchParams(window.location.search);
-  const titleParam = params.get('title') || 'Untitled';
+   let coverPage = '';
+  try {
+    const firstCanvas = document.querySelector('canvas');
+    if (firstCanvas) {
+      // Temporarily switch to page 0 snapshot if not already on it
+      coverPage = firstCanvas.toDataURL('image/jpeg', 0.75);
+    }
+  } catch(e) { console.warn('Cover capture failed:', e); }
+
+  const user = JSON.parse(localStorage.getItem('droidal_user') || '{}');
+  const userId = parseInt(user.user_id || localStorage.getItem('droidal_user_id') || 1);
 
   const projectData = {
-    id: currentProjectId,
-    user_id: parseInt(localStorage.getItem('droidal_user_id') || localStorage.getItem('user_id') || 1),
-    title: titleParam,
-    type: "flipbook",
-    data: pages,
-    preview_bg: localStorage.getItem(`droidal_bg_${BOOK_ID}`) || ''
+    id:         currentProjectId,
+    user_id:    userId,
+    title:      currentProjectTitle,   // use stored title, not URL param
+    type:       'flipbook',
+    data:       pages,
+    preview_bg: localStorage.getItem(`droidal_bg_${BOOK_ID}`) || '',
+    cover_page: coverPage
+
   };
 
   const res = await fetch('/api/projects/save', {
-    method: 'POST',
+    method:  'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(projectData)
+    body:    JSON.stringify(projectData)
   });
 
   if (!res.ok) {
@@ -3712,24 +4010,35 @@ async function actualSaveLogic() {
   return result;
 }
 
+
 async function saveAllPages() {
   pages[cur] = getJSON();
   const btn = document.getElementById('saveBtn');
   if (btn) { btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving…'; btn.disabled = true; }
   try {
-    await fetch('/api/pages/save', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        user_id: parseInt(CURRENT_USER_ID),
-        book_id: BOOK_ID,
-        pages:   pages,
-        meta:    { cur }
-      })
-    });
+    if (currentProjectId) {
+      // Project-based save — correct API
+      await actualSaveLogic();
+    } else {
+      // Legacy book-based save (no project ID)
+      const user = JSON.parse(localStorage.getItem('droidal_user') || '{}');
+      await fetch('/api/pages/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: parseInt(user.user_id || 1),
+          book_id: BOOK_ID,
+          pages:   pages,
+          meta:    { cur }
+        })
+      });
+    }
     const badge = document.getElementById('saveBadge');
-    if (badge) { badge.style.opacity='1'; setTimeout(()=>badge.style.opacity='0', 2000); }
-  } catch(err) { console.warn('Save failed:', err); }
+    if (badge) { badge.style.opacity = '1'; setTimeout(() => badge.style.opacity = '0', 2000); }
+  } catch(err) {
+    console.warn('Save failed:', err);
+    alert('Save failed: ' + err.message);
+  }
   if (btn) { btn.innerHTML = '<i class="fa-solid fa-cloud-arrow-up"></i> Save'; btn.disabled = false; }
 }
 
@@ -3810,7 +4119,7 @@ async function previewBook() {
       try { await navigator.clipboard.writeText(fullUrl); } catch(e) {}
     }
 
-    window.open(shareUrl, "_blank");
+    window.open(shareUrl + '?owner=1', "_blank");
 
   } catch (e) {
     console.error("Preview failed:", e);
@@ -4001,28 +4310,62 @@ function fpApplyFocused(scroll){
 
 function fpScrollToFocused(){ document.getElementById('fpList')?.querySelector('.fp-item.focused')?.scrollIntoView({block:'nearest'}); }
 
-function fpSelectFont(fontName,closeAfter){
-  _fpSelected=fontName;
-  _fpFocusIdx=_fpFiltered.findIndex(f=>f.family===fontName);
-  _fpEnsureLoaded(fontName).then(()=>{
-    const lbl=document.getElementById('fpLabel'), sw=document.getElementById('fpSwatch');
-    if(lbl){lbl.textContent=fontName;lbl.style.fontFamily=`'${fontName}',sans-serif`;}
-    if(sw)sw.style.fontFamily=`'${fontName}',sans-serif`;
+function fpSelectFont(fontName, closeAfter){
+  _fpSelected = fontName;
+  _fpFocusIdx = _fpFiltered.findIndex(f => f.family === fontName);
+  
+  _fpEnsureLoaded(fontName).then(() => {
+    const lbl = document.getElementById('fpLabel'), 
+          sw = document.getElementById('fpSwatch');
+    
+    if(lbl) {
+      lbl.textContent = fontName;
+      lbl.style.fontFamily = `'${fontName}', sans-serif`;
+    }
+    if(sw) sw.style.fontFamily = `'${fontName}', sans-serif`;
+
+    // Apply to canvas
     _fpApplyToCanvas(fontName);
-    document.querySelectorAll('#fpList .fp-item').forEach((el,i)=>{
-      el.classList.toggle('selected',_fpFiltered[i]?.family===fontName);
-      el.classList.toggle('focused',i===_fpFocusIdx);
+
+    // Update UI highlights
+    document.querySelectorAll('#fpList .fp-item').forEach((el, i) => {
+      el.classList.toggle('selected', _fpFiltered[i]?.family === fontName);
+      el.classList.toggle('focused', i === _fpFocusIdx);
     });
-    if(closeAfter)setTimeout(fpClose,140);
+
+    if(closeAfter) setTimeout(fpClose, 140);
+    
+    // FINAL SAFETY RENDER: 
+    // Wait 50ms for the browser to "paint" the font, then render one last time
+    setTimeout(() => canvas.requestRenderAll(), 50);
   });
 }
 
 function _fpApplyToCanvas(fontName){
-  const obj=canvas?.getActiveObject();if(!obj)return;
-  const apply=o=>{if(o.type==='i-text'||o.type==='text'||o.type==='textbox')o.set('fontFamily',fontName);};
-  if(obj.type==='activeSelection')obj.forEachObject(apply);else apply(obj);
-  canvas.requestRenderAll();
-  if(fontName===_fpSelected)hist();
+  const obj = canvas?.getActiveObject();
+  if(!obj) return;
+
+  const apply = o => {
+    if(o.type === 'i-text' || o.type === 'text' || o.type === 'textbox') {
+      o.set('fontFamily', fontName);
+      
+      // FORCED SYNC:
+      o.set('dirty', true);      // Tells Fabric the object changed visually
+      if (o.initDimensions) {
+          o.initDimensions();    // Recalculates width/height for the new font
+      }
+      o.setCoords();             // Updates selection handles to match new size
+    }
+  };
+
+  if(obj.type === 'activeSelection') {
+    obj.forEachObject(apply);
+  } else {
+    apply(obj);
+  }
+
+  canvas.requestRenderAll(); // Re-draw the canvas
+  if(fontName === _fpSelected) hist();
 }
 
 function _fpEnsureLoaded(fontName){
@@ -4089,6 +4432,852 @@ function syncFontDd(){fpSyncFromCanvas();}
 function selectFont(f){fpSelectFont(f,true);}
 function applyFontToCanvas(f){_fpApplyToCanvas(f);}
 function filterFontDd(q){_fpQuery=q;fpBuildFiltered();fpRenderList();}
+
+// ═══════════════════════════════════════════
+// IMAGE TOOLS: CROP, REMOVE BG, TRANSPARENT BG
+// ═══════════════════════════════════════════
+
+  // ═══════════════════════════════════════════════════════
+// IMAGE TOOLS — CROP ON CANVAS + FREEHAND ERASE
+// ═══════════════════════════════════════════════════════
+
+// ── Show/hide image buttons when image selected ──────────────────────────────
+canvas.on('selection:created', _imgSelCheck);
+canvas.on('selection:updated', _imgSelCheck);
+canvas.on('selection:cleared', _imgSelClear);
+
+function _imgSelCheck() {
+  // Don't interfere if a tool is actively running
+  if (_activeImgTool) return;
+  const obj = canvas.getActiveObject();
+  const show = !!(obj && obj.type === 'image');
+  document.getElementById('imgToolsDvd').style.display = show ? 'block' : 'none';
+  document.getElementById('btnCropImg').style.display  = show ? 'flex'  : 'none';
+  document.getElementById('btnTransBg').style.display  = show ? 'flex'  : 'none';
+  document.getElementById('btnRemoveBg').style.display = show ? 'flex'  : 'none';
+}
+
+function _imgSelClear() {
+  // Don't hide toolbar if a tool is actively running
+  if (_activeImgTool) return;
+  ['imgToolsDvd','btnCropImg','btnTransBg','btnRemoveBg',
+   'imgActionDvd','imgActionLabel','btnApplyImgTool','btnCancelImgTool','imgBrushSize']
+    .forEach(id => { const el = document.getElementById(id); if(el) el.style.display='none'; });
+}
+
+function _showActionBar(label) {
+  document.getElementById('btnCropImg').style.display    = 'none';
+  document.getElementById('btnTransBg').style.display    = 'none';
+  document.getElementById('btnRemoveBg').style.display   = 'none';
+  document.getElementById('imgActionDvd').style.display  = 'block';
+  document.getElementById('imgActionLabel').style.display= 'inline';
+  document.getElementById('imgActionLabel').textContent  = label;
+  document.getElementById('btnApplyImgTool').style.display  = 'flex';
+  document.getElementById('btnCancelImgTool').style.display = 'flex';
+  // Prevent canvas selection events from hiding toolbar while tool is active
+  document.getElementById('propsBar').style.pointerEvents = 'all';
+  document.getElementById('propsBar').classList.add('on');
+}
+
+function _hideActionBar() {
+  document.getElementById('imgActionDvd').style.display      = 'none';
+  document.getElementById('imgActionLabel').style.display    = 'none';
+  document.getElementById('btnApplyImgTool').style.display   = 'none';
+  document.getElementById('btnCancelImgTool').style.display  = 'none';
+  document.getElementById('imgBrushSize').style.display      = 'none';
+  document.getElementById('imgToolsDvd').style.display       = 'none';
+  // Restore normal toolbar behavior
+  _activeImgTool = null;
+  _imgSelCheck();
+}
+
+// ── Shared helpers ────────────────────────────────────────────────────────────
+let _activeImgTool = null; // 'crop' | 'transbg' | 'removebg'
+let _activeImgObj  = null;
+let _toolOverlay   = null;
+
+function _removeOverlay() {
+  if (_toolOverlay) { _toolOverlay.remove(); _toolOverlay = null; }
+  canvas.selection = true;
+  canvas.forEachObject(o => {
+    if (o._prevSel !== undefined) { o.selectable = o._prevSel; o.evented = o._prevSel; }
+  });
+  canvas.renderAll();
+}
+
+function _lockCanvas() {
+  canvas.discardActiveObject();
+  canvas.selection = false;
+  canvas.forEachObject(o => { o._prevSel = o.selectable; o.selectable = false; o.evented = false; });
+  canvas.renderAll();
+}
+
+function _getFabricRect() {
+  return document.querySelector('.canvas-container') || document.getElementById('c').parentElement;
+}
+
+function _replaceImg(oldObj, dataUrl, cb) {
+  fabric.Image.fromURL(dataUrl, function(newImg) {
+    newImg.set({
+      left: oldObj.left, top: oldObj.top,
+      scaleX: oldObj.scaleX, scaleY: oldObj.scaleY,
+      angle: oldObj.angle,
+      originX: oldObj.originX || 'left',
+      originY: oldObj.originY || 'top',
+    });
+    canvas.remove(oldObj);
+    canvas.add(newImg);
+    canvas.setActiveObject(newImg);
+    canvas.renderAll();
+    hist();
+    if (cb) cb(newImg);
+  });
+}
+
+// ── APPLY / CANCEL dispatcher ─────────────────────────────────────────────────
+function applyImgTool() {
+  if (_activeImgTool === 'crop')     applyCrop();
+  else if (_activeImgTool === 'transbg' || _activeImgTool === 'removebg' || _activeImgTool === 'manual') applyErase();
+}
+
+function cancelImgTool() {
+  const mb = document.getElementById('eraseModebar');
+  if (mb) mb.remove();
+  _removeOverlay();
+  _activeImgTool   = null;
+  _activeImgObj    = null;
+  _eraseOffCanvas  = null;
+  _eraseMaskCanvas = null;
+  _hideActionBar();
+  _imgSelCheck();
+}
+
+// ══════════════════════════════════════════════════════
+// CROP TOOL
+// ══════════════════════════════════════════════════════
+let _cropData = null; // { x,y,w,h } in overlay px
+
+function startCrop() {
+  const obj = canvas.getActiveObject();
+  if (!obj || obj.type !== 'image') { alert('Select an image first.'); return; }
+  _activeImgTool = 'crop';
+  _activeImgObj  = obj;
+  _cropData      = null;
+
+  _lockCanvas();
+
+  const fabricEl = document.getElementById('c');
+  const rect      = fabricEl.getBoundingClientRect();
+
+  // Overlay covers exactly the fabric canvas
+  _toolOverlay = document.createElement('div');
+  _toolOverlay.style.cssText = `
+    position:fixed; left:${rect.left}px; top:${rect.top}px;
+    width:${rect.width}px; height:${rect.height}px;
+    cursor:crosshair; z-index:2000; user-select:none;
+  `;
+
+  // Dark dimming layer
+  const dim = document.createElement('div');
+  dim.style.cssText = 'position:absolute;inset:0;background:rgba(0,0,0,0.45);pointer-events:none;';
+  _toolOverlay.appendChild(dim);
+
+  // Selection rectangle
+  const selBox = document.createElement('div');
+  selBox.style.cssText = `
+    position:absolute; border:2px solid #6366f1;
+    box-shadow:0 0 0 9999px rgba(0,0,0,0.45);
+    display:none; pointer-events:none;
+  `;
+  _toolOverlay.appendChild(selBox);
+
+  document.body.appendChild(_toolOverlay);
+  _showActionBar('✂ Drag to select crop area');
+
+  let dragging = false, sx = 0, sy = 0;
+
+  _toolOverlay.addEventListener('mousedown', e => {
+    const r = _toolOverlay.getBoundingClientRect();
+    sx = e.clientX - r.left;
+    sy = e.clientY - r.top;
+    dragging = true;
+    selBox.style.display = 'block';
+    selBox.style.left = sx+'px'; selBox.style.top = sy+'px';
+    selBox.style.width = '0'; selBox.style.height = '0';
+  });
+
+  _toolOverlay.addEventListener('mousemove', e => {
+    if (!dragging) return;
+    const r  = _toolOverlay.getBoundingClientRect();
+    const cx = e.clientX - r.left;
+    const cy = e.clientY - r.top;
+    const x  = Math.min(cx, sx), y = Math.min(cy, sy);
+    const w  = Math.abs(cx - sx), h = Math.abs(cy - sy);
+    selBox.style.left = x+'px'; selBox.style.top = y+'px';
+    selBox.style.width = w+'px'; selBox.style.height = h+'px';
+    _cropData = { x, y, w, h };
+  });
+
+  _toolOverlay.addEventListener('mouseup', () => { dragging = false; });
+}
+
+function applyCrop() {
+  if (!_cropData || _cropData.w < 5 || _cropData.h < 5) {
+    alert('Please drag on the image to select the area you want to keep.');
+    return;
+  }
+
+  const obj   = _activeImgObj;
+  const fabricEl = document.getElementById('c');
+  const rect  = fabricEl.getBoundingClientRect();
+
+  // Scale from screen px → fabric canvas px
+  const scX = canvas.getWidth()  / rect.width;
+  const scY = canvas.getHeight() / rect.height;
+
+  const fabX = _cropData.x * scX;
+  const fabY = _cropData.y * scY;
+  const fabW = _cropData.w * scX;
+  const fabH = _cropData.h * scY;
+
+  // Scale from fabric canvas px → image natural px
+  const imgEl  = obj.getElement();
+  const natW   = imgEl.naturalWidth  || imgEl.width;
+  const natH   = imgEl.naturalHeight || imgEl.height;
+  const dispW  = obj.getScaledWidth();
+  const dispH  = obj.getScaledHeight();
+
+  // Image top-left on fabric canvas (accounting for originX/originY center)
+  const oX = obj.originX === 'center' ? obj.left - dispW/2 : obj.left;
+  const oY = obj.originY === 'center' ? obj.top  - dispH/2 : obj.top;
+
+  const relX = ((fabX - oX) / dispW) * natW;
+  const relY = ((fabY - oY) / dispH) * natH;
+  const relW = (fabW / dispW) * natW;
+  const relH = (fabH / dispH) * natH;
+
+  const cx = Math.max(0, relX);
+  const cy = Math.max(0, relY);
+  const cw = Math.min(relW, natW - cx);
+  const ch = Math.min(relH, natH - cy);
+
+  if (cw < 2 || ch < 2) { alert('Crop area is outside the image. Try again.'); return; }
+
+  const tmp = document.createElement('canvas');
+  tmp.width  = cw; tmp.height = ch;
+  tmp.getContext('2d').drawImage(imgEl, cx, cy, cw, ch, 0, 0, cw, ch);
+
+  const url    = tmp.toDataURL('image/png');
+  const oldObj = obj;
+
+  _removeOverlay();
+  _activeImgTool = null; _activeImgObj = null; _cropData = null;
+  _hideActionBar();
+  _replaceImg(oldObj, url);
+}
+
+// ══════════════════════════════════════════════════════
+// FREEHAND ERASE TOOL (Trans BG + Remove BG)
+// ══════════════════════════════════════════════════════
+let _eraseOffCanvas  = null;
+let _eraseMaskCanvas = null;
+let _eraseBrushPx    = 20;
+let _eraseDrawing    = false;
+let _eraseLast       = null;
+
+// REPLACE entire startErase function with this:
+function startErase(mode) {
+  const obj = canvas.getActiveObject();
+  if (!obj || obj.type !== 'image') { alert('Select an image first.'); return; }
+  _activeImgTool = mode;
+  _activeImgObj  = obj;
+  _eraseDrawing  = false;
+  _eraseLast     = null;
+
+  const imgEl = obj.getElement();
+  const natW  = imgEl.naturalWidth  || imgEl.width;
+  const natH  = imgEl.naturalHeight || imgEl.height;
+
+  _eraseOffCanvas = document.createElement('canvas');
+  _eraseOffCanvas.width  = natW;
+  _eraseOffCanvas.height = natH;
+  _eraseOffCanvas.getContext('2d').drawImage(imgEl, 0, 0, natW, natH);
+
+  _eraseMaskCanvas = document.createElement('canvas');
+  _eraseMaskCanvas.width  = natW;
+  _eraseMaskCanvas.height = natH;
+
+  // ── AI mode — run immediately, no overlay needed ──────────────────────────
+  if (mode === 'removebg') {
+    _showActionBar('🤖 Removing background...');
+    document.getElementById('btnApplyImgTool').style.display  = 'none'; // no apply needed
+    document.getElementById('btnCancelImgTool').style.display = 'flex';
+    runAiRemoveBg();
+    return;
+  }
+
+  // ── Manual mode — show paint overlay ─────────────────────────────────────
+  _lockCanvas();
+
+  const fabricEl = document.getElementById('c');
+  const rect     = fabricEl.getBoundingClientRect();
+
+  _toolOverlay = document.createElement('canvas');
+  _toolOverlay.width  = Math.round(rect.width);
+  _toolOverlay.height = Math.round(rect.height);
+  _toolOverlay.style.cssText = `
+    position:fixed; left:${rect.left}px; top:${rect.top}px;
+    width:${rect.width}px; height:${rect.height}px;
+    z-index:2000; cursor:crosshair;
+  `;
+  document.body.appendChild(_toolOverlay);
+  const ctx = _toolOverlay.getContext('2d');
+
+  _showActionBar('🖌 Paint over background to erase');
+  document.getElementById('imgBrushSize').style.display = 'inline-block';
+
+  function getPos(e) {
+    const r    = _toolOverlay.getBoundingClientRect();
+    const ex   = (e.touches ? e.touches[0].clientX : e.clientX) - r.left;
+    const ey   = (e.touches ? e.touches[0].clientY : e.clientY) - r.top;
+    const scX  = canvas.getWidth()  / rect.width;
+    const scY  = canvas.getHeight() / rect.height;
+    const dispW = obj.getScaledWidth();
+    const dispH = obj.getScaledHeight();
+    const oX    = obj.originX === 'center' ? obj.left - dispW/2 : obj.left;
+    const oY    = obj.originY === 'center' ? obj.top  - dispH/2 : obj.top;
+    const nx    = ((ex*scX - oX) / dispW) * natW;
+    const ny    = ((ey*scY - oY) / dispH) * natH;
+    return { ex, ey, nx: Math.round(nx), ny: Math.round(ny) };
+  }
+
+  function paintAt(pos) {
+    ctx.fillStyle = 'rgba(239,68,68,0.45)';
+    ctx.beginPath();
+    ctx.arc(pos.ex, pos.ey,
+      _eraseBrushPx * (rect.width / canvas.getWidth()), 0, Math.PI*2);
+    ctx.fill();
+    const mCtx     = _eraseMaskCanvas.getContext('2d');
+    const brushNat = _eraseBrushPx * (natW / obj.getScaledWidth());
+    mCtx.fillStyle = '#ff0000';
+    mCtx.beginPath();
+    mCtx.arc(pos.nx, pos.ny, brushNat, 0, Math.PI*2);
+    mCtx.fill();
+  }
+
+  function paintLine(a, b) {
+    const steps = Math.max(1, Math.ceil(Math.hypot(b.ex-a.ex, b.ey-a.ey)/3));
+    for (let i = 1; i <= steps; i++) {
+      const t = i/steps;
+      paintAt({
+        ex: a.ex+(b.ex-a.ex)*t, ey: a.ey+(b.ey-a.ey)*t,
+        nx: a.nx+(b.nx-a.nx)*t, ny: a.ny+(b.ny-a.ny)*t,
+      });
+    }
+  }
+
+  _toolOverlay.onmousedown  = e => { _eraseDrawing=true; const p=getPos(e); _eraseLast=p; paintAt(p); };
+  _toolOverlay.onmousemove  = e => { if(!_eraseDrawing)return; const p=getPos(e); if(_eraseLast)paintLine(_eraseLast,p); _eraseLast=p; };
+  _toolOverlay.onmouseup    = () => { _eraseDrawing=false; _eraseLast=null; };
+  _toolOverlay.onmouseleave = () => { _eraseDrawing=false; _eraseLast=null; };
+  _toolOverlay.ontouchstart = e => { e.preventDefault(); _eraseDrawing=true; const p=getPos(e); _eraseLast=p; paintAt(p); };
+  _toolOverlay.ontouchmove  = e => { e.preventDefault(); if(!_eraseDrawing)return; const p=getPos(e); if(_eraseLast)paintLine(_eraseLast,p); _eraseLast=p; };
+  _toolOverlay.ontouchend   = () => { _eraseDrawing=false; _eraseLast=null; };
+}
+
+
+async function runAiRemoveBg() {
+  const labelEl = document.getElementById('imgActionLabel');
+  if (labelEl) labelEl.textContent = '🤖 Removing background...';
+
+  // Snapshot which object this run is for — if it changes mid-flight, discard result
+  const targetObj = _activeImgObj;
+  const capturedCanvas = _eraseOffCanvas;
+
+  try {
+    const imageData = capturedCanvas.toDataURL('image/png');
+
+    const res = await fetch('/api/remove-bg', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ image: imageData })
+    });
+
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.detail || 'Server error');
+    }
+
+    // ── STALE CHECK: if user started a new tool on a different image, discard ──
+    if (_activeImgObj !== targetObj) {
+      console.log('Remove BG result discarded — user moved on to another image');
+      return;
+    }
+
+    const data   = await res.json();
+    const url    = data.result;
+    const oldObj = _activeImgObj;
+
+    _removeOverlay();
+    _activeImgTool   = null; _activeImgObj = null;
+    _eraseOffCanvas  = null; _eraseMaskCanvas = null;
+    _hideActionBar();
+    _replaceImg(oldObj, url);
+
+  } catch(err) {
+    if (_activeImgObj !== targetObj) return; // stale, silently discard
+    console.error(err);
+    if (labelEl) labelEl.innerHTML = `<span style="color:#ef4444">❌ ${err.message}</span>`;
+    const cancelBtn = document.getElementById('btnCancelImgTool');
+    if (cancelBtn) cancelBtn.style.display = 'flex';
+  }
+}
+
+
+function updateEraseBrush(v) { _eraseBrushPx = v; }
+
+// FIND and REPLACE the entire applyErase function:
+function applyErase() {
+  if (!_eraseOffCanvas || !_eraseMaskCanvas) { 
+    cancelImgTool(); 
+    return; 
+  }
+
+  const W   = _eraseOffCanvas.width;
+  const H   = _eraseOffCanvas.height;
+  const out = document.createElement('canvas');
+  out.width = W; out.height = H;
+  const ctx = out.getContext('2d');
+
+  // Draw original image
+  ctx.drawImage(_eraseOffCanvas, 0, 0);
+
+  // Apply mask
+  const imgData = ctx.getImageData(0, 0, W, H);
+  const d       = imgData.data;
+  const mCtx    = _eraseMaskCanvas.getContext('2d');
+  const mask    = mCtx.getImageData(0, 0, W, H).data;
+
+  for (let i = 0; i < d.length; i += 4) {
+    if (mask[i] > 10) {
+      d[i+3] = Math.max(0, Math.round(d[i+3] * (1 - mask[i] / 255)));
+    }
+  }
+
+  ctx.putImageData(imgData, 0, 0);
+
+  // Save references before cleanup
+  const url    = out.toDataURL('image/png');
+  const oldObj = _activeImgObj;
+
+  // Cleanup AFTER saving references
+  const mb = document.getElementById('eraseModebar');
+  if (mb) mb.remove();
+
+  _removeOverlay();
+
+  // Clear state AFTER saving oldObj
+  _activeImgTool   = null;
+  _activeImgObj    = null;
+  _eraseOffCanvas  = null;
+  _eraseMaskCanvas = null;
+
+  _hideActionBar();
+
+  // Apply to canvas — must happen last
+  if (!oldObj) { console.warn('applyErase: no target object'); return; }
+
+  fabric.Image.fromURL(url, function(newImg) {
+    newImg.set({
+      left:    oldObj.left,
+      top:     oldObj.top,
+      scaleX:  oldObj.scaleX,
+      scaleY:  oldObj.scaleY,
+      angle:   oldObj.angle,
+      originX: oldObj.originX || 'left',
+      originY: oldObj.originY || 'top',
+    });
+    canvas.remove(oldObj);
+    canvas.add(newImg);
+    canvas.setActiveObject(newImg);
+    canvas.renderAll();
+    hist();
+  });
+}
+// ═══════════════════════════════════════════════════
+// GIF ENGINE — frame-accurate animated GIF on canvas
+// ═══════════════════════════════════════════════════
+const _gifRegistry = new Map(); // fabImg -> { frames, currentFrame, lastTime, offCanvas, compositeCanvas }
+let _gifLoopRunning = false;
+// ─── UNIVERSAL ANIMATED IMAGE DISPATCHER ─────────────────────────────────────
+function _detectAnimType(url, name, mimeType) {
+  const n = (name || url || '').toLowerCase();
+  if (n.endsWith('.lottie') || n.endsWith('.json') || mimeType === 'application/json') return 'lottie';
+  if (n.endsWith('.gif') || mimeType === 'image/gif') return 'gif';
+  if (n.endsWith('.webp') || mimeType === 'image/webp') return 'webp';
+  if (n.endsWith('.apng')) return 'apng';
+  if (n.endsWith('.avif') || mimeType === 'image/avif') return 'avif';
+  return 'static';
+}
+
+function _addAnyImageToCanvas(url, name, mimeType) {
+  const type = _detectAnimType(url, name, mimeType);
+  if (type === 'lottie') {
+    addLottieToCanvas(url);
+  } else if (type === 'gif') {
+    addGifToCanvas(url);
+  } else {
+    // webp/apng/avif/static — browser renders natively via <img>
+    // For animated webp/apng the browser animates the <img> element;
+    // we snapshot frames using a video-style RAF loop
+    _addAnimatedNativeToCanvas(url, type);
+  }
+}
+
+// ─── NATIVE ANIMATED (WebP / APNG / AVIF) ────────────────────────────────────
+// The browser animates these inside an <img> element automatically.
+// We draw the <img> to an offCanvas each RAF tick so Fabric stays in sync.
+function _addAnimatedNativeToCanvas(url, type) {
+  const img = new window.Image();
+  img.crossOrigin = 'anonymous';
+  img.onload = function() {
+    const W = img.naturalWidth  || img.width;
+    const H = img.naturalHeight || img.height;
+    const maxW  = Math.min(260, CW - 40);
+    const scale = maxW / W;
+
+    const offCanvas = document.createElement('canvas');
+    offCanvas.width  = W;
+    offCanvas.height = H;
+
+    const fabImg = new fabric.Image(offCanvas, {
+      left: 60 + Math.random() * 40,
+      top:  60 + Math.random() * 40,
+      scaleX: scale,
+      scaleY: scale,
+      objectCaching: false,
+      isGifFabric:  true,   // reuse gif registry for RAF loop
+      customGifSrc: url,
+      _b64src: url,
+    });
+    fabImg.width  = W;
+    fabImg.height = H;
+    fabImg._offCanvas  = offCanvas;
+    fabImg._nativeImg  = img;   // keep reference so it animates
+
+    fabImg._render = function(ctx) {
+      if (!this._offCanvas) return;
+      ctx.drawImage(this._offCanvas, -this.width / 2, -this.height / 2, this.width, this.height);
+    };
+
+    // Use a lightweight native-frame entry in the gif registry
+    _gifRegistry.set(fabImg, {
+      _native: true,
+      _img: img,
+      offCanvas,
+      frames: [{ delay: 3 }],   // dummy so registry isn't empty
+      currentFrame: 0,
+      lastTime: performance.now(),
+    });
+
+    _startNativeAnimLoop();
+
+    canvas.add(fabImg);
+    canvas.setActiveObject(fabImg);
+    hist();
+    renderLayers();
+  };
+  img.onerror = function() { _addImageToCanvas(url); };
+  img.src = url;
+}
+
+let _nativeLoopRunning = false;
+function _startNativeAnimLoop() {
+  if (_nativeLoopRunning) return;
+  _nativeLoopRunning = true;
+  function tick() {
+    let dirty = false;
+    _gifRegistry.forEach(function(entry, fabImg) {
+      if (!entry._native) return;
+      if (!fabImg.canvas) { _gifRegistry.delete(fabImg); return; }
+      const offCtx = entry.offCanvas.getContext('2d');
+      offCtx.clearRect(0, 0, entry.offCanvas.width, entry.offCanvas.height);
+      offCtx.drawImage(entry._img, 0, 0, entry.offCanvas.width, entry.offCanvas.height);
+      fabImg.set('dirty', true);
+      dirty = true;
+    });
+    if (dirty) canvas.renderAll();
+    const hasNative = [..._gifRegistry.values()].some(e => e._native);
+    if (hasNative) requestAnimationFrame(tick);
+    else _nativeLoopRunning = false;
+  }
+  requestAnimationFrame(tick);
+}
+
+// ─── LOTTIE ON CANVAS ─────────────────────────────────────────────────────────
+const _lottieRegistry = new Map(); // fabImg -> { anim, offCanvas }
+let _lottieLoopRunning = false;
+
+function addLottieToCanvas(url) {
+  fetch(url)
+    .then(function(r) { return r.json(); })
+    .then(function(animData) {
+      const W = animData.w || 300;
+      const H = animData.h || 300;
+      const maxW  = Math.min(260, CW - 40);
+      const scale = maxW / W;
+
+      // Hidden container for lottie-web to render into
+      const container = document.createElement('div');
+      container.style.cssText = 'position:fixed;left:-9999px;top:0;width:'+W+'px;height:'+H+'px;overflow:hidden;pointer-events:none;';
+      document.body.appendChild(container);
+
+      const anim = lottie.loadAnimation({
+        container:  container,
+        renderer:   'canvas',
+        loop:       true,
+        autoplay:   true,
+        animationData: animData,
+        rendererSettings: { clearCanvas: true, preserveAspectRatio: 'xMidYMid meet' },
+      });
+
+      const offCanvas = document.createElement('canvas');
+      offCanvas.width  = W;
+      offCanvas.height = H;
+
+      const fabImg = new fabric.Image(offCanvas, {
+        left: 60 + Math.random() * 40,
+        top:  60 + Math.random() * 40,
+        scaleX: scale,
+        scaleY: scale,
+        objectCaching: false,
+        isGifFabric:  true,
+        customGifSrc: url,
+        _b64src: url,
+      });
+      fabImg.width  = W;
+      fabImg.height = H;
+      fabImg._offCanvas = offCanvas;
+
+      fabImg._render = function(ctx) {
+        if (!this._offCanvas) return;
+        ctx.drawImage(this._offCanvas, -this.width / 2, -this.height / 2, this.width, this.height);
+      };
+
+      _lottieRegistry.set(fabImg, { anim, offCanvas, container });
+      _startLottieLoop();
+
+      canvas.add(fabImg);
+      canvas.setActiveObject(fabImg);
+      hist();
+      renderLayers();
+    })
+    .catch(function(err) {
+      console.warn('Lottie load failed:', err);
+      _addImageToCanvas(url);
+    });
+}
+
+function _startLottieLoop() {
+  if (_lottieLoopRunning) return;
+  _lottieLoopRunning = true;
+  function tick() {
+    if (_lottieRegistry.size === 0) { _lottieLoopRunning = false; return; }
+    let dirty = false;
+    _lottieRegistry.forEach(function(entry, fabImg) {
+      if (!fabImg.canvas) {
+        entry.anim.destroy();
+        entry.container.remove();
+        _lottieRegistry.delete(fabImg);
+        return;
+      }
+      // Grab what lottie-web drew into its internal canvas
+      const lottieCanvas = entry.container.querySelector('canvas');
+      if (!lottieCanvas) return;
+      const offCtx = entry.offCanvas.getContext('2d');
+      offCtx.clearRect(0, 0, entry.offCanvas.width, entry.offCanvas.height);
+      offCtx.drawImage(lottieCanvas, 0, 0, entry.offCanvas.width, entry.offCanvas.height);
+      fabImg.set('dirty', true);
+      dirty = true;
+    });
+    if (dirty) canvas.renderAll();
+    requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+}
+function addGifToCanvas(url) {
+  fetch(url)
+    .then(function(r) { return r.arrayBuffer(); })
+    .then(function(buf) {
+      const gif    = parseGIF(buf);
+      const frames = decompressFrames(gif, true);
+      if (!frames || !frames.length) { _addImageToCanvas(url); return; }
+
+      const W = frames[0].dims.width;
+      const H = frames[0].dims.height;
+
+      // Offscreen canvas shown on fabric
+      const offCanvas = document.createElement('canvas');
+      offCanvas.width  = W;
+      offCanvas.height = H;
+
+      // Composite canvas accumulates disposal-aware frames
+      const compCanvas = document.createElement('canvas');
+      compCanvas.width  = W;
+      compCanvas.height = H;
+
+      // Draw first frame immediately
+      _renderGifFrame({ frames, currentFrame: 0, offCanvas, compositeCanvas: compCanvas });
+
+      const maxW  = Math.min(260, CW - 40);
+      const scale = maxW / W;
+
+      const fabImg = new fabric.Image(offCanvas, {
+        left: 60 + Math.random() * 40,
+        top:  60 + Math.random() * 40,
+        scaleX: scale,
+        scaleY: scale,
+        objectCaching: false,
+        isGifFabric:  true,
+        customGifSrc: url,
+        _b64src: url,
+      });
+      fabImg.width  = W;
+      fabImg.height = H;
+      fabImg._offCanvas = offCanvas;
+
+      // Override _render so fabric draws from our live offCanvas
+      fabImg._render = function(ctx) {
+        if (!this._offCanvas) return;
+        ctx.drawImage(this._offCanvas, -this.width / 2, -this.height / 2, this.width, this.height);
+      };
+
+      _gifRegistry.set(fabImg, {
+        frames,
+        currentFrame: 0,
+        lastTime: performance.now(),
+        offCanvas,
+        compositeCanvas: compCanvas,
+      });
+
+      _startGlobalGifLoop();
+
+      canvas.add(fabImg);
+      canvas.setActiveObject(fabImg);
+      hist();
+      renderLayers();
+    })
+    .catch(function(err) {
+      console.warn('GIF decode failed, falling back to static:', err);
+      _addImageToCanvas(url);
+    });
+}
+
+function _renderGifFrame(entry) {
+  const frame   = entry.frames[entry.currentFrame];
+  const compCtx = entry.compositeCanvas.getContext('2d');
+  const offCtx  = entry.offCanvas.getContext('2d');
+
+  // Disposal of previous frame
+  if (entry.currentFrame > 0) {
+    const prev = entry.frames[entry.currentFrame - 1];
+    if (prev.disposalType === 2) {
+      compCtx.clearRect(prev.dims.left, prev.dims.top, prev.dims.width, prev.dims.height);
+    } else if (prev.disposalType === 3) {
+      compCtx.clearRect(0, 0, entry.compositeCanvas.width, entry.compositeCanvas.height);
+    }
+  } else {
+    // First frame of loop — clear fully
+    compCtx.clearRect(0, 0, entry.compositeCanvas.width, entry.compositeCanvas.height);
+  }
+
+  // Blit new frame pixels onto composite
+  const imgData = new ImageData(
+    new Uint8ClampedArray(frame.patch),
+    frame.dims.width,
+    frame.dims.height
+  );
+  compCtx.putImageData(imgData, frame.dims.left, frame.dims.top);
+
+  // Copy composite → visible offCanvas
+  offCtx.clearRect(0, 0, entry.offCanvas.width, entry.offCanvas.height);
+  offCtx.drawImage(entry.compositeCanvas, 0, 0);
+}
+
+function _startGlobalGifLoop() {
+  if (_gifLoopRunning) return;
+  _gifLoopRunning = true;
+
+  function tick() {
+    if (_gifRegistry.size === 0) { _gifLoopRunning = false; return; }
+    const now = performance.now();
+    let dirty = false;
+
+    _gifRegistry.forEach(function(entry, fabImg) {
+      if (!fabImg.canvas) { _gifRegistry.delete(fabImg); return; }
+
+      const frame    = entry.frames[entry.currentFrame];
+      // GIF delay is in hundredths of a second; clamp minimum to 50ms so nothing spins wildly
+      const delayMs  = Math.max(50, (frame.delay || 10) * 10);
+
+      if (now - entry.lastTime >= delayMs) {
+        entry.currentFrame = (entry.currentFrame + 1) % entry.frames.length;
+        entry.lastTime = now;
+        _renderGifFrame(entry);
+        fabImg.set('dirty', true);
+        dirty = true;
+      }
+    });
+
+    if (dirty) canvas.renderAll();
+    requestAnimationFrame(tick);
+  }
+
+  requestAnimationFrame(tick);
+}
+
+// Restore GIFs after page/JSON reload (same pattern as restoreVideoGroups)
+function restoreGifs() {
+  canvas.getObjects().forEach(function(obj) {
+    if (!obj.isGifFabric || !obj.customGifSrc) return;
+
+    const url = obj.customGifSrc;
+    fetch(url)
+      .then(function(r) { return r.arrayBuffer(); })
+      .then(function(buf) {
+        const gif    = parseGIF(buf);
+        const frames = decompressFrames(gif, true);
+        if (!frames || !frames.length) return;
+
+        const W = frames[0].dims.width;
+        const H = frames[0].dims.height;
+
+        const offCanvas  = document.createElement('canvas');
+        offCanvas.width  = W;
+        offCanvas.height = H;
+        const compCanvas = document.createElement('canvas');
+        compCanvas.width  = W;
+        compCanvas.height = H;
+
+        obj.width      = W;
+        obj.height     = H;
+        obj._offCanvas = offCanvas;
+        obj.objectCaching = false;
+
+        obj._render = function(ctx) {
+          if (!this._offCanvas) return;
+          ctx.drawImage(this._offCanvas, -this.width / 2, -this.height / 2, this.width, this.height);
+        };
+
+        const entry = { frames, currentFrame: 0, lastTime: performance.now(), offCanvas, compositeCanvas: compCanvas };
+        _renderGifFrame(entry);
+        _gifRegistry.set(obj, entry);
+        _startGlobalGifLoop();
+        canvas.requestRenderAll();
+      })
+      .catch(function(err) { console.warn('GIF restore failed:', err); });
+  });
+}
 
 fpInit();
 </script>

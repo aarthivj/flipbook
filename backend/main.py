@@ -1,13 +1,14 @@
-import json,os
+import os
 import shutil
-
+from rembg import remove
+import base64
 from uuid import uuid4
 import uuid
 from fastapi import FastAPI, Depends, File, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
-from sqlalchemy import Text, create_engine, Column, String, Integer, JSON, ForeignKey, inspect, text
+from sqlalchemy import DateTime, Text, create_engine, Column, String, Integer, JSON, ForeignKey, inspect, text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
 from pydantic import BaseModel
@@ -16,7 +17,7 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from dotenv import load_dotenv
 import random, string, secrets
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 import smtplib
 
@@ -55,6 +56,8 @@ class Project(Base):
     data = Column(JSON) 
     share_id = Column(String, unique=True, index=True, default=lambda: str(uuid4()))
     preview_bg = Column(String, nullable=True)
+    cover_page = Column(Text, nullable=True)   # ← ADD
+    created_at = Column(DateTime, default=datetime.utcnow)
 class CustomElement(Base):
     __tablename__ = "custom_elements"
     id = Column(Integer, primary_key=True, index=True)
@@ -103,7 +106,12 @@ def run_migrations():
         proj_columns = [col['name'] for col in inspector.get_columns('projects')]
         if 'preview_bg' not in proj_columns:
             conn.execute(text("ALTER TABLE projects ADD COLUMN preview_bg VARCHAR"))
+        if 'created_at' not in proj_columns:
+            conn.execute(text("ALTER TABLE projects ADD COLUMN created_at DATETIME"))
         # Add this inside run_migrations(), after the email check
+        if 'cover_page' not in proj_columns:
+            conn.execute(text("ALTER TABLE projects ADD COLUMN cover_page TEXT"))
+        
         if 'verified' not in existing_columns:
             conn.execute(text("ALTER TABLE users ADD COLUMN verified INTEGER DEFAULT 0"))
 
@@ -455,9 +463,19 @@ def reset_password(payload: dict, db: Session = Depends(get_db)):
     return {"message": "Password reset successfully."}
 
 # --- PROJECTS API ---
+@app.delete("/api/projects/delete/{project_id}")
+async def delete_project(project_id: int, db: Session = Depends(get_db)):
+    project = db.query(Project).filter(Project.id == project_id).first()
+    if project:
+        db.delete(project)
+        db.commit()
+        return {"ok": True}
+    raise HTTPException(status_code=404)
+
 @app.get("/api/projects/{user_id}")
 def get_projects(user_id: int, db: Session = Depends(get_db)):
-    return db.query(Project).filter(Project.user_id == user_id).all()
+    # Sorting by created_at DESC ensures the newest projects show up first on the dashboard
+    return db.query(Project).filter(Project.user_id == user_id).order_by(Project.created_at.desc()).all()
 
 @app.get("/api/project/{p_id}")
 def get_project(p_id: int, db: Session = Depends(get_db)):
@@ -472,7 +490,8 @@ def save_project(proj: dict, db: Session = Depends(get_db)):
     p_id = proj.get("id")
     data_content = proj.get("data")
     preview_bg = proj.get("preview_bg", None)   # ← ADD
-    
+    cover_page = proj.get("cover_page", None)    # ← ADD
+
     if isinstance(data_content, str):
         import json
         data_content = json.loads(data_content)
@@ -483,7 +502,10 @@ def save_project(proj: dict, db: Session = Depends(get_db)):
             db_p.data = data_content
             db_p.title = proj.get('title', db_p.title)
             if preview_bg is not None:             # ← ADD
-                db_p.preview_bg = preview_bg       # ← ADD
+                db_p.preview_bg = preview_bg
+            if cover_page is not None:          # ← ADD
+                db_p.cover_page = cover_page    # ← ADD
+                  # ← ADD
             if not db_p.share_id:
                 db_p.share_id = str(uuid4())
             db.commit()
@@ -494,7 +516,8 @@ def save_project(proj: dict, db: Session = Depends(get_db)):
         project_type=proj.get('type', 'flipbook'),
         user_id=proj.get('user_id'),
         data=data_content,
-        preview_bg=preview_bg,                     # ← ADD
+        preview_bg=preview_bg,            
+        cover_page=cover_page,         # ← ADD
         share_id=str(uuid4())
     )
     db.add(new_p)
@@ -599,6 +622,23 @@ def load_pages(user_id: int, book_id: str, db: Session = Depends(get_db)):
     if not row:
         return {"pages": [], "meta": {}}
     return {"pages": row.pages_data, "meta": row.meta_data or {}}
+
+@app.post("/api/remove-bg")
+async def remove_bg(payload: dict):
+    try:
+        img_data = payload.get("image")
+        if not img_data:
+            raise HTTPException(400, detail="No image provided")
+        if "," in img_data:
+            img_data = img_data.split(",")[1]
+        img_bytes  = base64.b64decode(img_data)
+        result     = remove(img_bytes)
+        result_b64 = base64.b64encode(result).decode("utf-8")
+        return { "result": "data:image/png;base64," + result_b64 }
+    except Exception as e:
+        raise HTTPException(500, detail=str(e))
+
+
 
 if __name__ == "__main__":
     import uvicorn
