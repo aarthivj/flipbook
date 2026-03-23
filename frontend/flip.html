@@ -2,19 +2,42 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>Droidal – Flipbook Preview</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">    <title>Droidal – Flipbook Preview</title>
  <script src="https://cdn.jsdelivr.net/npm/page-flip@2.0.7/dist/js/page-flip.browser.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gifuct-js@2.1.2/dist/gifuct-js.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700;900&family=Inter:wght@300;400;500;600;700&family=Roboto:wght@400;700&family=Oswald:wght@400;700&family=Montserrat:wght@400;600;700&family=Poppins:wght@400;600&family=Raleway:wght@400;700&family=Lato:wght@400;700&family=Open+Sans:wght@400;600&family=Merriweather:wght@400;700&family=Dancing+Script:wght@600&family=Bebas+Neue&display=swap" rel="stylesheet">
     <style>
         *{box-sizing:border-box;margin:0;padding:0}
-        body{background:#0f172a;min-height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:40px 20px 60px;font-family:'Inter',sans-serif;overflow:hidden}
+       body {
+    overflow: auto; /* Allow scrolling if zoomed */
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
         body::before{content:'';position:fixed;top:0;left:0;right:0;bottom:0;background:radial-gradient(circle at 20% 30%,rgba(16,185,129,.15) 0%,transparent 50%),radial-gradient(circle at 80% 70%,rgba(59,130,246,.15) 0%,transparent 50%);pointer-events:none;z-index:0}
-        .book-wrapper{text-align:center;position:relative;z-index:1;padding:0px 60px}
-        #book{width:840px;height:594px;position:relative;margin:0 auto 20px;transition:transform .6s cubic-bezier(.4,0,.2,1)}
-        .my-page{background-color:#ffffff;position:absolute;top:0;left:0;width:100%;height:100%;overflow:hidden;box-shadow:inset 0 0 1px rgba(0,0,0,.1)}
+     .book-wrapper {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-height: 600px; /* Give it a base height */
+    padding: 40px;
+    box-sizing: border-box;
+    perspective: 2000px;
+    overflow: visible; /* Important for zoom */
+}
+#book {
+    /* Dimensions are controlled by JS to match PageFlip settings */
+    margin: 0 auto;
+    transform-origin: center center;
+    transition: transform 0.4s ease-out;
+    will-change: transform;
+}        .my-page{background-color:#ffffff;position:absolute;top:0;left:0;width:100%;height:100%;overflow:hidden;box-shadow:inset 0 0 1px rgba(0,0,0,.1)}
         /* .my-page::before{content:'';position:absolute;top:0;left:0;right:0;bottom:0;background-image:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.008) 2px,rgba(0,0,0,.008) 4px);pointer-events:none;opacity:.6;z-index:50} */
         .interactive-layer{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:9999}
         .interactive-layer div,.interactive-layer a,.interactive-layer video,.interactive-layer button{pointer-events:auto}
@@ -50,7 +73,8 @@
         .my-page:nth-child(odd)::after{left:0;background:linear-gradient(to right,rgba(0,0,0,0.25) 0%,rgba(0,0,0,0.1) 20%,rgba(0,0,0,0.02) 50%,transparent 100%)}
         .my-page:nth-child(even)::before{content:'';position:absolute;top:0;right:0;width:1px;height:100%;background:rgba(0,0,0,0.2);z-index:61}
         .my-page:nth-child(1)::after,.my-page:nth-child(1)::before{display:none}
-        .interactive-layer video,.interactive-layer canvas{transition:none !important}
+        .interactive-layer video,
+        .interactive-layer canvas{image-rendering: -webkit-optimize-contrast;backface-visibility: hidden;transition:none !important}
 
         /* --- Video --- */
         .vid-wrap{position:absolute;overflow:hidden;z-index:9998}
@@ -186,10 +210,6 @@
         }
 
         /* ─── GLOSS TOGGLE BUTTON ─── */
- #book {
-    overflow: visible;
-    position: relative;
-}
 
 #spine-overlay {
     position: absolute;
@@ -200,6 +220,7 @@
     height: 100%;
     pointer-events: none;
     z-index: 100;
+    display: block;
     transition: opacity 0.2s ease;
 }
 
@@ -234,6 +255,26 @@
         rgba(0,0,0,0.65) 85%,
         rgba(0,0,0,0.0)  100%
     );
+}
+.is-portrait #spine-overlay {
+    display: none;
+}
+
+@media (max-width: 768px) {
+    .book-wrapper {
+        padding: 10px;
+        min-height: 60vh;
+    }
+}
+
+@media (max-width: 768px) {
+    .ctrl-bar {
+        height: 60px;
+        padding: 0 10px;
+    }
+    .cb-btn span { display: none; } /* Hide text on small buttons */
+    .cb-btn i { font-size: 1.2rem; }
+    .pg-ind { font-size: 0.7rem; min-width: 50px; }
 }
     
     </style>
@@ -853,7 +894,7 @@ async function renderPage(canvasId, jsonData, overlay, pageIndex) {
                 obj.hasControls = obj.hasBorders = false;
             });
             sc.renderAll();
-
+            restoreGifsOnPage(sc, pageIndex);
             // 2. INTERACTIVE OVERLAYS
             sc.getObjects().forEach(obj => {
                 obj.setCoords();
@@ -1325,6 +1366,8 @@ function recenter(idx) {
     } else {
         bookEl.style.transform = 'translateX(0px)';    // spreads: centred
     }
+
+    resizeBook();
 }
 
 function updateUI(idx) {
@@ -1386,12 +1429,13 @@ function initFlip() {
         maxShadowOpacity: 0.5,
         showPageCorners: true,
         useMouseEvents: true,
-        clickEventForward: false
+        clickEventForward: false,
+        usePortrait: true,
     });
 
     window.pageFlip = pageFlip;
     pageFlip.loadFromHTML(document.querySelectorAll('#book .my-page'));
-    
+    setTimeout(resizeBook, 100);
     recenter(0);
     setTimeout(() => document.getElementById('loadOverlay').classList.add('hidden'), 500);
 
@@ -1533,8 +1577,257 @@ async function saveAndShare() {
     }, 2000);
 }
 
+// ═══════════════════════════════════════════════════
+// GIF ENGINE FOR PREVIEW
+// ═══════════════════════════════════════════════════
+
+async function restoreGifsOnPage(sc, pageIndex) {
+  const objs = sc.getObjects();
+  
+  for (const obj of objs) {
+    if (!obj.customGifSrc) continue;
+
+    const src = obj.customGifSrc;
+
+    // Check if it's a Lottie (Zip) file based on the header UEsDBBQ
+    if (src.includes('UEsDBBQ') || src.endsWith('.lottie')) {
+       await renderLottieInPreview(obj, sc);
+    } else {
+       // Standard GIF Logic
+       renderStandardGif(obj, sc);
+    }
+  }
+}
+
+function renderLottieInPreview(obj, sc, pageIndex) {
+  const url = obj.customLottieSrc || obj._b64src;
+  if (!url) return;
+
+  const getBuffer = url.startsWith('data:')
+    ? Promise.resolve(_dataUrlToArrayBuffer(url))
+    : fetch(url).then(function(r) { return r.arrayBuffer(); });
+
+  getBuffer.then(function(buf) {
+    const header = new Uint8Array(buf, 0, 2);
+    const isZip  = header[0] === 0x50 && header[1] === 0x4B;
+
+    if (isZip) {
+      return JSZip.loadAsync(buf).then(function(zip) {
+        const files = Object.values(zip.files).filter(function(f) {
+          return !f.dir && f.name.endsWith('.json');
+        });
+        // animations/ folder first
+        files.sort(function(a, b) {
+          return (a.name.startsWith('animations/') ? 0 : 1) - (b.name.startsWith('animations/') ? 0 : 1);
+        });
+        if (!files.length) throw new Error('No JSON in .lottie ZIP');
+        return files[0].async('string').then(function(str) {
+          const parsed = JSON.parse(str);
+          if (!parsed.layers && !parsed.v && files[1]) {
+            return files[1].async('string').then(function(s) { return JSON.parse(s); });
+          }
+          return parsed;
+        });
+      });
+    } else {
+      return JSON.parse(new TextDecoder().decode(buf));
+    }
+  })
+  .then(function(animData) {
+    if (!animData || (!animData.layers && !animData.v)) {
+      console.warn('Invalid lottie animData in preview');
+      return;
+    }
+
+    const W = animData.w || 300;
+    const H = animData.h || 300;
+
+    const container = document.createElement('div');
+    container.style.cssText = 'position:fixed;left:-9999px;top:0;width:' + W + 'px;height:' + H + 'px;overflow:hidden;pointer-events:none;';
+    document.body.appendChild(container);
+
+    const anim = lottie.loadAnimation({
+      container: container,
+      renderer: 'canvas',
+      loop: true,
+      autoplay: true,
+      animationData: animData,
+      rendererSettings: { clearCanvas: true, preserveAspectRatio: 'xMidYMid meet' },
+    });
+
+    const offCanvas = document.createElement('canvas');
+    offCanvas.width  = W;
+    offCanvas.height = H;
+
+    obj.objectCaching = false;
+    obj._offCanvas = offCanvas;
+    obj._render = function(ctx) {
+      if (!this._offCanvas) return;
+      ctx.drawImage(this._offCanvas, -this.width / 2, -this.height / 2, this.width, this.height);
+    };
+
+    // Copy lottie canvas → offCanvas each frame
+    function syncLoop() {
+      const lottieCanvas = container.querySelector('canvas');
+      if (lottieCanvas) {
+        offCanvas.getContext('2d').clearRect(0, 0, W, H);
+        offCanvas.getContext('2d').drawImage(lottieCanvas, 0, 0, W, H);
+        obj.set('dirty', true);
+        sc.requestRenderAll();
+      }
+      requestAnimationFrame(syncLoop);
+    }
+    requestAnimationFrame(syncLoop);
+  })
+  .catch(function(err) {
+    console.warn('Lottie Preview Setup Failed:', err);
+  });
+}
+
+function _dataUrlToArrayBuffer(dataUrl) {
+  const base64 = dataUrl.split(',')[1];
+  const binary = atob(base64);
+  const buf    = new ArrayBuffer(binary.length);
+  const view   = new Uint8Array(buf);
+  for (let i = 0; i < binary.length; i++) view[i] = binary.charCodeAt(i);
+  return buf;
+}
+
+function _renderPreviewGifFrame(entry) {
+  const frame   = entry.frames[entry.currentFrame];
+  const compCtx = entry.compositeCanvas.getContext('2d');
+  const offCtx  = entry.offCanvas.getContext('2d');
+
+  if (entry.currentFrame > 0) {
+    const prev = entry.frames[entry.currentFrame - 1];
+    if (prev.disposalType === 2) {
+      compCtx.clearRect(prev.dims.left, prev.dims.top, prev.dims.width, prev.dims.height);
+    } else if (prev.disposalType === 3) {
+      compCtx.clearRect(0, 0, entry.compositeCanvas.width, entry.compositeCanvas.height);
+    }
+  } else {
+    compCtx.clearRect(0, 0, entry.compositeCanvas.width, entry.compositeCanvas.height);
+  }
+
+  const imgData = new ImageData(
+    new Uint8ClampedArray(frame.patch),
+    frame.dims.width,
+    frame.dims.height
+  );
+  compCtx.putImageData(imgData, frame.dims.left, frame.dims.top);
+
+  offCtx.clearRect(0, 0, entry.offCanvas.width, entry.offCanvas.height);
+  offCtx.drawImage(entry.compositeCanvas, 0, 0);
+}
+
+function _startPreviewGifLoop() {
+  if (_previewGifLoopRunning) return;
+  _previewGifLoopRunning = true;
+
+  function tick() {
+    _previewGifRegistry.forEach(function(entry, fabImg) {
+      if (!entry.img || !entry.img.complete) return;
+      // Draw the current frame of the natively-animated <img> to offCanvas
+      entry.offCtx.clearRect(0, 0, entry.offCanvas.width, entry.offCanvas.height);
+      entry.offCtx.drawImage(entry.img, 0, 0, entry.offCanvas.width, entry.offCanvas.height);
+      fabImg.set('dirty', true);
+      entry.sc.renderAll();
+    });
+
+    requestAnimationFrame(tick);
+  }
+
+  requestAnimationFrame(tick);
+}
+
 
 function setTxt(t) { document.getElementById('loadTxt').textContent = t; }
+
+// Add this at the top of your script (outside any function)
+let lastWindowWidth = window.innerWidth;
+let lastDevicePixelRatio = window.devicePixelRatio;
+
+function resizeBook() {
+    const book = document.getElementById('book');
+    if (!book || !window.pageFlip) return;
+
+    // 1. CHECK IF THIS IS A ZOOM OR A REAL RESIZE
+    const currentPixelRatio = window.devicePixelRatio;
+    const isZooming = currentPixelRatio !== lastDevicePixelRatio;
+    
+    // If the user is zooming (Ctrl +/-), STOP the scaling script.
+    // This lets the browser's native zoom take over.
+    if (isZooming) {
+        lastDevicePixelRatio = currentPixelRatio;
+        return; 
+    }
+
+    // 2. ONLY SCALE IF THE WINDOW ACTUALLY RESIZED
+    // This prevents the "stuck" size issue.
+    const windowW = window.innerWidth;
+    const windowH = window.innerHeight - 150;
+
+    const orientation = window.pageFlip.getOrientation();
+    const isPortrait = orientation === 'portrait';
+    book.classList.toggle('is-portrait', isPortrait);
+
+    const logicalW = isPortrait ? 420 : 840;
+    const logicalH = 594;
+
+    // Calculate initial scale
+    let scale = Math.min((windowW - 60) / logicalW, (windowH - 60) / logicalH);
+    
+    // Cap the scale so it doesn't get too huge on 4K monitors
+    if (scale > 1.2) scale = 1.2;
+    // Don't let it get too tiny on mobile
+    if (scale < 0.4) scale = 0.4;
+
+    const idx = window.pageFlip.getCurrentPageIndex();
+    const total = window.pageFlip.getPageCount();
+    let shift = 0;
+
+    if (!isPortrait) {
+        if (idx === 0) shift = -210;
+        else if (idx >= total - 1) shift = 210;
+    }
+
+    book.style.transform = `scale(${scale}) translateX(${shift}px)`;
+    
+    // Update our trackers
+    lastWindowWidth = windowW;
+}
+
+window.addEventListener('resize', () => {
+    
+    if (window.innerWidth !== lastWindowWidth) {
+        resizeBook();
+    }
+});
+
+// For mobile pinching
+if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', () => {
+        if (window.visualViewport.scale > 1.05) {
+            // User is pinching - do nothing, let them zoom!
+        } else {
+            resizeBook();
+        }
+    });
+}
+
+// ─── ZOOM-AWARE RESIZE ────────────────────────────────────────────────────────
+function isUserZoomed() {
+    if (window.visualViewport) return window.visualViewport.scale > 1.05;
+    return window.outerWidth / window.innerWidth > 1.05;
+}
+
+function safeResize() {
+    if (isUserZoomed()) return;   // don't fight the user's zoom
+    resizeBook();
+}
+
+
+
 </script>
 </body>
 </html>
